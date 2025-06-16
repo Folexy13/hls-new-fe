@@ -18,9 +18,9 @@ const Dashboard = () => {
       name: 'Vitamins',
       progress: 75,
       supplements: [
-        { id: 1, name: 'Vitamin D3', price: 25.99, description: 'Supports bone health and immune function' },
-        { id: 2, name: 'Vitamin B12', price: 19.99, description: 'Essential for energy metabolism' },
-        { id: 3, name: 'Vitamin C', price: 15.99, description: 'Powerful antioxidant support' }
+        { id: '1', name: 'Vitamin D3', price: 25.99, description: 'Supports bone health and immune function', image: '', category: 'vitamin' as const },
+        { id: '2', name: 'Vitamin B12', price: 19.99, description: 'Essential for energy metabolism', image: '', category: 'vitamin' as const },
+        { id: '3', name: 'Vitamin C', price: 15.99, description: 'Powerful antioxidant support', image: '', category: 'vitamin' as const }
       ]
     },
     {
@@ -28,9 +28,9 @@ const Dashboard = () => {
       name: 'Minerals',
       progress: 60,
       supplements: [
-        { id: 4, name: 'Magnesium', price: 22.99, description: 'Supports muscle and nerve function' },
-        { id: 5, name: 'Zinc', price: 18.99, description: 'Immune system support' },
-        { id: 6, name: 'Iron', price: 24.99, description: 'Essential for blood health' }
+        { id: '4', name: 'Magnesium', price: 22.99, description: 'Supports muscle and nerve function', image: '', category: 'mineral' as const },
+        { id: '5', name: 'Zinc', price: 18.99, description: 'Immune system support', image: '', category: 'mineral' as const },
+        { id: '6', name: 'Iron', price: 24.99, description: 'Essential for blood health', image: '', category: 'mineral' as const }
       ]
     },
     {
@@ -38,9 +38,9 @@ const Dashboard = () => {
       name: 'Proteins',
       progress: 85,
       supplements: [
-        { id: 7, name: 'Whey Protein', price: 45.99, description: 'High-quality complete protein' },
-        { id: 8, name: 'Plant Protein', price: 39.99, description: 'Vegan-friendly protein blend' },
-        { id: 9, name: 'Collagen', price: 35.99, description: 'Supports skin and joint health' }
+        { id: '7', name: 'Whey Protein', price: 45.99, description: 'High-quality complete protein', image: '', category: 'protein' as const },
+        { id: '8', name: 'Plant Protein', price: 39.99, description: 'Vegan-friendly protein blend', image: '', category: 'protein' as const },
+        { id: '9', name: 'Collagen', price: 35.99, description: 'Supports skin and joint health', image: '', category: 'protein' as const }
       ]
     },
     {
@@ -48,9 +48,9 @@ const Dashboard = () => {
       name: 'Omega Fatty Acids',
       progress: 40,
       supplements: [
-        { id: 10, name: 'Omega-3 Fish Oil', price: 28.99, description: 'Heart and brain health support' },
-        { id: 11, name: 'Algae Omega-3', price: 32.99, description: 'Vegan omega-3 alternative' },
-        { id: 12, name: 'Krill Oil', price: 42.99, description: 'Premium omega-3 source' }
+        { id: '10', name: 'Omega-3 Fish Oil', price: 28.99, description: 'Heart and brain health support', image: '', category: 'supplement' as const },
+        { id: '11', name: 'Algae Omega-3', price: 32.99, description: 'Vegan omega-3 alternative', image: '', category: 'supplement' as const },
+        { id: '12', name: 'Krill Oil', price: 42.99, description: 'Premium omega-3 source', image: '', category: 'supplement' as const }
       ]
     }
   ];
@@ -63,12 +63,7 @@ const Dashboard = () => {
   };
 
   const handleAddToCart = (supplement: any) => {
-    addToCart({
-      id: supplement.id,
-      name: supplement.name,
-      price: supplement.price,
-      quantity: 1
-    });
+    addToCart(supplement);
   };
 
   return (

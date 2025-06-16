@@ -51,6 +51,7 @@ interface StoreState {
   
   // Actions
   setUser: (user: User) => void;
+  login: () => void;
   logout: () => void;
   setQuizData: (data: QuizData) => void;
   addToCart: (product: Product) => void;
@@ -77,6 +78,17 @@ export const useStore = create<StoreState>()(
       // Actions
       setUser: (user) =>
         set({ user, isAuthenticated: true }),
+
+      login: () =>
+        set({ 
+          user: { 
+            id: '1', 
+            email: 'test@example.com', 
+            name: 'Test User',
+            isAuthenticated: true
+          }, 
+          isAuthenticated: true 
+        }),
 
       logout: () =>
         set({ 
