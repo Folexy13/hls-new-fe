@@ -1,7 +1,13 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift } from 'lucide-react';
+import doctor from '../images/bannerdoctor.png'
+import leftPill from '../images/leftPill.png';
+import rightPill from '../images/rightPill.png';
+import vitamins from '../images/vitamins.png'
+import vitamins2 from '../images/vitamins2.png'
+import vitamins3 from '../images/vitamins3.png'
+import vitamins4 from '../images/vitamins4.png'
 
 const Homepage: React.FC = () => {
   const testimonials = [
@@ -33,7 +39,7 @@ const Homepage: React.FC = () => {
       id: '1',
       name: 'Vitamin D3 Complex',
       price: 29.99,
-      image: '/placeholder.svg',
+      image: vitamins,
       description: 'High-potency vitamin D3 for bone health and immune support',
       category: 'vitamin' as const
     },
@@ -41,7 +47,7 @@ const Homepage: React.FC = () => {
       id: '2',
       name: 'Omega-3 Fish Oil',
       price: 34.99,
-      image: '/placeholder.svg',
+      image: vitamins2,
       description: 'Pure omega-3 fatty acids for heart and brain health',
       category: 'supplement' as const
     },
@@ -49,7 +55,7 @@ const Homepage: React.FC = () => {
       id: '3',
       name: 'Magnesium Glycinate',
       price: 24.99,
-      image: '/placeholder.svg',
+      image: vitamins3,
       description: 'Highly absorbable magnesium for muscle and nerve function',
       category: 'mineral' as const
     },
@@ -57,7 +63,7 @@ const Homepage: React.FC = () => {
       id: '4',
       name: 'Whey Protein Isolate',
       price: 49.99,
-      image: '/placeholder.svg',
+      image: vitamins4,
       description: 'Premium protein for muscle building and recovery',
       category: 'protein' as const
     }
@@ -103,70 +109,135 @@ const Homepage: React.FC = () => {
     }
   ];
 
+  const whyTakeQuiz = [
+    {
+      icon: Dna,
+      text: "Know your nutrient type for Free"
+    },
+    {
+      icon: Banknote,
+      text: "Get paid for using your Nutrients"
+    },
+    {
+      icon: Truck,
+      text: "Free monthly Delivery for Beneficiaries"
+    },
+    {
+      icon: Stethoscope,
+      text: "Get news on medical breakthroughs and innovations"
+    },
+    {
+      icon: Gift,
+      text: "Occasional freebies on national holidays and special days"
+    },
+  ];
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-emerald-50 to-blue-50 pt-8 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-              Your Personalized
-              <span className="text-emerald-600 block">Health Journey</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+      <section className="relative bg-[#e0f2fe] pt-8 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden h-[650px] flex flex-col justify-center">
+        {/* Content */}
+        <div className="max-w-7xl mx-auto relative z-10 text-center w-full pt-5 bottom-40">
+          <p className="text-lg text-blue-900 font-semibold mb-4">Food Extracts • Nutrients • Supplements</p>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-blue-900 mb-6">
+            Personalized Just For YOU.
+          </h1>
+          <p className="text-xl text-blue-800 mb-8 max-w-3xl mx-auto">
               Discover the supplements your body actually needs with our science-based assessment. 
               Get personalized recommendations tailored to your unique lifestyle and health goals.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/quiz"
-                className="bg-emerald-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-emerald-700 transition-colors"
+                className="bg-orange-500 text-white px-4 sm:px-8 py-2 sm:py-2 rounded-lg text-base sm:text-lg font-semibold hover:bg-orange-600 transition-colors w-full sm:w-auto text-center"
               >
-                Take Free Quiz
-              </Link>
-              <Link
-                to="/about"
-                className="border-2 border-emerald-600 text-emerald-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-emerald-50 transition-colors"
-              >
-                Learn More
+                Take Quiz
               </Link>
             </div>
           </div>
-          
-          <div className="mt-16 flex justify-center">
-            <ArrowDown className="h-6 w-6 text-gray-400 animate-bounce" />
+
+        {/* Curved bottom background */}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[40%] w-[900px] h-[100px] z-0 overflow-hidden">
+  <svg
+    viewBox="0 0 900 200"
+    preserveAspectRatio="none"
+    className="w-full h-full"
+  >
+    <path
+      d="M0,200 C100,0 800,0 900,200 L900,200 L0,200 Z"
+      fill="#00657e"
+    />
+  </svg>
+</div>
+
+
+        
+        {/* Doctor Image */}
+        <div className="absolute bottom-[-1px] left-1/2 -translate-x-1/2 z-10 flex justify-center">
+          <img
+            src={doctor}
+            alt="Health and wellness background"
+            className="w-[200px] h-auto object-contain"
+          />
+        </div>
+
+          {/* Pills Images */}
+          <img
+            src={leftPill}
+            alt="Green pill"
+            className="absolute bottom-0 left-4 sm:left-10 w-16 sm:w-24 h-auto z-10"
+          />
+          <img
+            src={rightPill}
+            alt="Green pill"
+            className="absolute bottom-0 right-4 sm:right-10 w-16 sm:w-24 h-auto z-10"
+          />
+        </section>
+
+      {/* Why Take Quiz Section */}
+      <section className="py-16 ">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900">Why take the quiz?</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {whyTakeQuiz.map((item, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-center text-center">
+                <item.icon className="h-12 w-12 text-[#005073] mb-4" />
+                <p className="text-gray-900">{item.text}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </section>
 
-      {/* Analytics Section */}
-      <section className="py-16 bg-white">
+          {/* Analytics Section */}
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <Users className="h-12 w-12 text-emerald-600" />
+                <Users className="h-12 w-12 text-[#005073]" />
               </div>
               <div className="text-3xl font-bold text-gray-900">50K+</div>
               <div className="text-gray-600">Happy Customers</div>
             </div>
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <Award className="h-12 w-12 text-emerald-600" />
+                <Award className="h-12 w-12 text-[#005073]" />
               </div>
               <div className="text-3xl font-bold text-gray-900">98%</div>
               <div className="text-gray-600">Satisfaction Rate</div>
             </div>
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <TrendingUp className="h-12 w-12 text-emerald-600" />
+                <TrendingUp className="h-12 w-12 text-[#005073]" />
               </div>
               <div className="text-3xl font-bold text-gray-900">25%</div>
               <div className="text-gray-600">Health Improvement</div>
             </div>
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <CheckCircle className="h-12 w-12 text-emerald-600" />
+                <CheckCircle className="h-12 w-12 text-[#005073]" />
               </div>
               <div className="text-3xl font-bold text-gray-900">100+</div>
               <div className="text-gray-600">Premium Products</div>
@@ -174,6 +245,9 @@ const Homepage: React.FC = () => {
           </div>
         </div>
       </section>
+      </section>
+
+    
 
       {/* Products Section */}
       <section className="py-16 bg-gray-50">

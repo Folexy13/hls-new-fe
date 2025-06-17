@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X } from 'lucide-react';
+import logo from '../images/logo.jpg';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
@@ -29,8 +29,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Mobile Header */}
       <header className="lg:hidden bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
-          <Link to="/" className="text-2xl font-bold text-emerald-600">
-            HLS
+          <Link to="/">
+            <img src={logo} alt="HLS Logo" className="h-8" />
           </Link>
           <div className="flex items-center space-x-4">
             {isAuthenticated && (
@@ -119,8 +119,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <header className="hidden lg:block bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <Link to="/" className="text-3xl font-bold text-emerald-600">
-              HLS
+            <Link to="/">
+              <img src={logo} alt="HLS Logo" className="h-10" />
             </Link>
             
             <nav className="flex space-x-8">
