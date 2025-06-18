@@ -408,7 +408,7 @@ const Homepage: React.FC = () => {
           <div className="grid grid-cols-2 text-center md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold mb-4">HLS</h3>
-              <p className="text-left pl-6 md:text-gray-400">
+              <p className="text-left pl-6 md: text-gray-400">
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
