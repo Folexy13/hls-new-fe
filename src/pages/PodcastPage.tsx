@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Share, Play, Pause, Volume2 } from 'lucide-react';
+import { Heart, MessageCircle, Share, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-interface PodcastPost {
+interface PodcastVideo {
   id: number;
   title: string;
   description: string;
@@ -14,17 +15,23 @@ interface PodcastPost {
   likes: number;
   comments: number;
   isLiked: boolean;
-  audioUrl: string;
+  videoUrl: string;
   thumbnail: string;
   category: string;
 }
 
 const PodcastPage = () => {
-  const [posts, setPosts] = useState<PodcastPost[]>([]);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<number | null>(null);
-  
-  // Mock data for health-focused podcast posts
-  const mockPosts: PodcastPost[] = [
+  const [videos, setVideos] = useState<PodcastVideo[]>([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const isMobile = useIsMobile();
+
+  // Mock data for health-focused podcast videos
+  const mockVideos: PodcastVideo[] = [
     {
       id: 1,
       title: "5 Minutes to Better Sleep",
@@ -34,7 +41,7 @@ const PodcastPage = () => {
       likes: 324,
       comments: 42,
       isLiked: false,
-      audioUrl: "#",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
       thumbnail: "/placeholder.svg",
       category: "Sleep Health"
     },
@@ -47,7 +54,7 @@ const PodcastPage = () => {
       likes: 567,
       comments: 89,
       isLiked: true,
-      audioUrl: "#",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
       thumbnail: "/placeholder.svg",
       category: "Nutrition"
     },
@@ -60,7 +67,7 @@ const PodcastPage = () => {
       likes: 432,
       comments: 67,
       isLiked: false,
-      audioUrl: "#",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
       thumbnail: "/placeholder.svg",
       category: "Mental Health"
     },
@@ -73,7 +80,7 @@ const PodcastPage = () => {
       likes: 289,
       comments: 34,
       isLiked: false,
-      audioUrl: "#",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
       thumbnail: "/placeholder.svg",
       category: "Fitness"
     },
@@ -86,47 +93,104 @@ const PodcastPage = () => {
       likes: 678,
       comments: 123,
       isLiked: true,
-      audioUrl: "#",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
       thumbnail: "/placeholder.svg",
       category: "Supplements"
     }
   ];
 
   useEffect(() => {
-    // Simulate loading posts
-    setPosts(mockPosts);
+    setVideos(mockVideos);
   }, []);
 
-  const handleLike = (postId: number) => {
-    setPosts(prevPosts => 
-      prevPosts.map(post => 
-        post.id === postId 
+  useEffect(() => {
+    // Auto-play current video
+    const currentVideo = videoRefs.current[currentVideoIndex];
+    if (currentVideo) {
+      currentVideo.currentTime = 0;
+      currentVideo.play().catch(console.error);
+      setIsPlaying(true);
+    }
+
+    // Pause other videos
+    videoRefs.current.forEach((video, index) => {
+      if (video && index !== currentVideoIndex) {
+        video.pause();
+      }
+    });
+  }, [currentVideoIndex]);
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const scrollLeft = scrollContainerRef.current.scrollLeft;
+      const videoWidth = window.innerWidth;
+      const newIndex = Math.round(scrollLeft / videoWidth);
+      
+      if (newIndex !== currentVideoIndex && newIndex >= 0 && newIndex < videos.length) {
+        setCurrentVideoIndex(newIndex);
+      }
+    }
+  };
+
+  const handleLike = (videoId: number) => {
+    setVideos(prevVideos => 
+      prevVideos.map(video => 
+        video.id === videoId 
           ? { 
-              ...post, 
-              isLiked: !post.isLiked,
-              likes: post.isLiked ? post.likes - 1 : post.likes + 1
+              ...video, 
+              isLiked: !video.isLiked,
+              likes: video.isLiked ? video.likes - 1 : video.likes + 1
             }
-          : post
+          : video
       )
     );
   };
 
-  const handlePlay = (postId: number) => {
-    if (currentlyPlaying === postId) {
-      setCurrentlyPlaying(null);
-      toast.info('Paused');
-    } else {
-      setCurrentlyPlaying(postId);
-      toast.success('Playing audio');
+  const handlePlayPause = () => {
+    const currentVideo = videoRefs.current[currentVideoIndex];
+    if (currentVideo) {
+      if (isPlaying) {
+        currentVideo.pause();
+      } else {
+        currentVideo.play().catch(console.error);
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
-  const handleShare = (post: PodcastPost) => {
+  const handleMute = () => {
+    const currentVideo = videoRefs.current[currentVideoIndex];
+    if (currentVideo) {
+      currentVideo.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handleShare = (video: PodcastVideo) => {
     toast.success('Link copied to clipboard!');
   };
 
-  const handleComment = (postId: number) => {
+  const handleComment = (videoId: number) => {
     toast.info('Comments feature coming soon!');
+  };
+
+  const handleVideoClick = () => {
+    if (isMobile) {
+      setShowControls(!showControls);
+      setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setShowControls(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isMobile) {
+      setShowControls(false);
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -141,116 +205,154 @@ const PodcastPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Health Podcasts</h1>
-          <p className="text-gray-600">Discover bite-sized health content tailored for you</p>
-        </div>
-      </div>
+    <div className="fixed inset-0 bg-black overflow-hidden">
+      {/* Horizontal Scroll Container */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
+        style={{ scrollBehavior: 'smooth' }}
+        onScroll={handleScroll}
+      >
+        {videos.map((video, index) => (
+          <div 
+            key={video.id} 
+            className="relative w-screen h-full flex-shrink-0 snap-center"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleVideoClick}
+          >
+            {/* Video Player */}
+            <video
+              ref={(el) => videoRefs.current[index] = el}
+              src={video.videoUrl}
+              className="w-full h-full object-cover cursor-pointer"
+              loop
+              muted={isMuted}
+              playsInline
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+            />
 
-      {/* Posts Feed */}
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {posts.map((post) => (
-          <Card key={post.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <CardContent className="p-0">
-              {/* Post Header */}
-              <div className="p-4 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <Volume2 className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{post.author}</p>
-                      <p className="text-sm text-gray-500">{post.duration}</p>
-                    </div>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(post.category)}`}>
-                    {post.category}
-                  </span>
-                </div>
+            {/* Overlay Content */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none">
+              {/* Top Header */}
+              <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-auto">
+                <h1 className="text-white text-lg font-semibold">Health Reels</h1>
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(video.category)}`}>
+                  {video.category}
+                </span>
               </div>
 
-              {/* Post Content */}
-              <div className="px-4 pb-4">
-                <h3 className="font-semibold text-lg text-gray-900 mb-2">{post.title}</h3>
-                <p className="text-gray-600 text-sm mb-4">{post.description}</p>
+              {/* Center Play/Pause Button - Only show when controls are visible */}
+              {showControls && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handlePlayPause}
+                    className="w-16 h-16 rounded-full bg-black/30 text-white hover:bg-black/50 transition-opacity"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8" />
+                    ) : (
+                      <Play className="h-8 w-8 ml-1" />
+                    )}
+                  </Button>
+                </div>
+              )}
 
-                {/* Audio Player Mockup */}
-                <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePlay(post.id)}
-                      className="flex-shrink-0"
-                    >
-                      {currentlyPlaying === post.id ? (
-                        <Pause className="h-4 w-4" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <div className="flex-1">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
-                          style={{ width: currentlyPlaying === post.id ? '35%' : '0%' }}
-                        ></div>
-                      </div>
+              {/* Bottom Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
+                {/* Author and Title */}
+                <div className="mb-4">
+                  <div className="flex items-center mb-2">
+                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                      <Volume2 className="h-5 w-5 text-white" />
                     </div>
-                    <span className="text-sm text-gray-500 flex-shrink-0">
-                      {currentlyPlaying === post.id ? '2:15' : '0:00'} / {post.duration}
-                    </span>
+                    <div>
+                      <p className="text-white font-medium">{video.author}</p>
+                      <p className="text-gray-300 text-sm">{video.duration}</p>
+                    </div>
                   </div>
+                  <h2 className="text-white text-lg font-semibold mb-2">{video.title}</h2>
+                  <p className="text-gray-300 text-sm leading-relaxed">{video.description}</p>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between">
-                  <div className="flex space-x-4">
+                  <div className="flex items-center space-x-4">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center space-x-2 ${post.isLiked ? 'text-red-500' : 'text-gray-600'}`}
+                      onClick={() => handleLike(video.id)}
+                      className={`flex items-center space-x-2 text-white hover:text-red-400 ${
+                        video.isLiked ? 'text-red-500' : ''
+                      }`}
                     >
-                      <Heart className={`h-4 w-4 ${post.isLiked ? 'fill-current' : ''}`} />
-                      <span>{post.likes}</span>
+                      <Heart className={`h-5 w-5 ${video.isLiked ? 'fill-current' : ''}`} />
+                      <span>{video.likes}</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleComment(post.id)}
-                      className="flex items-center space-x-2 text-gray-600"
+                      onClick={() => handleComment(video.id)}
+                      className="flex items-center space-x-2 text-white hover:text-blue-400"
                     >
-                      <MessageCircle className="h-4 w-4" />
-                      <span>{post.comments}</span>
+                      <MessageCircle className="h-5 w-5" />
+                      <span>{video.comments}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleShare(video)}
+                      className="flex items-center space-x-2 text-white hover:text-green-400"
+                    >
+                      <Share className="h-5 w-5" />
                     </Button>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleShare(post)}
-                    className="flex items-center space-x-2 text-gray-600"
+                    onClick={handleMute}
+                    className="text-white hover:text-yellow-400"
                   >
-                    <Share className="h-4 w-4" />
-                    <span>Share</span>
+                    {isMuted ? (
+                      <VolumeX className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
 
-        {/* Load More */}
-        <div className="text-center py-8">
-          <Button variant="outline" onClick={() => toast.info('Loading more content...')}>
-            Load More Posts
-          </Button>
-        </div>
+                {/* Progress Indicators */}
+                <div className="flex justify-center mt-4 space-x-2">
+                  {videos.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentVideoIndex ? 'bg-white' : 'bg-white/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Custom scrollbar hide styles */}
+      <style>
+        {`
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
     </div>
   );
 };

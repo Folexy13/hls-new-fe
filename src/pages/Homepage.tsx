@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, ShoppingCart, ArrowRight } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift } from 'lucide-react';
 import doctor from '../images/bannerdoctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
@@ -9,6 +9,13 @@ import vitamins2 from '../images/vitamins2.png'
 import vitamins3 from '../images/vitamins3.png'
 import vitamins4 from '../images/vitamins4.png'
 import patient from '../images/patient.jpg'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../components/ui/carousel"
 
 const Homepage: React.FC = () => {
   const testimonials = [
@@ -91,18 +98,21 @@ const Homepage: React.FC = () => {
 
   const blogs = [
     {
+      id: 1,
       title: "The Science Behind Personalized Nutrition",
       excerpt: "Discover how your unique genetic makeup influences your nutritional needs and how personalized supplementation can optimize your health.",
       date: "March 15, 2024",
       image: "/placeholder.svg"
     },
     {
+      id: 2,
       title: "5 Signs You Might Need Vitamin D",
       excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
       date: "March 10, 2024",
       image: "/placeholder.svg"
     },
     {
+      id: 3,
       title: "Optimizing Recovery with Magnesium",
       excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
       date: "March 5, 2024",
@@ -254,6 +264,14 @@ const Homepage: React.FC = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Products</h2>
             <p className="text-xl text-gray-600">Premium supplements backed by science</p>
+            <div className="mt-6">
+              <Link 
+                to="/marketplace"
+                className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                View All Products →
+              </Link>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -280,62 +298,6 @@ const Homepage: React.FC = () => {
         </div>
       </section>
 
-            {/* Doctor's Note Section */}
-            <section className="bg-[#00657e] py-16 px-4 sm:px-6 lg:px-8 text-white">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
-          {/* Left Column: Trending Image */}
-          <div className="md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left mb-8 md:mb-0">
-            <h3 className="text-xl font-serif mb-4 text-gray-200">Trending...</h3>
-            <img
-              src={patient}
-              alt="Trending health news"
-              className="w-full max-w-sm rounded-lg shadow-lg"
-            />
-          </div>
-
-          {/* Right Column: Doctor's Note Content */}
-          <div className="md:w-1/2 flex flex-col items-center md:items-end text-center md:text-right">
-            <h2 className="text-2xl font-serif mb-4 text-gray-200">Doctor's Note</h2>
-            <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-6">
-              Taking Aspirin Helps Prevent Cancer?
-            </h1>
-            <p className="text-lg text-gray-200 mb-8 max-w-lg">
-              Taking low-dose aspirin may reduce the risk of colorectal cancer and researchers are studying whether it reduces the risk of other cancers.
-            </p>
-            <Link
-              to="#" // Placeholder link
-              className="bg-orange-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors"
-            >
-              Read more
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Analytics Section - New */}
-      <section className="bg-blue-100 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white shadow-lg rounded-lg  relative z-10 flex flex-col md:flex-row justify-around items-center py-8">
-            <div className="text-center mb-8 md:mb-0">
-                <TrendingUp className="h-12 w-12 text-[#005073] mx-auto mb-2" />
-                <div className="text-3xl font-bold text-gray-900">83</div>
-                <p className="text-gray-600">Visits per month</p>
-            </div>
-            <div className="text-center mb-8 md:mb-0">
-                <ShoppingCart className="h-12 w-12 text-[#005073] mx-auto mb-2" />
-                <div className="text-3xl font-bold text-gray-900">56</div>
-                <p className="text-gray-600">Purchases per month</p>
-            </div>
-            <div className="text-center">
-                <Users className="h-12 w-12 text-[#005073] mx-auto mb-2" />
-                <div className="text-3xl font-bold text-gray-900">10</div>
-                <p className="text-gray-600">Registered principals</p>
-            </div>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <ArrowRight className="h-6 w-6 text-gray-400" />
-            </div>
-        </div>
-      </section>
-
       {/* Testimonials Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -344,29 +306,35 @@ const Homepage: React.FC = () => {
             <p className="text-xl text-gray-600">Real stories from real people</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center mb-4">
-                  <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className="w-12 h-12 rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-gray-600 text-sm">{testimonial.role}</p>
+          <Carousel className="w-full max-w-5xl mx-auto">
+            <CarouselContent>
+              {testimonials.map((testimonial, index) => (
+                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                  <div className="bg-gray-50 rounded-lg p-6 h-full">
+                    <div className="flex items-center mb-4">
+                      <img
+                        src={testimonial.image}
+                        alt={testimonial.name}
+                        className="w-12 h-12 rounded-full mr-4"
+                      />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
+                        <p className="text-gray-600 text-sm">{testimonial.role}</p>
+                      </div>
+                    </div>
+                    <div className="flex mb-3">
+                      {[...Array(testimonial.rating)].map((_, i) => (
+                        <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                      ))}
+                    </div>
+                    <p className="text-gray-700">{testimonial.content}</p>
                   </div>
-                </div>
-                <div className="flex mb-3">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-700">{testimonial.content}</p>
-              </div>
-            ))}
-          </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 
@@ -378,14 +346,20 @@ const Homepage: React.FC = () => {
             <p className="text-xl text-gray-600">Everything you need to know</p>
           </div>
           
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <div key={index} className="bg-white rounded-lg p-6 shadow-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                <p className="text-gray-700">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {faqs.map((faq, index) => (
+                <CarouselItem key={index} className="md:basis-1/2">
+                  <div className="bg-white rounded-lg p-6 shadow-md h-full">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
+                    <p className="text-gray-700">{faq.answer}</p>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 
@@ -397,25 +371,34 @@ const Homepage: React.FC = () => {
             <p className="text-xl text-gray-600">Health insights and tips from our experts</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {blogs.map((blog, index) => (
-              <article key={index} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                <img
-                  src={blog.image}
-                  alt={blog.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="text-sm text-gray-500 mb-2">{blog.date}</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{blog.title}</h3>
-                  <p className="text-gray-700 mb-4">{blog.excerpt}</p>
-                  <button className="text-emerald-600 font-medium hover:text-emerald-700">
-                    Read More →
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {blogs.map((blog) => (
+                <CarouselItem key={blog.id} className="md:basis-1/2 lg:basis-1/3">
+                  <article className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                    <img
+                      src={blog.image}
+                      alt={blog.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="text-sm text-gray-500 mb-2">{blog.date}</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">{blog.title}</h3>
+                      <p className="text-gray-700 mb-4 flex-1">{blog.excerpt}</p>
+                      <Link 
+                        to={`/blog/${blog.id}`}
+                        className="text-emerald-600 font-medium hover:text-emerald-700 inline-block"
+                      >
+                        Read More →
+                      </Link>
+                    </div>
+                  </article>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 
@@ -425,7 +408,7 @@ const Homepage: React.FC = () => {
           <div className="grid grid-cols-2 text-center md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold mb-4">HLS</h3>
-              <p className="text-left pl-6 md: text-gray-400">
+              <p className="text-left pl-6 md:text-gray-400">
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
