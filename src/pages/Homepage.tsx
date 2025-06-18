@@ -97,18 +97,21 @@ const Homepage: React.FC = () => {
 
   const blogs = [
     {
+      id: 1,
       title: "The Science Behind Personalized Nutrition",
       excerpt: "Discover how your unique genetic makeup influences your nutritional needs and how personalized supplementation can optimize your health.",
       date: "March 15, 2024",
       image: "/placeholder.svg"
     },
     {
+      id: 2,
       title: "5 Signs You Might Need Vitamin D",
       excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
       date: "March 10, 2024",
       image: "/placeholder.svg"
     },
     {
+      id: 3,
       title: "Optimizing Recovery with Magnesium",
       excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
       date: "March 5, 2024",
@@ -361,25 +364,34 @@ const Homepage: React.FC = () => {
             <p className="text-xl text-gray-600">Health insights and tips from our experts</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {blogs.map((blog, index) => (
-              <article key={index} className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
-                <img
-                  src={blog.image}
-                  alt={blog.title}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <div className="text-sm text-gray-500 mb-2">{blog.date}</div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{blog.title}</h3>
-                  <p className="text-gray-700 mb-4">{blog.excerpt}</p>
-                  <button className="text-emerald-600 font-medium hover:text-emerald-700">
-                    Read More →
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {blogs.map((blog) => (
+                <CarouselItem key={blog.id} className="md:basis-1/2 lg:basis-1/3">
+                  <article className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                    <img
+                      src={blog.image}
+                      alt={blog.title}
+                      className="w-full h-48 object-cover"
+                    />
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="text-sm text-gray-500 mb-2">{blog.date}</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">{blog.title}</h3>
+                      <p className="text-gray-700 mb-4 flex-1">{blog.excerpt}</p>
+                      <Link 
+                        to={`/blog/${blog.id}`}
+                        className="text-emerald-600 font-medium hover:text-emerald-700 inline-block"
+                      >
+                        Read More →
+                      </Link>
+                    </div>
+                  </article>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </section>
 

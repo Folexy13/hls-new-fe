@@ -1,4 +1,5 @@
 
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import SupportPage from "./pages/SupportPage";
 import Dashboard from "./pages/Dashboard";
 import CartPage from "./pages/CartPage";
 import PodcastPage from "./pages/PodcastPage";
+import BlogPage from "./pages/BlogPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -34,6 +36,7 @@ const App = () => (
             <Route path="/quiz" element={<QuizPage />} />
             <Route path="/auth/*" element={<AuthPage />} />
             <Route path="/support" element={<SupportPage />} />
+            <Route path="/blog/:id" element={<BlogPage />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={
@@ -74,3 +77,4 @@ const App = () => (
 );
 
 export default App;
+
