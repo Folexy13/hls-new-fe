@@ -1,5 +1,3 @@
-
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +17,8 @@ import CartPage from "./pages/CartPage";
 import PodcastPage from "./pages/PodcastPage";
 import BlogPage from "./pages/BlogPage";
 import NotFound from "./pages/NotFound";
+import MarketplacePage from "./pages/MarketplacePage";
+import ProductPage from "./pages/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -37,6 +37,8 @@ const App = () => (
             <Route path="/auth/*" element={<AuthPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/blog/:id" element={<BlogPage />} />
+            <Route path="/marketplace" element={<MarketplacePage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
             
             {/* Protected Routes */}
             <Route path="/dashboard" element={
@@ -77,4 +79,3 @@ const App = () => (
 );
 
 export default App;
-
