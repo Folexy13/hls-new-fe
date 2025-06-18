@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Heart, MessageCircle, Share, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PodcastVideo {
   id: number;
@@ -22,10 +23,12 @@ interface PodcastVideo {
 const PodcastPage = () => {
   const [videos, setVideos] = useState<PodcastVideo[]>([]);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [showControls, setShowControls] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const isMobile = useIsMobile();
 
   // Mock data for health-focused podcast videos
   const mockVideos: PodcastVideo[] = [
@@ -105,9 +108,8 @@ const PodcastPage = () => {
     const currentVideo = videoRefs.current[currentVideoIndex];
     if (currentVideo) {
       currentVideo.currentTime = 0;
-      if (isPlaying) {
-        currentVideo.play().catch(console.error);
-      }
+      currentVideo.play().catch(console.error);
+      setIsPlaying(true);
     }
 
     // Pause other videos
@@ -116,7 +118,7 @@ const PodcastPage = () => {
         video.pause();
       }
     });
-  }, [currentVideoIndex, isPlaying]);
+  }, [currentVideoIndex]);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -172,6 +174,25 @@ const PodcastPage = () => {
     toast.info('Comments feature coming soon!');
   };
 
+  const handleVideoClick = () => {
+    if (isMobile) {
+      setShowControls(!showControls);
+      setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setShowControls(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isMobile) {
+      setShowControls(false);
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     const colors: {[key: string]: string} = {
       'Sleep Health': 'bg-purple-100 text-purple-800',
@@ -196,12 +217,15 @@ const PodcastPage = () => {
           <div 
             key={video.id} 
             className="relative w-screen h-full flex-shrink-0 snap-center"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleVideoClick}
           >
             {/* Video Player */}
             <video
               ref={(el) => videoRefs.current[index] = el}
               src={video.videoUrl}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover cursor-pointer"
               loop
               muted={isMuted}
               playsInline
@@ -210,33 +234,35 @@ const PodcastPage = () => {
             />
 
             {/* Overlay Content */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none">
               {/* Top Header */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
+              <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-auto">
                 <h1 className="text-white text-lg font-semibold">Health Reels</h1>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(video.category)}`}>
                   {video.category}
                 </span>
               </div>
 
-              {/* Center Play Button */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePlayPause}
-                  className="w-16 h-16 rounded-full bg-black/30 text-white hover:bg-black/50"
-                >
-                  {isPlaying ? (
-                    <Pause className="h-8 w-8" />
-                  ) : (
-                    <Play className="h-8 w-8 ml-1" />
-                  )}
-                </Button>
-              </div>
+              {/* Center Play/Pause Button - Only show when controls are visible */}
+              {showControls && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handlePlayPause}
+                    className="w-16 h-16 rounded-full bg-black/30 text-white hover:bg-black/50 transition-opacity"
+                  >
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8" />
+                    ) : (
+                      <Play className="h-8 w-8 ml-1" />
+                    )}
+                  </Button>
+                </div>
+              )}
 
               {/* Bottom Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-4">
+              <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
                 {/* Author and Title */}
                 <div className="mb-4">
                   <div className="flex items-center mb-2">
@@ -316,15 +342,17 @@ const PodcastPage = () => {
       </div>
 
       {/* Custom scrollbar hide styles */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+      <style>
+        {`
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+        `}
+      </style>
     </div>
   );
 };
