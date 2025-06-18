@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, ShoppingCart, ArrowRight } from 'lucide-react';
 import doctor from '../images/bannerdoctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
@@ -8,6 +8,7 @@ import vitamins from '../images/vitamins.png'
 import vitamins2 from '../images/vitamins2.png'
 import vitamins3 from '../images/vitamins3.png'
 import vitamins4 from '../images/vitamins4.png'
+import patient from '../images/patient.jpg'
 
 const Homepage: React.FC = () => {
   const testimonials = [
@@ -211,7 +212,7 @@ const Homepage: React.FC = () => {
         </div>
 
           {/* Analytics Section */}
-      <section className="py-16">
+      {/* <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
@@ -244,10 +245,8 @@ const Homepage: React.FC = () => {
             </div>
           </div>
         </div>
+      </section> */}
       </section>
-      </section>
-
-    
 
       {/* Products Section */}
       <section className="py-16 bg-gray-50">
@@ -278,6 +277,62 @@ const Homepage: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+            {/* Doctor's Note Section */}
+            <section className="bg-[#00657e] py-16 px-4 sm:px-6 lg:px-8 text-white">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
+          {/* Left Column: Trending Image */}
+          <div className="md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left mb-8 md:mb-0">
+            <h3 className="text-xl font-serif mb-4 text-gray-200">Trending...</h3>
+            <img
+              src={patient}
+              alt="Trending health news"
+              className="w-full max-w-sm rounded-lg shadow-lg"
+            />
+          </div>
+
+          {/* Right Column: Doctor's Note Content */}
+          <div className="md:w-1/2 flex flex-col items-center md:items-end text-center md:text-right">
+            <h2 className="text-2xl font-serif mb-4 text-gray-200">Doctor's Note</h2>
+            <h1 className="text-4xl sm:text-5xl font-serif font-bold mb-6">
+              Taking Aspirin Helps Prevent Cancer?
+            </h1>
+            <p className="text-lg text-gray-200 mb-8 max-w-lg">
+              Taking low-dose aspirin may reduce the risk of colorectal cancer and researchers are studying whether it reduces the risk of other cancers.
+            </p>
+            <Link
+              to="#" // Placeholder link
+              className="bg-orange-500 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-orange-600 transition-colors"
+            >
+              Read more
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Analytics Section - New */}
+      <section className="bg-blue-100 py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 bg-white shadow-lg rounded-lg  relative z-10 flex flex-col md:flex-row justify-around items-center py-8">
+            <div className="text-center mb-8 md:mb-0">
+                <TrendingUp className="h-12 w-12 text-[#005073] mx-auto mb-2" />
+                <div className="text-3xl font-bold text-gray-900">83</div>
+                <p className="text-gray-600">Visits per month</p>
+            </div>
+            <div className="text-center mb-8 md:mb-0">
+                <ShoppingCart className="h-12 w-12 text-[#005073] mx-auto mb-2" />
+                <div className="text-3xl font-bold text-gray-900">56</div>
+                <p className="text-gray-600">Purchases per month</p>
+            </div>
+            <div className="text-center">
+                <Users className="h-12 w-12 text-[#005073] mx-auto mb-2" />
+                <div className="text-3xl font-bold text-gray-900">10</div>
+                <p className="text-gray-600">Registered principals</p>
+            </div>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                <ArrowRight className="h-6 w-6 text-gray-400" />
+            </div>
         </div>
       </section>
 
@@ -367,10 +422,10 @@ const Homepage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 text-center md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold mb-4">HLS</h3>
-              <p className="text-gray-400">
+              <p className="text-left pl-6 md: text-gray-400">
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
