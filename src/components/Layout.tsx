@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X } from 'lucide-react';
+import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText } from 'lucide-react';
 import logo from '../images/logo.jpg';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -13,12 +13,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { name: 'Home', href: '/', icon: Home },
     { name: 'About', href: '/about', icon: BookOpen },
     { name: 'Quiz', href: '/quiz', icon: User },
+    { name: 'Form', href: '/form', icon: FileText },
     { name: 'Support', href: '/support', icon: BookOpen },
   ];
 
   const privateNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Cart', href: '/cart', icon: ShoppingCart },
+    { name: 'Form', href: '/form', icon: FileText },
     { name: 'Podcast', href: '/podcast', icon: Headphones },
   ];
 

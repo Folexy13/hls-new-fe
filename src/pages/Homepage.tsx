@@ -1,14 +1,6 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift } from 'lucide-react';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import doctor from '../images/bannerdoctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
@@ -16,6 +8,14 @@ import vitamins from '../images/vitamins.png'
 import vitamins2 from '../images/vitamins2.png'
 import vitamins3 from '../images/vitamins3.png'
 import vitamins4 from '../images/vitamins4.png'
+import patient from '../images/patient.jpg'
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "../components/ui/carousel"
 
 const Homepage: React.FC = () => {
   const testimonials = [
@@ -222,7 +222,7 @@ const Homepage: React.FC = () => {
         </div>
 
           {/* Analytics Section */}
-      <section className="py-16">
+      {/* <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
@@ -255,10 +255,8 @@ const Homepage: React.FC = () => {
             </div>
           </div>
         </div>
+      </section> */}
       </section>
-      </section>
-
-    
 
       {/* Products Section */}
       <section className="py-16 bg-gray-50">
@@ -276,41 +274,27 @@ const Homepage: React.FC = () => {
             </div>
           </div>
           
-          <Carousel className="w-full">
-            <CarouselContent>
-              {products.map((product) => (
-                <CarouselItem key={product.id} className="md:basis-1/2 lg:basis-1/4">
-                  <Link to={`/product/${product.id}`} className="block">
-                    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                        <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
-                          <button 
-                            className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              // Add to cart functionality here
-                            }}
-                          >
-                            Add to Cart
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {products.map((product) => (
+              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
+                    <button className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors">
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -421,10 +405,10 @@ const Homepage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 text-center md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold mb-4">HLS</h3>
-              <p className="text-gray-400">
+              <p className="text-left pl-6 md: text-gray-400">
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
