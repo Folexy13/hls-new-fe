@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import MarketplacePage from "./pages/MarketplacePage";
 import ProductPage from "./pages/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FormPage from "./pages/FormPage";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,8 @@ const App = () => (
                 <PodcastPage />
               </ProtectedRoute>
             } />
+            
+            <Route path="/form" element={<FormPage />} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
