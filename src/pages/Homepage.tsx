@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift } from 'lucide-react';
@@ -149,23 +150,19 @@ const Homepage: React.FC = () => {
       <section className="relative bg-[#e0f2fe] pt-8 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden h-[650px] flex flex-col justify-center">
         {/* Content */}
         <div className="max-w-7xl mx-auto relative z-10 text-center w-full pt-5 bottom-40">
-          <p className="text-lg text-blue-900 font-semibold mb-4">Food Extracts • Nutrients • Supplements</p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-blue-900 mb-6">
+          <p className="text-sm sm:text-lg text-blue-900 font-semibold mb-4">Food Extracts • Nutrients • Supplements</p>
+          <h1 className="text-2xl sm:text-5xl lg:text-6xl font-bold text-blue-900 mb-6">
             Personalized Just For YOU.
           </h1>
-          <p className="text-xl text-blue-800 mb-8 max-w-3xl mx-auto">
-              Discover the supplements your body actually needs with our science-based assessment. 
-              Get personalized recommendations tailored to your unique lifestyle and health goals.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/quiz"
-                className="bg-orange-500 text-white px-4 sm:px-8 py-2 sm:py-2 rounded-lg text-base sm:text-lg font-semibold hover:bg-orange-600 transition-colors w-full sm:w-auto text-center"
-              >
-                Take Quiz
-              </Link>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/quiz"
+              className="bg-orange-500 text-white px-4 sm:px-8 py-2 sm:py-2 rounded-lg text-base sm:text-lg font-semibold hover:bg-orange-600 transition-colors w-full sm:w-auto text-center"
+            >
+              Take Quiz
+            </Link>
           </div>
+        </div>
 
         {/* Curved bottom background */}
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[40%] w-[900px] h-[100px] z-0 overflow-hidden">
@@ -181,8 +178,6 @@ const Homepage: React.FC = () => {
   </svg>
 </div>
 
-
-        
         {/* Doctor Image */}
         <div className="absolute bottom-[-1px] left-1/2 -translate-x-1/2 z-10 flex justify-center">
           <img
@@ -220,42 +215,6 @@ const Homepage: React.FC = () => {
             ))}
           </div>
         </div>
-
-          {/* Analytics Section */}
-      {/* <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <Users className="h-12 w-12 text-[#005073]" />
-              </div>
-              <div className="text-3xl font-bold text-gray-900">50K+</div>
-              <div className="text-gray-600">Happy Customers</div>
-            </div>
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <Award className="h-12 w-12 text-[#005073]" />
-              </div>
-              <div className="text-3xl font-bold text-gray-900">98%</div>
-              <div className="text-gray-600">Satisfaction Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <TrendingUp className="h-12 w-12 text-[#005073]" />
-              </div>
-              <div className="text-3xl font-bold text-gray-900">25%</div>
-              <div className="text-gray-600">Health Improvement</div>
-            </div>
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="h-12 w-12 text-[#005073]" />
-              </div>
-              <div className="text-3xl font-bold text-gray-900">100+</div>
-              <div className="text-gray-600">Premium Products</div>
-            </div>
-          </div>
-        </div>
-      </section> */}
       </section>
 
       {/* Products Section */}
@@ -274,27 +233,37 @@ const Homepage: React.FC = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
-                    <button className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors">
-                      Add to Cart
-                    </button>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {products.map((product) => (
+                <CarouselItem key={product.id} className="md:basis-1/2 lg:basis-1/4">
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full">
+                    <Link to={`/product/${product.id}`}>
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-48 object-cover"
+                      />
+                    </Link>
+                    <div className="p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
+                        <button className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors">
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="hidden md:block">
+              <CarouselPrevious />
+              <CarouselNext />
+            </div>
+          </Carousel>
         </div>
       </section>
 
@@ -332,8 +301,10 @@ const Homepage: React.FC = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <div className="hidden md:block">
+              <CarouselPrevious />
+              <CarouselNext />
+            </div>
           </Carousel>
         </div>
       </section>
@@ -357,8 +328,10 @@ const Homepage: React.FC = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <div className="hidden md:block">
+              <CarouselPrevious />
+              <CarouselNext />
+            </div>
           </Carousel>
         </div>
       </section>
@@ -376,11 +349,13 @@ const Homepage: React.FC = () => {
               {blogs.map((blog) => (
                 <CarouselItem key={blog.id} className="md:basis-1/2 lg:basis-1/3">
                   <article className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                    <img
-                      src={blog.image}
-                      alt={blog.title}
-                      className="w-full h-48 object-cover"
-                    />
+                    <Link to={`/blog/${blog.id}`}>
+                      <img
+                        src={blog.image}
+                        alt={blog.title}
+                        className="w-full h-48 object-cover"
+                      />
+                    </Link>
                     <div className="p-6 flex-1 flex flex-col">
                       <div className="text-sm text-gray-500 mb-2">{blog.date}</div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-3">{blog.title}</h3>
@@ -396,8 +371,10 @@ const Homepage: React.FC = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <div className="hidden md:block">
+              <CarouselPrevious />
+              <CarouselNext />
+            </div>
           </Carousel>
         </div>
       </section>
