@@ -9,6 +9,18 @@ import vitamins2 from '../images/vitamins2.png'
 import vitamins3 from '../images/vitamins3.png'
 import vitamins4 from '../images/vitamins4.png'
 import patient from '../images/patient.jpg'
+import bose from '../images/avwenagha-bose.jpg'
+import joy from '../images/joy.jpeg'
+import walter from '../images/walker-okolie.jpg'
+import samson from '../images/samson-ojo.jpeg'
+import nick from '../images/nick-ozonuma.jpg'
+import eriscyl from '../images/ericsyl-john.jpg'
+import mimi from '../images/mimi-gloria.jpg'
+
+
+
+
+
 import {
   Carousel,
   CarouselContent,
@@ -20,26 +32,59 @@ import {
 const Homepage: React.FC = () => {
   const testimonials = [
     {
-      name: "Sarah Johnson",
-      role: "Fitness Enthusiast",
-      content: "HLS helped me understand my nutritional needs better. The personalized recommendations are spot-on!",
+      name: "Avwenagha Bose",
+      content: "The services I received from HLS are excellent. Great experience with professional staff",
+      rating: 5,
+      image: bose
+    },
+    {
+      name: "Joy Anieofon David II",
+      content: "Professional services with top-notch customer care! Learned so much about supplements and healthy living. Prices are very affordable.",
+      rating: 5,
+      image: joy
+    },
+    {
+      name: "Walker Okolie",
+      content: "They prioritize your wellbeing over profits. They don't just deliver, but follow up to ensure you're doing well.",
+      rating: 5,
+      image: walter
+    },
+    {
+      name: "Samson Ojo",
+      content: "Extremely competitive prices with first-class service. HLS adds tremendous value with nutritional education.",
+      rating: 5,
+      image: samson
+    },
+    {
+      name: "Nick Okunzuwa",
+      content: "Great insight to healthy living! The education about proper supplementation has been life-changing.",
+      rating: 5,
+      image: nick
+    },
+    {
+      name: "Ericsyl John",
+      content: "Their prompt response is impressive! They take time to educate me on the right supplements for my needs",
+      rating: 5,
+      image: eriscyl
+    },
+    {
+      name: "Mimi Gloria",
+      content: "For getting the best supplements and nutrition, you can never go wrong with HLS.",
+      rating: 5,
+      image: mimi
+    },
+    {
+      name: "Olivia Njoku",
+      content: "HLS provides a new level of understanding about how the lifestyle choices you make impact the biological processes in your body. I've seen great improvements in my health over 2 years.",
       rating: 5,
       image: "/placeholder.svg"
     },
     {
-      name: "Mike Chen",
-      role: "Busy Professional",
-      content: "The quiz was eye-opening. Now I know exactly what supplements I need for my lifestyle.",
+      name: "Kenny Ajayi",
+      content: "Very reliable company! They deliver to your doorstep without any worries.",
       rating: 5,
       image: "/placeholder.svg"
     },
-    {
-      name: "Emma Davis",
-      role: "Health Coach",
-      content: "I recommend HLS to all my clients. The science-based approach is what sets it apart.",
-      rating: 5,
-      image: "/placeholder.svg"
-    }
   ];
 
   const products = [
@@ -319,7 +364,6 @@ const Homepage: React.FC = () => {
                       />
                       <div>
                         <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
-                        <p className="text-gray-600 text-sm">{testimonial.role}</p>
                       </div>
                     </div>
                     <div className="flex mb-3">
