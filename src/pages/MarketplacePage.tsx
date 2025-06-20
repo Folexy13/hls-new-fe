@@ -13,7 +13,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '1',
       name: 'Vitamin D3 Complex',
-      price: 29.99,
+      price: 14999,
       image: vitamins,
       description: 'High-potency vitamin D3 for bone health and immune support',
       category: 'vitamin' as const,
@@ -22,7 +22,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '2',
       name: 'Omega-3 Fish Oil',
-      price: 34.99,
+      price: 17499,
       image: vitamins2,
       description: 'Pure omega-3 fatty acids for heart and brain health',
       category: 'supplement' as const,
@@ -31,7 +31,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '3',
       name: 'Magnesium Glycinate',
-      price: 24.99,
+      price: 12499,
       image: vitamins3,
       description: 'Highly absorbable magnesium for muscle and nerve function',
       category: 'mineral' as const,
@@ -40,7 +40,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '4',
       name: 'Whey Protein Isolate',
-      price: 49.99,
+      price: 24999,
       image: vitamins4,
       description: 'Premium protein for muscle building and recovery',
       category: 'protein' as const,
@@ -49,7 +49,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '5',
       name: 'Multivitamin Complete',
-      price: 39.99,
+      price: 19999,
       image: vitamins,
       description: 'Comprehensive daily multivitamin formula',
       category: 'vitamin' as const,
@@ -58,7 +58,7 @@ const MarketplacePage: React.FC = () => {
     {
       id: '6',
       name: 'Probiotics Advanced',
-      price: 44.99,
+      price: 22499,
       image: vitamins2,
       description: 'Advanced probiotic blend for digestive health',
       category: 'supplement' as const,
@@ -70,7 +70,7 @@ const MarketplacePage: React.FC = () => {
   const hlsProducts = allProducts.filter(product => product.vendor === 'HLS');
 
   const ProductGrid = ({ products }: { products: typeof allProducts }) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
       {products.map((product) => (
         <Link key={product.id} to={`/product/${product.id}`} className="block">
           <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
@@ -78,18 +78,18 @@ const MarketplacePage: React.FC = () => {
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-48 object-cover"
+                className="w-full h-20 sm:h-32 lg:h-48 object-cover"
               />
             </CardHeader>
-            <CardContent className="p-6">
-              <CardTitle className="text-lg mb-2">{product.name}</CardTitle>
-              <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-emerald-600">${product.price}</span>
-                <span className="text-xs bg-gray-100 px-2 py-1 rounded">{product.vendor}</span>
+            <CardContent className="p-2 sm:p-4 lg:p-6">
+              <CardTitle className="text-xs sm:text-sm lg:text-lg mb-1 sm:mb-2 line-clamp-2">{product.name}</CardTitle>
+              <p className="text-gray-600 text-xs mb-2 sm:mb-4 hidden sm:block">{product.description}</p>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm sm:text-lg lg:text-2xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                <span className="text-xs bg-gray-100 px-1 sm:px-2 py-1 rounded hidden sm:block">{product.vendor}</span>
               </div>
               <button 
-                className="w-full mt-4 bg-emerald-600 text-white py-2 rounded-md hover:bg-emerald-700 transition-colors"
+                className="w-full text-xs sm:text-sm bg-emerald-600 text-white py-1 sm:py-2 rounded-md hover:bg-emerald-700 transition-colors"
                 onClick={(e) => {
                   e.preventDefault();
                   // Add to cart functionality
@@ -105,40 +105,49 @@ const MarketplacePage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Marketplace</h1>
-          <p className="text-xl text-gray-600">Discover premium health products from trusted vendors</p>
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">Marketplace</h1>
+          <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Discover premium health products from trusted vendors</p>
         </div>
 
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="all">All Products</TabsTrigger>
-            <TabsTrigger value="vendor">My Vendor Products</TabsTrigger>
-            <TabsTrigger value="hls">HLS Products</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-8 h-auto">
+            <TabsTrigger value="all" className="text-xs sm:text-sm px-2 py-2">
+              <span className="hidden sm:inline">All Products</span>
+              <span className="sm:hidden">All</span>
+            </TabsTrigger>
+            <TabsTrigger value="vendor" className="text-xs sm:text-sm px-2 py-2">
+              <span className="hidden sm:inline">My Vendor</span>
+              <span className="sm:hidden">Vendor</span>
+            </TabsTrigger>
+            <TabsTrigger value="hls" className="text-xs sm:text-sm px-2 py-2">
+              <span className="hidden sm:inline">HLS Products</span>
+              <span className="sm:hidden">HLS</span>
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all" className="space-y-6">
+          <TabsContent value="all" className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-900">All Products</h2>
-              <span className="text-gray-600">{allProducts.length} products</span>
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">All Products</h2>
+              <span className="text-gray-600 text-sm sm:text-base">{allProducts.length} products</span>
             </div>
             <ProductGrid products={allProducts} />
           </TabsContent>
           
-          <TabsContent value="vendor" className="space-y-6">
+          <TabsContent value="vendor" className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-900">Vendor Products</h2>
-              <span className="text-gray-600">{vendorProducts.length} products</span>
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">Vendor Products</h2>
+              <span className="text-gray-600 text-sm sm:text-base">{vendorProducts.length} products</span>
             </div>
             <ProductGrid products={vendorProducts} />
           </TabsContent>
           
-          <TabsContent value="hls" className="space-y-6">
+          <TabsContent value="hls" className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-900">HLS Products</h2>
-              <span className="text-gray-600">{hlsProducts.length} products</span>
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">HLS Products</h2>
+              <span className="text-gray-600 text-sm sm:text-base">{hlsProducts.length} products</span>
             </div>
             <ProductGrid products={hlsProducts} />
           </TabsContent>

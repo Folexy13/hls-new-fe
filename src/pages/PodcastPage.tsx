@@ -1,358 +1,200 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Heart, MessageCircle, Share, Play, Pause, Volume2, VolumeX } from 'lucide-react';
-import { toast } from 'react-toastify';
-import { useIsMobile } from '@/hooks/use-mobile';
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
 
-interface PodcastVideo {
-  id: number;
-  title: string;
-  description: string;
-  duration: string;
-  author: string;
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-  videoUrl: string;
-  thumbnail: string;
-  category: string;
-}
-
-const PodcastPage = () => {
-  const [videos, setVideos] = useState<PodcastVideo[]>([]);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
+const PodcastPage: React.FC = () => {
+  const [currentVideo, setCurrentVideo] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [showControls, setShowControls] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const isMobile = useIsMobile();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Mock data for health-focused podcast videos
-  const mockVideos: PodcastVideo[] = [
+  const videos = [
     {
       id: 1,
-      title: "5 Minutes to Better Sleep",
-      description: "Quick tips and techniques to improve your sleep quality tonight. Learn about sleep hygiene and natural remedies.",
-      duration: "5:32",
-      author: "Dr. Sarah Chen",
-      likes: 324,
-      comments: 42,
-      isLiked: false,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      title: "Understanding Nutrition Basics",
+      description: "Learn the fundamentals of nutrition and how it affects your daily life",
+      duration: "15:30",
       thumbnail: "/placeholder.svg",
-      category: "Sleep Health"
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"
     },
     {
       id: 2,
-      title: "Nutrition Myths Debunked",
-      description: "Separating fact from fiction in the world of nutrition. What the science really says about popular diet trends.",
-      duration: "8:15",
-      author: "Nutritionist Mike Ross",
-      likes: 567,
-      comments: 89,
-      isLiked: true,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+      title: "Supplement Safety Guidelines",
+      description: "Important safety considerations when choosing and using supplements",
+      duration: "12:45",
       thumbnail: "/placeholder.svg",
-      category: "Nutrition"
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4"
     },
     {
       id: 3,
-      title: "Morning Meditation for Energy",
-      description: "Start your day with this guided meditation designed to boost your energy and focus naturally.",
-      duration: "10:00",
-      author: "Meditation Master Lisa",
-      likes: 432,
-      comments: 67,
-      isLiked: false,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      title: "Healthy Lifestyle Habits",
+      description: "Building sustainable habits for long-term health and wellness",
+      duration: "18:20",
       thumbnail: "/placeholder.svg",
-      category: "Mental Health"
-    },
-    {
-      id: 4,
-      title: "Quick Desk Exercises",
-      description: "Combat desk job fatigue with these simple exercises you can do anywhere. Perfect for office workers.",
-      duration: "6:45",
-      author: "Fitness Coach Tom",
-      likes: 289,
-      comments: 34,
-      isLiked: false,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-      thumbnail: "/placeholder.svg",
-      category: "Fitness"
-    },
-    {
-      id: 5,
-      title: "Understanding Vitamins",
-      description: "A comprehensive guide to essential vitamins, their benefits, and how to ensure you're getting enough.",
-      duration: "12:30",
-      author: "Dr. Amanda Green",
-      likes: 678,
-      comments: 123,
-      isLiked: true,
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-      thumbnail: "/placeholder.svg",
-      category: "Supplements"
+      videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4"
     }
   ];
 
-  useEffect(() => {
-    setVideos(mockVideos);
-  }, []);
+  const currentVideoData = videos[currentVideo];
 
   useEffect(() => {
-    // Auto-play current video
-    const currentVideo = videoRefs.current[currentVideoIndex];
-    if (currentVideo) {
-      currentVideo.currentTime = 0;
-      currentVideo.play().catch(console.error);
-      setIsPlaying(true);
+    if (videoRef.current) {
+      videoRef.current.load();
+      setIsPlaying(false);
     }
+  }, [currentVideo]);
 
-    // Pause other videos
-    videoRefs.current.forEach((video, index) => {
-      if (video && index !== currentVideoIndex) {
-        video.pause();
-      }
-    });
-  }, [currentVideoIndex]);
+  const togglePlay = async () => {
+    if (!videoRef.current) return;
 
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      const scrollLeft = scrollContainerRef.current.scrollLeft;
-      const videoWidth = window.innerWidth;
-      const newIndex = Math.round(scrollLeft / videoWidth);
-      
-      if (newIndex !== currentVideoIndex && newIndex >= 0 && newIndex < videos.length) {
-        setCurrentVideoIndex(newIndex);
-      }
-    }
-  };
-
-  const handleLike = (videoId: number) => {
-    setVideos(prevVideos => 
-      prevVideos.map(video => 
-        video.id === videoId 
-          ? { 
-              ...video, 
-              isLiked: !video.isLiked,
-              likes: video.isLiked ? video.likes - 1 : video.likes + 1
-            }
-          : video
-      )
-    );
-  };
-
-  const handlePlayPause = () => {
-    const currentVideo = videoRefs.current[currentVideoIndex];
-    if (currentVideo) {
+    try {
       if (isPlaying) {
-        currentVideo.pause();
+        videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        currentVideo.play().catch(console.error);
+        await videoRef.current.play();
+        setIsPlaying(true);
       }
-      setIsPlaying(!isPlaying);
+    } catch (error) {
+      console.error('Error playing video:', error);
+      setIsPlaying(false);
     }
   };
 
-  const handleMute = () => {
-    const currentVideo = videoRefs.current[currentVideoIndex];
-    if (currentVideo) {
-      currentVideo.muted = !isMuted;
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
     }
   };
 
-  const handleShare = (video: PodcastVideo) => {
-    toast.success('Link copied to clipboard!');
+  const nextVideo = () => {
+    setCurrentVideo((prev) => (prev + 1) % videos.length);
   };
 
-  const handleComment = (videoId: number) => {
-    toast.info('Comments feature coming soon!');
+  const prevVideo = () => {
+    setCurrentVideo((prev) => (prev - 1 + videos.length) % videos.length);
   };
 
-  const handleVideoClick = () => {
-    if (isMobile) {
-      setShowControls(!showControls);
-      setTimeout(() => setShowControls(false), 3000); // Hide controls after 3 seconds
-    }
+  const handleVideoEnded = () => {
+    setIsPlaying(false);
+    nextVideo();
   };
 
-  const handleMouseEnter = () => {
-    if (!isMobile) {
-      setShowControls(true);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    if (!isMobile) {
-      setShowControls(false);
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: {[key: string]: string} = {
-      'Sleep Health': 'bg-purple-100 text-purple-800',
-      'Nutrition': 'bg-green-100 text-green-800',
-      'Mental Health': 'bg-blue-100 text-blue-800',
-      'Fitness': 'bg-orange-100 text-orange-800',
-      'Supplements': 'bg-emerald-100 text-emerald-800'
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+  const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    console.error('Video error:', e);
+    setIsPlaying(false);
   };
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
-      {/* Horizontal Scroll Container */}
-      <div 
-        ref={scrollContainerRef}
-        className="flex h-full overflow-x-auto overflow-y-hidden snap-x snap-mandatory scrollbar-hide"
-        style={{ scrollBehavior: 'smooth' }}
-        onScroll={handleScroll}
-      >
-        {videos.map((video, index) => (
-          <div 
-            key={video.id} 
-            className="relative w-screen h-full flex-shrink-0 snap-center"
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleVideoClick}
-          >
-            {/* Video Player */}
+    <div className="min-h-screen bg-black text-white">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-4">Health & Wellness Podcasts</h1>
+          <p className="text-sm sm:text-base lg:text-xl text-gray-300">Educational content for your health journey</p>
+        </div>
+
+        {/* Main Video Player */}
+        <div className="relative bg-gray-900 rounded-lg overflow-hidden mb-6 sm:mb-8">
+          <div className="relative aspect-video">
             <video
-              ref={(el) => videoRefs.current[index] = el}
-              src={video.videoUrl}
-              className="w-full h-full object-cover cursor-pointer"
-              loop
-              muted={isMuted}
+              ref={videoRef}
+              className="w-full h-full object-contain bg-black"
+              onEnded={handleVideoEnded}
+              onError={handleVideoError}
+              onLoadStart={() => console.log('Video loading started')}
+              onCanPlay={() => console.log('Video can play')}
               playsInline
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-            />
-
-            {/* Overlay Content */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none">
-              {/* Top Header */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center pointer-events-auto">
-                <h1 className="text-white text-lg font-semibold">Health Reels</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(video.category)}`}>
-                  {video.category}
-                </span>
-              </div>
-
-              {/* Center Play/Pause Button - Only show when controls are visible */}
-              {showControls && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handlePlayPause}
-                    className="w-16 h-16 rounded-full bg-black/30 text-white hover:bg-black/50 transition-opacity"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-8 w-8" />
-                    ) : (
-                      <Play className="h-8 w-8 ml-1" />
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {/* Bottom Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-auto">
-                {/* Author and Title */}
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
-                      <Volume2 className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{video.author}</p>
-                      <p className="text-gray-300 text-sm">{video.duration}</p>
-                    </div>
-                  </div>
-                  <h2 className="text-white text-lg font-semibold mb-2">{video.title}</h2>
-                  <p className="text-gray-300 text-sm leading-relaxed">{video.description}</p>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLike(video.id)}
-                      className={`flex items-center space-x-2 text-white hover:text-red-400 ${
-                        video.isLiked ? 'text-red-500' : ''
-                      }`}
-                    >
-                      <Heart className={`h-5 w-5 ${video.isLiked ? 'fill-current' : ''}`} />
-                      <span>{video.likes}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleComment(video.id)}
-                      className="flex items-center space-x-2 text-white hover:text-blue-400"
-                    >
-                      <MessageCircle className="h-5 w-5" />
-                      <span>{video.comments}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleShare(video)}
-                      className="flex items-center space-x-2 text-white hover:text-green-400"
-                    >
-                      <Share className="h-5 w-5" />
-                    </Button>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleMute}
-                    className="text-white hover:text-yellow-400"
-                  >
-                    {isMuted ? (
-                      <VolumeX className="h-5 w-5" />
-                    ) : (
-                      <Volume2 className="h-5 w-5" />
-                    )}
-                  </Button>
-                </div>
-
-                {/* Progress Indicators */}
-                <div className="flex justify-center mt-4 space-x-2">
-                  {videos.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentVideoIndex ? 'bg-white' : 'bg-white/30'
-                      }`}
-                    />
-                  ))}
-                </div>
+              preload="metadata"
+            >
+              <source src={currentVideoData.videoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            
+            {/* Video Controls Overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={prevVideo}
+                  className="p-2 sm:p-3 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-all"
+                >
+                  <SkipBack className="h-4 w-4 sm:h-6 sm:w-6" />
+                </button>
+                
+                <button
+                  onClick={togglePlay}
+                  className="p-3 sm:p-4 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-all"
+                >
+                  {isPlaying ? (
+                    <Pause className="h-6 w-6 sm:h-8 sm:w-8" />
+                  ) : (
+                    <Play className="h-6 w-6 sm:h-8 sm:w-8" />
+                  )}
+                </button>
+                
+                <button
+                  onClick={nextVideo}
+                  className="p-2 sm:p-3 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-all"
+                >
+                  <SkipForward className="h-4 w-4 sm:h-6 sm:w-6" />
+                </button>
+                
+                <button
+                  onClick={toggleMute}
+                  className="p-2 sm:p-3 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-all"
+                >
+                  {isMuted ? (
+                    <VolumeX className="h-4 w-4 sm:h-6 sm:w-6" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 sm:h-6 sm:w-6" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          
+          {/* Video Info */}
+          <div className="p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2">{currentVideoData.title}</h2>
+            <p className="text-sm sm:text-base text-gray-300 mb-2">{currentVideoData.description}</p>
+            <span className="text-xs sm:text-sm text-gray-400">Duration: {currentVideoData.duration}</span>
+          </div>
+        </div>
 
-      {/* Custom scrollbar hide styles */}
-      <style>
-        {`
-          .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}
-      </style>
+        {/* Video Playlist */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {videos.map((video, index) => (
+            <div
+              key={video.id}
+              onClick={() => setCurrentVideo(index)}
+              className={`bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all hover:bg-gray-700 ${
+                index === currentVideo ? 'ring-2 ring-blue-500' : ''
+              }`}
+            >
+              <div className="aspect-video bg-gray-700 flex items-center justify-center relative">
+                <img
+                  src={video.thumbnail}
+                  alt={video.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <Play className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
+                </div>
+                {index === currentVideo && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs">
+                    Now Playing
+                  </div>
+                )}
+              </div>
+              <div className="p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-semibold mb-1 sm:mb-2 line-clamp-2">{video.title}</h3>
+                <p className="text-xs sm:text-sm text-gray-400 mb-2 line-clamp-2">{video.description}</p>
+                <span className="text-xs text-gray-500">{video.duration}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
