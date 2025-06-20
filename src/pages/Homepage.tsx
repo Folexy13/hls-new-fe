@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
@@ -33,41 +32,11 @@ import {
 } from "../components/ui/carousel"
 
 const Homepage: React.FC = () => {
-  const [theme, setTheme] = useState('light-blue');
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [code, setCode] = useState('');
   const [showNutrientForm, setShowNutrientForm] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  const themes = {
-    'light-blue': {
-      hero: 'bg-[#e0f2fe]',
-      text: 'text-blue-900',
-      button: 'bg-orange-500 hover:bg-orange-600',
-      accent: 'text-emerald-600'
-    },
-    'light-green': {
-      hero: 'bg-gradient-to-br from-green-50 to-emerald-100',
-      text: 'text-green-900',
-      button: 'bg-blue-500 hover:bg-blue-600',
-      accent: 'text-green-600'
-    },
-    'dark-purple': {
-      hero: 'bg-gradient-to-br from-purple-900 to-indigo-900',
-      text: 'text-purple-100',
-      button: 'bg-purple-500 hover:bg-purple-600',
-      accent: 'text-purple-300'
-    },
-    'dark-slate': {
-      hero: 'bg-gradient-to-br from-slate-800 to-gray-900',
-      text: 'text-slate-100',
-      button: 'bg-slate-500 hover:bg-slate-600',
-      accent: 'text-slate-300'
-    }
-  };
-
-  const currentTheme = themes[theme as keyof typeof themes];
 
   const handleCodeSubmit = () => {
     if (code === 'HLS2024') {
@@ -250,40 +219,38 @@ const Homepage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Theme Toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <select 
-          value={theme} 
-          onChange={(e) => setTheme(e.target.value)}
-          className="px-2 py-1 rounded border text-xs"
-        >
-          <option value="light-blue">Light Blue</option>
-          <option value="light-green">Light Green</option>
-          <option value="dark-purple">Dark Purple</option>
-          <option value="dark-slate">Dark Slate</option>
-        </select>
-      </div>
-
       {/* Hero Section */}
-      <section className={`relative ${currentTheme.hero} pt-6 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden h-[400px] sm:h-[500px] lg:h-[650px] flex flex-col justify-center`}>
-        {/* Content */}
-        <div className="max-w-7xl mx-auto relative z-10 text-center w-full pt-2 sm:pt-5 lg:bottom-40">
-          <p className={`text-xs sm:text-sm lg:text-lg ${currentTheme.text} font-semibold mb-2 sm:mb-4`}>Food Extracts • Nutrients • Supplements</p>
-          <h1 className={`text-lg sm:text-3xl lg:text-6xl font-bold ${currentTheme.text} mb-4 sm:mb-6`}>
-            Personalized Just For YOU.
-          </h1>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center">
-            <button
-              onClick={handleQuizStart}
-              className={`${currentTheme.button} text-white px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base lg:text-lg font-semibold transition-colors w-full sm:w-auto text-center`}
-            >
-              Take Quiz
-            </button>
+      <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Content Container */}
+        <div className="max-w-7xl mx-auto relative z-20 text-center">
+          {/* Text Content */}
+          <div className="pt-8 sm:pt-16 lg:pt-20 pb-4 sm:pb-8">
+            <p className="text-xs sm:text-sm lg:text-lg text-blue-900 font-semibold mb-2 sm:mb-4">Food Extracts • Nutrients • Supplements</p>
+            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold text-blue-900 mb-6 sm:mb-8">
+              Personalized Just For YOU.
+            </h1>
+            <div className="flex justify-center mb-8 sm:mb-12">
+              <button
+                onClick={handleQuizStart}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-colors"
+              >
+                Take Quiz
+              </button>
+            </div>
+          </div>
+
+          {/* Doctor Image - positioned above curve */}
+          <div className="relative z-30 flex justify-center">
+            <img
+              src={doctor}
+              alt="Health and wellness background"
+              className="w-32 sm:w-48 lg:w-64 h-auto object-contain"
+            />
           </div>
         </div>
 
         {/* Curved bottom background */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[40%] w-[900px] h-[100px] z-0 overflow-hidden">
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-4xl h-16 sm:h-24 lg:h-32 z-10">
           <svg
             viewBox="0 0 900 200"
             preserveAspectRatio="none"
@@ -296,42 +263,33 @@ const Homepage: React.FC = () => {
           </svg>
         </div>
 
-        {/* Doctor Image */}
-        <div className="absolute bottom-[-1px] left-1/2 -translate-x-1/2 z-10 flex justify-center">
-          <img
-            src={doctor}
-            alt="Health and wellness background"
-            className="w-[120px] sm:w-[160px] lg:w-[200px] h-auto object-contain"
-          />
-        </div>
-
         {/* Pills Images */}
         <img
           src={leftPill}
           alt="Green pill"
-          className="absolute bottom-0 left-2 sm:left-4 lg:left-10 w-8 sm:w-12 lg:w-24 h-auto z-10"
+          className="absolute bottom-4 left-4 sm:left-8 lg:left-16 w-6 sm:w-12 lg:w-20 h-auto z-20"
         />
         <img
           src={rightPill}
           alt="Green pill"
-          className="absolute bottom-0 right-2 sm:right-4 lg:right-10 w-8 sm:w-12 lg:w-24 h-auto z-10"
+          className="absolute bottom-4 right-4 sm:right-8 lg:right-16 w-6 sm:w-12 lg:w-20 h-auto z-20"
         />
       </section>
 
       {/* Why Take Quiz Section */}
       <section className="py-8 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Why take the quiz?</h2>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Why take the quiz?</h2>
           </div>
           
           <Carousel className="w-full">
             <CarouselContent>
               {whyTakeQuiz.map((item, index) => (
                 <CarouselItem key={index} className="basis-full sm:basis-1/2 lg:basis-1/5">
-                  <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 flex flex-col items-center text-center h-full">
-                    <item.icon className="h-8 sm:h-10 lg:h-12 w-8 sm:w-10 lg:w-12 text-[#005073] mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-900">{item.text}</p>
+                  <div className="bg-white rounded-lg shadow-sm p-3 sm:p-6 flex flex-col items-center text-center h-full">
+                    <item.icon className="h-6 sm:h-10 lg:h-12 w-6 sm:w-10 lg:w-12 text-[#005073] mb-2 sm:mb-4" />
+                    <p className="text-xs sm:text-base text-gray-900">{item.text}</p>
                   </div>
                 </CarouselItem>
               ))}
@@ -347,13 +305,13 @@ const Homepage: React.FC = () => {
       {/* Products Section */}
       <section className="py-8 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Featured Products</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600">Premium supplements backed by science</p>
-            <div className="mt-4 sm:mt-6">
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Featured Products</h2>
+            <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Premium supplements backed by science</p>
+            <div className="mt-3 sm:mt-6">
               <Link 
                 to="/marketplace"
-                className={`inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 ${currentTheme.accent} bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-sm sm:text-base`}
+                className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-xs sm:text-base"
               >
                 View All Products →
               </Link>
@@ -369,15 +327,15 @@ const Homepage: React.FC = () => {
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-32 sm:h-40 lg:h-48 object-cover"
+                        className="w-full h-24 sm:h-40 lg:h-48 object-cover"
                       />
                     </Link>
-                    <div className="p-4 sm:p-6">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
+                    <div className="p-3 sm:p-6">
+                      <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
                       <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 hidden sm:block">{product.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className={`text-lg sm:text-xl lg:text-2xl font-bold ${currentTheme.accent}`}>₦{product.price.toLocaleString()}</span>
-                        <button className={`${currentTheme.button} text-white px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors text-xs sm:text-sm`}>
+                        <span className="text-sm sm:text-xl lg:text-2xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors text-xs sm:text-sm">
                           Add to Cart
                         </button>
                       </div>
@@ -397,24 +355,24 @@ const Homepage: React.FC = () => {
       {/* Testimonials Section */}
       <section className="py-8 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">What Our Customers Say</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600">Real stories from real people</p>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">What Our Customers Say</h2>
+            <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Real stories from real people</p>
           </div>
           
           <Carousel className="w-full max-w-5xl mx-auto">
             <CarouselContent>
               {testimonials.map((testimonial, index) => (
                 <CarouselItem key={index} className="basis-full sm:basis-1/2 lg:basis-1/3">
-                  <div className="bg-gray-50 rounded-lg p-4 sm:p-6 h-full">
-                    <div className="flex items-center mb-3 sm:mb-4">
+                  <div className="bg-gray-50 rounded-lg p-3 sm:p-6 h-full">
+                    <div className="flex items-center mb-2 sm:mb-4">
                       <img
                         src={testimonial.image}
                         alt={testimonial.name}
-                        className="w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 rounded-full mr-3 sm:mr-4"
+                        className="w-6 sm:w-10 lg:w-12 h-6 sm:h-10 lg:h-12 rounded-full mr-2 sm:mr-4"
                       />
                       <div>
-                        <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.name}</h4>
+                        <h4 className="font-semibold text-gray-900 text-xs sm:text-base">{testimonial.name}</h4>
                       </div>
                     </div>
                     <div className="flex mb-2 sm:mb-3">
@@ -438,18 +396,18 @@ const Homepage: React.FC = () => {
       {/* FAQ Section */}
       <section className="py-8 sm:py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Frequently Asked Questions</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600">Everything you need to know</p>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Frequently Asked Questions</h2>
+            <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Everything you need to know</p>
           </div>
           
           <Carousel className="w-full">
             <CarouselContent>
               {faqs.map((faq, index) => (
                 <CarouselItem key={index} className="basis-full sm:basis-1/2">
-                  <div className="bg-white rounded-lg p-4 sm:p-6 shadow-md h-full">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">{faq.question}</h3>
-                    <p className="text-gray-700 text-sm sm:text-base">{faq.answer}</p>
+                  <div className="bg-white rounded-lg p-3 sm:p-6 shadow-md h-full">
+                    <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">{faq.question}</h3>
+                    <p className="text-gray-700 text-xs sm:text-base">{faq.answer}</p>
                   </div>
                 </CarouselItem>
               ))}
@@ -465,9 +423,9 @@ const Homepage: React.FC = () => {
       {/* Blog Section */}
       <section className="py-8 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Latest from Our Blog</h2>
-            <p className="text-base sm:text-lg lg:text-xl text-gray-600">Health insights and tips from our experts</p>
+          <div className="text-center mb-6 sm:mb-12">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Latest from Our Blog</h2>
+            <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Health insights and tips from our experts</p>
           </div>
           
           <Carousel className="w-full">
@@ -479,16 +437,16 @@ const Homepage: React.FC = () => {
                       <img
                         src={blog.image}
                         alt={blog.title}
-                        className="w-full h-32 sm:h-40 lg:h-48 object-cover"
+                        className="w-full h-24 sm:h-40 lg:h-48 object-cover"
                       />
                     </Link>
-                    <div className="p-4 sm:p-6 flex-1 flex flex-col">
-                      <div className="text-xs sm:text-sm text-gray-500 mb-2">{blog.date}</div>
-                      <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
-                      <p className="text-gray-700 mb-3 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
+                    <div className="p-3 sm:p-6 flex-1 flex flex-col">
+                      <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
+                      <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
+                      <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
                       <Link 
                         to={`/blog/${blog.id}`}
-                        className={`${currentTheme.accent} font-medium hover:opacity-80 inline-block text-sm sm:text-base`}
+                        className="text-emerald-600 font-medium hover:opacity-80 inline-block text-xs sm:text-base"
                       >
                         Read More →
                       </Link>
@@ -508,15 +466,15 @@ const Homepage: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-6 sm:py-8 lg:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <div className="col-span-2 md:col-span-1">
-              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-4">HLS</h3>
+              <h3 className="text-base sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3">HLS</h3>
               <p className="text-gray-400 text-xs sm:text-sm lg:text-base">
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
             <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-4">Quick Links</h4>
+              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Quick Links</h4>
               <ul className="space-y-1 sm:space-y-2">
                 <li><Link to="/about" className="text-gray-400 hover:text-white text-xs sm:text-sm">About Us</Link></li>
                 <li><button onClick={handleQuizStart} className="text-gray-400 hover:text-white text-xs sm:text-sm">Take Quiz</button></li>
@@ -524,7 +482,7 @@ const Homepage: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-4">Support</h4>
+              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Support</h4>
               <ul className="space-y-1 sm:space-y-2">
                 <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Help Center</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Contact Us</a></li>
@@ -532,7 +490,7 @@ const Homepage: React.FC = () => {
               </ul>
             </div>
             <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-4">Connect</h4>
+              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Connect</h4>
               <ul className="space-y-1 sm:space-y-2">
                 <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Newsletter</a></li>
                 <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Social Media</a></li>
@@ -540,7 +498,7 @@ const Homepage: React.FC = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-4 sm:mt-6 lg:mt-8 pt-4 sm:pt-6 lg:pt-8 text-center">
+          <div className="border-t border-gray-800 mt-4 sm:mt-6 pt-4 sm:pt-6 text-center">
             <p className="text-gray-400 text-xs sm:text-sm">
               © {new Date().getFullYear()} HLS Health & Wellness. All rights reserved.
             </p>
