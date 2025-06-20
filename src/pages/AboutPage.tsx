@@ -1,5 +1,3 @@
-
-import React from 'react';
 import { CheckCircle, Users, Award, TrendingUp, ArrowRight, Quote, Star, Heart, Shield, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -151,48 +149,62 @@ const AboutPage: React.FC = () => {
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">Our Story</h2>
             <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 mx-auto mb-8"></div>
           </div>
-          
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="prose prose-lg text-gray-700">
-                <p className="text-xl leading-relaxed mb-6">
-                  Founded in 2020, HLS emerged from a simple yet powerful observation: 
-                  health solutions designed for Western populations often don't work optimally for Africans.
+          <div className="prose prose-lg text-gray-700 mx-auto mb-12">
+            <p className='text-lg font-semibold'>
+              Founded in 2021 by a team of healthcare professionals and entrepreneurs, HLS began its 
+              journey to revolutionize nutrient-based healthcare in Nigeria. We've grown from a small
+               startup to a leading provider of personalized health solutions, serving thousands of clients
+                and partnering with numerous healthcare professionals. Today, we're committed to reshaping Nigerians' 
+                perceptions of healthcare by highlighting the benefits of nutrient-based approaches that work as supplements
+                 in harmony with daily diets, not just treating diseases. Our goal is to empower every individual to find their 
+                 right supplement, regardless of budget or brand preferences, by providing research-driven alternatives that enhance
+                  health and lifestyle. To achieve this, we've curated a comprehensive market store featuring authentic, traceable,
+                   and available supplements in Nigeria, ensuring that everyone can access the nutrients they need to thrive.
+            </p>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            <div className="space-y-8">
+              <div>
+                <h3 className="text-2xl font-bold text-emerald-700 mb-2">Our Vision</h3>
+                <p className="text-gray-800 text-lg">
+                Empower 1 million Nigerians to embrace affordable, nutrient-based 
+                healthcare by 2027, while establishing a leading earning platform 
+                for healthcare professionals.
                 </p>
-                <p className="mb-6">
-                  Our founders, a team of accomplished medical professionals, scientists, and technologists, 
-                  came together with a shared vision to bridge this gap. By combining cutting-edge research 
-                  in nutrigenomics with deep understanding of African genetic diversity and lifestyle patterns, 
-                  we created the first truly personalized health platform for the African continent.
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-emerald-700 mb-2">Our Mission</h3>
+                <p className="text-gray-800 text-lg">
+                Unlocking the hidden power of nutrient-based healthcare for Nigerians,
+                 by shedding light on the lesser-known benefits of age defiance, brain
+                  health for economic productivity and creativity, quick recovery, and 
+                  longevity, in addition to the commonly known benefits of vitality and 
+                  immunity, through education, research, and personalized solutions.
                 </p>
-                <p>
-                  Today, we're proud to serve over 50,000 customers across 15 African countries, 
-                  helping them achieve optimal health through precision nutrition and lifestyle optimization.
-                </p>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-emerald-700 mb-2">Objectives</h3>
+                <ol className="list-decimal list-inside text-gray-800 space-y-1 text-lg">
+                  <li>Promoting the benefits of good healthcare beyond disease prevention.</li>
+                  <li>Arousing curiosity about nutrient types.</li>
+                  <li>Educating through entertaining strategies.</li>
+                  <li>Conducting free evidence-based research.</li>
+                  <li>Suggesting affordable nutrient supplements.</li>
+                  <li>Providing authentic nutrient information.</li>
+                  <li>Encouraging healthcare professionals.</li>
+                </ol>
               </div>
             </div>
-            
-            <div className="relative">
-              <div className="bg-gradient-to-br from-emerald-100 to-blue-100 rounded-2xl p-8 transform hover:scale-105 transition-transform duration-300">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-emerald-600 mb-2">50K+</div>
-                    <div className="text-gray-600 font-medium">Lives Improved</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-blue-600 mb-2">15+</div>
-                    <div className="text-gray-600 font-medium">Countries Served</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-purple-600 mb-2">98%</div>
-                    <div className="text-gray-600 font-medium">Satisfaction Rate</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-4xl font-bold text-orange-600 mb-2">24/7</div>
-                    <div className="text-gray-600 font-medium">Support Available</div>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-gradient-to-br from-emerald-100 to-blue-100 rounded-2xl p-8 flex flex-col h-full shadow-md">
+              <h3 className="text-2xl font-bold text-emerald-700 mb-4">Six Pillars of HLS</h3>
+              <ul className="list-disc list-inside text-gray-800 space-y-3 text-lg">
+                <li><span className="font-semibold text-emerald-800">Advancement:</span> We prioritize preventive healthcare, innovating solutions that promote optimal wellness.</li>
+                <li><span className="font-semibold text-emerald-800">Accessibility:</span> We make nutrient-based healthcare accessible to everyone, regardless of background or budget.</li>
+                <li><span className="font-semibold text-emerald-800">Availability:</span> We ensure our services and products are readily available to support individuals' health journeys.</li>
+                <li><span className="font-semibold text-emerald-800">Authenticity:</span> We stand behind the authenticity and quality of our recommended supplements, guaranteeing traceability.</li>
+                <li><span className="font-semibold text-emerald-800">Accountability:</span> We take responsibility for our clients' progress, tracking outcomes and incorporating feedback for continuous improvement.</li>
+                <li><span className="font-semibold text-emerald-800">Affordability:</span> We strive to make high-quality healthcare solutions affordable for all, without compromising on effectiveness.</li>
+              </ul>
             </div>
           </div>
         </div>
