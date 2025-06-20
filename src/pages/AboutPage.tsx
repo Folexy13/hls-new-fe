@@ -2,6 +2,13 @@
 import React from 'react';
 import { CheckCircle, Users, Award, TrendingUp, ArrowRight, Quote, Star, Heart, Shield, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const AboutPage: React.FC = () => {
   const values = [
@@ -212,44 +219,63 @@ const AboutPage: React.FC = () => {
             <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-blue-500 mx-auto mt-8"></div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {stakeholders.map((stakeholder, index) => (
-              <Card key={index} className="group overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white">
-                <CardContent className="p-0">
-                  <div className="flex flex-col lg:flex-row">
-                    <div className="lg:w-1/3 relative overflow-hidden">
-                      <img
-                        src={stakeholder.image}
-                        alt={stakeholder.name}
-                        className="w-full h-64 lg:h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-                    </div>
-                    <div className="lg:w-2/3 p-8">
-                      <div className="mb-4">
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">{stakeholder.name}</h3>
-                        <p className="text-emerald-600 font-semibold text-lg mb-1">{stakeholder.role}</p>
-                        <p className="text-sm text-gray-500 font-medium">{stakeholder.specialization}</p>
-                      </div>
-                      
-                      <p className="text-gray-700 mb-6 leading-relaxed">{stakeholder.bio}</p>
-                      
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Key Achievements</h4>
-                        <div className="space-y-2">
-                          {stakeholder.achievements.map((achievement, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <Star className="h-4 w-4 text-yellow-500 flex-shrink-0" />
-                              <span className="text-sm text-gray-600">{achievement}</span>
+          <div className="relative">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {stakeholders.map((stakeholder, index) => (
+                  <CarouselItem key={index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
+                    <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white h-full">
+                      <CardContent className="p-0 h-full">
+                        <div className="flex flex-col h-full">
+                          <div className="relative overflow-hidden h-64">
+                            <img
+                              src={stakeholder.image}
+                              alt={stakeholder.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                          </div>
+                          <div className="p-6 flex-1 flex flex-col">
+                            <div className="mb-4">
+                              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">{stakeholder.name}</h3>
+                              <p className="text-emerald-600 font-semibold text-base md:text-lg mb-1">{stakeholder.role}</p>
+                              <p className="text-sm text-gray-500 font-medium">{stakeholder.specialization}</p>
                             </div>
-                          ))}
+                            
+                            <p className="text-gray-700 mb-6 leading-relaxed text-sm md:text-base flex-1">{stakeholder.bio}</p>
+                            
+                            <div className="space-y-3">
+                              <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide">Key Achievements</h4>
+                              <div className="space-y-2">
+                                {stakeholder.achievements.map((achievement, idx) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <Star className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                                    <span className="text-sm text-gray-600">{achievement}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-12" />
+              <CarouselNext className="hidden md:flex -right-12" />
+            </Carousel>
+            
+            {/* Mobile scroll indicator */}
+            <div className="flex justify-center mt-6 md:hidden">
+              <p className="text-sm text-gray-500">← Swipe to see more leaders →</p>
+            </div>
           </div>
         </div>
       </section>
