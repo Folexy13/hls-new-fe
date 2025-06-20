@@ -75,16 +75,32 @@ const AboutPage: React.FC = () => {
 
   const testimonials = [
     {
-      text: "HLS transformed my approach to health. The personalized recommendations were spot-on and easy to follow.",
+      text: "HLS transformed my approach to health. The personalized recommendations were spot-on and easy to follow. I've never felt better in my life!",
       author: "Sarah Johnson",
       role: "Health Enthusiast",
-      rating: 5
+      rating: 5,
+      location: "Lagos, Nigeria"
     },
     {
-      text: "Finally, a platform that understands African genetics and nutrition needs. Game-changer!",
+      text: "Finally, a platform that understands African genetics and nutrition needs. The insights I received were incredibly accurate and tailored to my heritage.",
       author: "Dr. Michael Adeyemi",
       role: "Physician",
-      rating: 5
+      rating: 5,
+      location: "Accra, Ghana"
+    },
+    {
+      text: "The team at HLS goes above and beyond. Their scientific approach combined with personalized care is unmatched in the industry.",
+      author: "Amina Hassan",
+      role: "Nutritionist",
+      rating: 5,
+      location: "Cairo, Egypt"
+    },
+    {
+      text: "I've tried many health platforms, but HLS is different. The recommendations actually work because they're based on real science and my unique profile.",
+      author: "David Okonkwo",
+      role: "Fitness Coach",
+      rating: 5,
+      location: "Nairobi, Kenya"
     }
   ];
 
@@ -282,34 +298,55 @@ const AboutPage: React.FC = () => {
 
       {/* Testimonials Section */}
       <section className="py-20 bg-gradient-to-r from-emerald-600 to-blue-700 text-white px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">What Our Community Says</h2>
             <p className="text-xl opacity-90 max-w-3xl mx-auto">
               Real stories from real people who have transformed their health with HLS
             </p>
+            <div className="w-24 h-1 bg-gradient-to-r from-yellow-300 to-white mx-auto mt-8"></div>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300">
-                <CardContent className="p-8">
-                  <Quote className="h-8 w-8 text-yellow-300 mb-4" />
-                  <p className="text-lg mb-6 leading-relaxed">{testimonial.text}</p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">{testimonial.author}</p>
-                      <p className="text-sm opacity-75">{testimonial.role}</p>
-                    </div>
-                    <div className="flex gap-1">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 text-yellow-300 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="relative">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {testimonials.map((testimonial, index) => (
+                  <CarouselItem key={index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
+                    <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 h-full">
+                      <CardContent className="p-6 md:p-8 h-full flex flex-col">
+                        <Quote className="h-8 w-8 text-yellow-300 mb-4 flex-shrink-0" />
+                        <p className="text-base md:text-lg mb-6 leading-relaxed flex-1">{testimonial.text}</p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-base md:text-lg">{testimonial.author}</p>
+                            <p className="text-sm opacity-75">{testimonial.role}</p>
+                            <p className="text-xs opacity-60 mt-1">{testimonial.location}</p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            {[...Array(testimonial.rating)].map((_, i) => (
+                              <Star key={i} className="h-4 w-4 md:h-5 md:w-5 text-yellow-300 fill-current" />
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex -left-12" />
+              <CarouselNext className="hidden md:flex -right-12" />
+            </Carousel>
+            
+            {/* Mobile scroll indicator */}
+            <div className="flex justify-center mt-6 md:hidden">
+              <p className="text-sm text-white/70">← Swipe to see more testimonials →</p>
+            </div>
           </div>
         </div>
       </section>
