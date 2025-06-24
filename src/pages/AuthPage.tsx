@@ -263,8 +263,8 @@ const ForgotPasswordPage = () => {
 
 const AuthPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 pt-8">
-      <div className="w-full">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 lg:py-4">
+      <div className="w-full max-w-md">
         <Routes>
           <Route path="signin" element={<SignInPage />} />
           <Route path="signup" element={<SignUpPage />} />
