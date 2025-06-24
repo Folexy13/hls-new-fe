@@ -1,6 +1,6 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { tokenManager } from '../utils/tokenManager';
 
 export interface User {
   id: string;
@@ -51,7 +51,7 @@ interface StoreState {
   
   // Actions
   setUser: (user: User) => void;
-  login: () => void;
+  login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
   setQuizData: (data: QuizData) => void;
   addToCart: (product: Product) => void;
@@ -79,24 +79,27 @@ export const useStore = create<StoreState>()(
       setUser: (user) =>
         set({ user, isAuthenticated: true }),
 
-      login: () =>
-        set({ 
-          user: { 
-            id: '1', 
-            email: 'test@example.com', 
-            name: 'Test User',
-            isAuthenticated: true
-          }, 
-          isAuthenticated: true 
-        }),
+      login: (user, accessToken, refreshToken) => {
+        tokenManager.setTokens(accessToken, refreshToken);
+        set({ user, isAuthenticated: true });
+      },
 
-      logout: () =>
+      logout: () => {
+        const refreshToken = tokenManager.getRefreshToken();
+        if (refreshToken) {
+          // Fire and forget logout request
+          import('../services/authService').then(({ authService }) => {
+            authService.logout(refreshToken).catch(console.error);
+          });
+        }
+        tokenManager.clearTokens();
         set({ 
           user: null, 
           isAuthenticated: false, 
           cartItems: [], 
           cartTotal: 0 
-        }),
+        });
+      },
 
       setQuizData: (data) =>
         set({ quizData: data, quizCompleted: true }),

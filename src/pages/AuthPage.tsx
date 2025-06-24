@@ -7,23 +7,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { useStore } from '../store/useStore';
 import { toast } from 'react-toastify';
+import { authService } from '../services/authService';
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      login();
+    
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authService.login({ email, password });
+      const user = {
+        id: response.user.id,
+        email: response.user.email,
+        name: `${response.user.firstName} ${response.user.lastName}`,
+        isAuthenticated: true,
+      };
+      
+      login(user, response.access_token, response.refresh_token);
       toast.success('Successfully signed in!');
+      
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
-    } else {
-      toast.error('Please fill in all fields');
+    } catch (error) {
+      toast.error('Invalid email or password');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -43,6 +63,7 @@ const SignInPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -53,10 +74,11 @@ const SignInPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
+              disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full">
-            Sign In
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Signing In...' : 'Sign In'}
           </Button>
           <div className="text-center space-y-2">
             <Link to="/auth/forgot-password" className="text-sm text-emerald-600 hover:underline">
@@ -83,19 +105,37 @@ const SignUpPage = () => {
     password: '',
     confirmPassword: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-    if (Object.values(formData).every(value => value)) {
+    
+    if (!Object.values(formData).every(value => value)) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authService.register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      });
+      
       toast.success('Account created successfully! Please sign in.');
       navigate('/auth/signin');
-    } else {
-      toast.error('Please fill in all fields');
+    } catch (error) {
+      toast.error('Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,6 +155,7 @@ const SignUpPage = () => {
                 value={formData.firstName}
                 onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                 placeholder="First name"
+                disabled={isLoading}
               />
             </div>
             <div>
@@ -124,6 +165,7 @@ const SignUpPage = () => {
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                 placeholder="Last name"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -135,6 +177,7 @@ const SignUpPage = () => {
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               placeholder="Enter your email"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -145,6 +188,7 @@ const SignUpPage = () => {
               value={formData.password}
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               placeholder="Create a password"
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -155,10 +199,11 @@ const SignUpPage = () => {
               value={formData.confirmPassword}
               onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
               placeholder="Confirm your password"
+              disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full">
-            Sign Up
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Creating Account...' : 'Sign Up'}
           </Button>
           <div className="text-center text-sm text-gray-600">
             Already have an account?{' '}
@@ -218,7 +263,7 @@ const ForgotPasswordPage = () => {
 
 const AuthPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 pt-8">
       <div className="w-full">
         <Routes>
           <Route path="signin" element={<SignInPage />} />

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +8,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Layout from "./components/Layout";
+import AuthWrapper from "./components/AuthWrapper";
 import Homepage from "./pages/Homepage";
 import AboutPage from "./pages/AboutPage";
 import QuizPage from "./pages/QuizPage";
@@ -30,39 +32,41 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Homepage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/auth/*" element={<AuthPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/blog/:id" element={<BlogPage />} />
-            <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/cart" element={
-              <ProtectedRoute>
-                <CartPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/podcast" element={
-              <ProtectedRoute>
-                <PodcastPage />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/form" element={<FormPage />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+        <AuthWrapper>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Homepage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/quiz" element={<QuizPage />} />
+              <Route path="/auth/*" element={<AuthPage />} />
+              <Route path="/support" element={<SupportPage />} />
+              <Route path="/blog/:id" element={<BlogPage />} />
+              <Route path="/marketplace" element={<MarketplacePage />} />
+              <Route path="/product/:id" element={<ProductPage />} />
+              
+              {/* Protected Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/cart" element={
+                <ProtectedRoute>
+                  <CartPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/podcast" element={
+                <ProtectedRoute>
+                  <PodcastPage />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/form" element={<FormPage />} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </AuthWrapper>
       </BrowserRouter>
       
       <ToastContainer

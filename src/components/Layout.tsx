@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText } from 'lucide-react';
+import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { isAuthenticated, cartItems, setSidebarOpen, sidebarOpen } = useStore();
+  const { isAuthenticated, cartItems, logout, user } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navigation = [
@@ -25,6 +27,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,6 +104,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       )}
                     </Link>
                   ))}
+                  <hr className="my-2" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    Logout
+                  </button>
                 </>
               )}
               
@@ -169,8 +184,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   Sign In
                 </Link>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Welcome back!</span>
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">
+                    Hi, {user?.name || 'User'}!
+                  </span>
+                  <Button 
+                    onClick={handleLogout}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
                 </div>
               )}
             </div>
