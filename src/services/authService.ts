@@ -1,5 +1,5 @@
 
-import { API_BASE_URL } from '../config/env';
+import { apiClient } from '../config/axios';
 
 export interface LoginRequest {
   email: string;
@@ -26,60 +26,25 @@ export interface AuthResponse {
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/v2/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      throw new Error('Login failed');
-    }
-
-    return response.json();
+    const response = await apiClient.post('/api/v2/auth/login', credentials);
+    return response.data;
   },
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/v2/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      throw new Error('Registration failed');
-    }
-
-    return response.json();
+    const response = await apiClient.post('/api/v2/auth/register', userData);
+    return response.data;
   },
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_BASE_URL}/api/v2/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+    const response = await apiClient.post('/api/v2/auth/refresh', {
+      refresh_token: refreshToken,
     });
-
-    if (!response.ok) {
-      throw new Error('Token refresh failed');
-    }
-
-    return response.json();
+    return response.data;
   },
 
   async logout(refreshToken: string): Promise<void> {
-    await fetch(`${API_BASE_URL}/api/v2/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+    await apiClient.post('/api/v2/auth/logout', {
+      refresh_token: refreshToken,
     });
   },
 };
