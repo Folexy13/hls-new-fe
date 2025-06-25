@@ -41,6 +41,7 @@ const SignInPage = () => {
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (error) {
+      console.log(error)
       toast.error('Invalid email or password');
     } finally {
       setIsLoading(false);
