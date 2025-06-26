@@ -1,4 +1,3 @@
-
 import { apiClient } from '../config/axios';
 
 export interface LoginRequest {
@@ -26,8 +25,21 @@ export interface AuthResponse {
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post('/api/v2/auth/login', credentials);
-    return response.data.data;
+    try {
+      const response = await apiClient.post('/api/v2/auth/login', credentials);
+      const data = response.data.data;
+      const token = data.token || data.access_token;
+      if (token) {
+        localStorage.setItem('token', token);
+        console.log('Login successful, token stored:', token);
+      } else {
+        console.warn('No token found in login response:', data);
+      }
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
