@@ -80,6 +80,8 @@ export const useStore = create<StoreState>()(
         set({ user, isAuthenticated: true }),
 
       login: (user, accessToken, refreshToken) => {
+        console.log('User logged in:', user);
+        console.log('Access Token:', accessToken);  
         tokenManager.setTokens(accessToken, refreshToken);
         set({ user, isAuthenticated: true });
       },

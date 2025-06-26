@@ -37,14 +37,14 @@ export const authService = {
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     const response = await apiClient.post('/api/v2/auth/refresh', {
-      refresh_token: refreshToken,
+    refreshToken,
     });
     return response.data.data;
   },
 
   async logout(refreshToken: string): Promise<void> {
     await apiClient.post('/api/v2/auth/logout', {
-      refresh_token: refreshToken,
+      refreshToken,
     });
   },
 };
