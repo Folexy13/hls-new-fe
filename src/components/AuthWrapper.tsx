@@ -19,13 +19,14 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       if (refreshToken && !tokenManager.isTokenExpired()) {
         try {
           const response = await authService.refreshToken(refreshToken);
+          console.log('Token refreshed successfully:', response);
           tokenManager.setTokens(response.access_token, response.refresh_token);
-          setUser({
-            id: response.user.id,
-            email: response.user.email,
-            name: `${response.user.firstName} ${response.user.lastName}`,
-            isAuthenticated: true,
-          });
+          // setUser({
+          //   id: response.user.id,
+          //   email: response.user.email,
+          //   name: `${response.user.firstName} ${response.user.lastName}`,
+          //   isAuthenticated: true,
+          // });
         } catch (error) {
           console.error('Token refresh failed:', error);
           tokenManager.clearTokens();

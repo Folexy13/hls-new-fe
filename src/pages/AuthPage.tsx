@@ -35,12 +35,13 @@ const SignInPage = () => {
         isAuthenticated: true,
       };
       
-      login(user, response.access_token, response.refresh_token);
+      login(user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Successfully signed in!');
       
       const from = location.state?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (error) {
+      console.log(error)
       toast.error('Invalid email or password');
     } finally {
       setIsLoading(false);
