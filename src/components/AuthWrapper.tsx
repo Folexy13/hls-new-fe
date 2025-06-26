@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { authService } from '../services/authService';
@@ -29,8 +28,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           // });
         } catch (error) {
           console.error('Token refresh failed:', error);
-          tokenManager.clearTokens();
-          logout();
+          // tokenManager.clearTokens();
+          // logout();
         }
       } else if (!tokenManager.hasValidTokens() && isAuthenticated) {
         logout();
