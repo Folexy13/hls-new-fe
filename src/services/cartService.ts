@@ -30,8 +30,10 @@ export const cartService = {
    * @returns Promise<CartResponse>
    */
   async getCart(): Promise<CartResponse> {
-    const response = await apiClient.get<CartResponse>('/api/v2/cart');
-    return response.data;
+    const response = await apiClient.get<any>('/api/v2/cart');
+    console.log('Cart fetched:', response.data);
+    const cart = response.data.data;
+    return cart;
   },
 
   /**

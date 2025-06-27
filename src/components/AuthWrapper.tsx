@@ -19,7 +19,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         try {
           const response = await authService.refreshToken(refreshToken);
           console.log('Token refreshed successfully:', response);
-          tokenManager.setTokens(response.access_token, response.refresh_token);
+          console.log(response)
+          tokenManager.setTokens(response.accessToken, response.refreshToken);
           // setUser({
           //   id: response.user.id,
           //   email: response.user.email,

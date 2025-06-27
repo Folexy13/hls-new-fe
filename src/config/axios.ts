@@ -36,12 +36,13 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       const refreshToken = tokenManager.getRefreshToken();
+      console.log('Attempting to refresh token with:', refreshToken);
       if (refreshToken) {
         try {
           const response = await axios.post(`${API_BASE_URL}/api/v2/auth/refresh`, {
             refreshToken
           });
-
+          console.log('Token refreshed successfully:', response.data);
           const { access_token, refresh_token: newRefreshToken } = response.data;
           tokenManager.setTokens(access_token, newRefreshToken);
 
@@ -49,9 +50,10 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${access_token}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
+          
           // Refresh failed, clear tokens
-          tokenManager.clearTokens();
-          window.location.href = '/auth/signin';
+          // tokenManager.clearTokens();
+          // window.location.href = '/auth/signin';
         }
       }
     }

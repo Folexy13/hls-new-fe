@@ -5,6 +5,7 @@ const TOKEN_EXPIRY_KEY = 'token_expiry';
 
 export const tokenManager = {
   setTokens(accessToken: string, refreshToken: string) {
+    console.log('Setting tokens:', { accessToken, refreshToken });
     sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
     sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     // Set expiry to 7 days from now
