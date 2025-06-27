@@ -18,8 +18,6 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       if (refreshToken && !tokenManager.isTokenExpired()) {
         try {
           const response = await authService.refreshToken(refreshToken);
-          console.log('Token refreshed successfully:', response);
-          console.log(response)
           tokenManager.setTokens(response.accessToken, response.refreshToken);
           // setUser({
           //   id: response.user.id,
@@ -29,8 +27,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           // });
         } catch (error) {
           console.error('Token refresh failed:', error);
-          // tokenManager.clearTokens();
-          // logout();
+          tokenManager.clearTokens();
+          logout();
         }
       } else if (!tokenManager.hasValidTokens() && isAuthenticated) {
         logout();
