@@ -52,13 +52,13 @@ export const cartService = {
 
   /**
    * Add an item to the cart
-   * @param itemId - ID of the item to add
+   * @param supplementId - ID of the supplement to add
    * @param quantity - Quantity to add
    * @returns Promise<any>
    */
-  async addItemToCart(itemId: number, quantity: number): Promise<any> {
+  async addItemToCart(supplementId: number, quantity: number): Promise<any> {
     try {
-      const response = await apiClient.post('/api/v2/cart/items', { itemId, quantity });
+      const response = await apiClient.post('/api/v2/cart/items', { supplementId, quantity });
       console.log('Item added to cart:', response.data);
       return response.data;
     } catch (error) {
