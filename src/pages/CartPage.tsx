@@ -9,11 +9,12 @@ import { Minus, Plus, Trash2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const CartPage = () => {
-  const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart } = useStore();
+  const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend } = useStore();
   const { cart: apiCart, loading, error, refetch } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
     if (newQuantity > 0) {
@@ -25,16 +26,16 @@ const CartPage = () => {
     setShowCheckout(true);
   };
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setShowCheckout(false);
+    // TODO: Integrate Paystack payment here
     // Simulate payment processing
-    setTimeout(() => {
+    setTimeout(async () => {
       const success = Math.random() > 0.3; // 70% success rate
       setPaymentSuccess(success);
       setShowPaymentStatus(true);
-      
       if (success) {
-        clearCart();
+        await clearCart();
         toast.success('Payment successful!');
       } else {
         toast.error('Payment failed. Please try again.');
@@ -108,10 +109,16 @@ const CartPage = () => {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-          <Button variant="outline" onClick={refetch} size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={refetch} size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button variant="destructive" onClick={() => setShowClearConfirm(true)} size="sm">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear Cart
+            </Button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -143,6 +150,31 @@ const CartPage = () => {
                     <div className="text-right">
                       <p className="font-bold text-gray-900">${(item.supplement.price * item.quantity).toFixed(2)}</p>
                     </div>
+                    {/* Remove from cart button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="ml-2 text-red-600 hover:bg-red-50"
+                      onClick={async () => {
+                        await removeFromCart(item.id);
+                        await refetch();
+                        if (apiCart && apiCart.items) {
+                          // Map backend items to store format
+                          setCartFromBackend(apiCart.items.map(i => ({
+                            id: i.supplement.id.toString(),
+                            name: i.supplement.name,
+                            price: i.supplement.price,
+                            image: i.supplement.image,
+                            description: i.supplement.description,
+                            category: 'supplement', // or map actual category if available
+                            quantity: i.quantity
+                          })));
+                        }
+                      }}
+                      title="Remove from cart"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -225,6 +257,28 @@ const CartPage = () => {
             <Button onClick={() => setShowPaymentStatus(false)}>
               {paymentSuccess ? 'Continue Shopping' : 'Try Again'}
             </Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* Clear Cart Confirmation Dialog */}
+        <Dialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Clear Cart</DialogTitle>
+              <DialogDescription>Are you sure you want to remove all items from your cart? This action cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2 justify-end mt-4">
+              <Button variant="outline" onClick={() => setShowClearConfirm(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={async () => {
+                await clearCart();
+                await refetch();
+                if (apiCart && apiCart.items) {
+                  setCartFromBackend([]);
+                }
+                setShowClearConfirm(false);
+                toast.success('Cart cleared!');
+              }}>Clear</Button>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

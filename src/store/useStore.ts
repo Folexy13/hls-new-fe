@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { tokenManager } from '../utils/tokenManager';
+import { cartService } from '../services/cartService';
 
 export interface User {
   id: string;
@@ -60,6 +61,7 @@ interface StoreState {
   clearCart: () => void;
   setSidebarOpen: (open: boolean) => void;
   setCurrentTab: (tab: string) => void;
+  setCartFromBackend: (items: CartItem[]) => void;
 }
 
 export const useStore = create<StoreState>()(
@@ -106,49 +108,81 @@ export const useStore = create<StoreState>()(
       setQuizData: (data) =>
         set({ quizData: data, quizCompleted: true }),
 
-      addToCart: (product) =>
-        set((state) => {
-          const existingItem = state.cartItems.find(item => item.id === product.id);
-          let newCartItems;
-          
-          if (existingItem) {
-            newCartItems = state.cartItems.map(item =>
-              item.id === product.id
-                ? { ...item, quantity: item.quantity + 1 }
-                : item
+      addToCart: async (product) => {
+        try {
+          await cartService.addItemToCart(Number(product.id), 1);
+          set((state) => {
+            const existingItem = state.cartItems.find(item => item.id === product.id);
+            let newCartItems;
+            if (existingItem) {
+              newCartItems = state.cartItems.map(item =>
+                item.id === product.id
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item
+              );
+            } else {
+              newCartItems = [...state.cartItems, { ...product, quantity: 1 }];
+            }
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to add item to cart:', error);
+        }
+      },
+
+      removeFromCart: async (productId) => {
+        try {
+          await cartService.removeCartItem(Number(productId));
+          set((state) => {
+            const newCartItems = state.cartItems.filter(item => item.id !== productId);
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to remove item from cart:', error);
+        }
+      },
+
+      updateCartQuantity: async (productId: string, quantity: number) => {
+        // Find the cart item to get its numeric id (API expects number)
+        const state = get();
+        const item = state.cartItems.find(item => item.id === productId);
+        if (!item) return;
+        try {
+          await cartService.updateCartItem(Number(productId), quantity);
+          set((state) => {
+            const newCartItems = state.cartItems.map(item =>
+              item.id === productId ? { ...item, quantity } : item
             );
-          } else {
-            newCartItems = [...state.cartItems, { ...product, quantity: 1 }];
-          }
-          
-          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-          return { cartItems: newCartItems, cartTotal };
-        }),
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to update cart item quantity:', error);
+          // Optionally, show a toast or error message here
+        }
+      },
 
-      removeFromCart: (productId) =>
-        set((state) => {
-          const newCartItems = state.cartItems.filter(item => item.id !== productId);
-          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-          return { cartItems: newCartItems, cartTotal };
-        }),
-
-      updateCartQuantity: (productId, quantity) =>
-        set((state) => {
-          const newCartItems = state.cartItems.map(item =>
-            item.id === productId ? { ...item, quantity } : item
-          );
-          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-          return { cartItems: newCartItems, cartTotal };
-        }),
-
-      clearCart: () =>
-        set({ cartItems: [], cartTotal: 0 }),
+      clearCart: async () => {
+        try {
+          await cartService.clearCart();
+          set({ cartItems: [], cartTotal: 0 });
+        } catch (error) {
+          console.error('Failed to clear cart:', error);
+        }
+      },
 
       setSidebarOpen: (open) =>
         set({ sidebarOpen: open }),
 
       setCurrentTab: (tab) =>
         set({ currentTab: tab }),
+
+      setCartFromBackend: (items) => set({
+        cartItems: items,
+        cartTotal: items.reduce((total, item) => total + (item.price * item.quantity), 0)
+      }),
     }),
     {
       name: 'hls-storage',

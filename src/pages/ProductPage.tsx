@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Star, Shield, Truck, Heart } from 'lucide-react';
@@ -7,9 +6,14 @@ import vitamins from '../images/vitamins.png';
 import vitamins2 from '../images/vitamins2.png';
 import vitamins3 from '../images/vitamins3.png';
 import vitamins4 from '../images/vitamins4.png';
+import { useStore } from '../store/useStore';
+import { toast } from 'react-toastify';
+import { useState } from 'react';
 
 const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { addToCart } = useStore();
+  const [adding, setAdding] = useState(false);
 
   const products = [
     {
@@ -138,9 +142,20 @@ const ProductPage: React.FC = () => {
             <div className="space-y-3 sm:space-y-4">
               <button 
                 className="w-full bg-emerald-600 text-white py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
-                disabled={!product.inStock}
+                disabled={!product.inStock || adding}
+                onClick={async () => {
+                  setAdding(true);
+                  try {
+                    await addToCart(product);
+                    toast.success('Added to cart!');
+                  } catch (err) {
+                    toast.error('Failed to add to cart');
+                  } finally {
+                    setAdding(false);
+                  }
+                }}
               >
-                Add to Cart
+                {adding ? 'Adding...' : 'Add to Cart'}
               </button>
               <button className="w-full border border-gray-300 text-gray-700 py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />

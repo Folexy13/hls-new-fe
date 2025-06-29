@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +6,8 @@ import vitamins from '../images/vitamins.png';
 import vitamins2 from '../images/vitamins2.png';
 import vitamins3 from '../images/vitamins3.png';
 import vitamins4 from '../images/vitamins4.png';
+import { useStore } from '../store/useStore';
+import { toast } from 'react-toastify';
 
 const MarketplacePage: React.FC = () => {
   const allProducts = [
@@ -69,6 +70,9 @@ const MarketplacePage: React.FC = () => {
   const vendorProducts = allProducts.filter(product => product.vendor === 'VendorCorp');
   const hlsProducts = allProducts.filter(product => product.vendor === 'HLS');
 
+  const { addToCart } = useStore();
+  const [addingId, setAddingId] = useState<string | null>(null);
+
   const ProductGrid = ({ products }: { products: typeof allProducts }) => (
     <div className="grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
       {products.map((product) => (
@@ -89,13 +93,22 @@ const MarketplacePage: React.FC = () => {
                 <span className="text-xs bg-gray-100 px-1 sm:px-2 py-1 rounded hidden sm:block">{product.vendor}</span>
               </div>
               <button 
-                className="w-full text-xs sm:text-sm bg-emerald-600 text-white py-1 sm:py-2 rounded-md hover:bg-emerald-700 transition-colors"
-                onClick={(e) => {
+                className="w-full text-xs sm:text-sm bg-emerald-600 text-white py-1 sm:py-2 rounded-md hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                disabled={addingId === product.id}
+                onClick={async (e) => {
                   e.preventDefault();
-                  // Add to cart functionality
+                  setAddingId(product.id);
+                  try {
+                    await addToCart(product);
+                    toast.success('Added to cart!');
+                  } catch (err) {
+                    toast.error('Failed to add to cart');
+                  } finally {
+                    setAddingId(null);
+                  }
                 }}
               >
-                Add to Cart
+                {addingId === product.id ? 'Adding...' : 'Add to Cart'}
               </button>
             </CardContent>
           </Card>
