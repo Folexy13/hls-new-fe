@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,7 @@ const SignInPage = () => {
         isAuthenticated: true,
       };
       
-      login(user, response.tokens.accessToken, response.tokens.refreshToken);
+      login(user, response.accessToken, response.refreshToken);
       toast.success('Successfully signed in!');
       
       const from = location.state?.from?.pathname || '/dashboard';

@@ -156,7 +156,7 @@ const CartPage = () => {
                       size="icon"
                       className="ml-2 text-red-600 hover:bg-red-50"
                       onClick={async () => {
-                        await removeFromCart(item.id);
+                        await removeFromCart(item.id.toString());
                         await refetch();
                         if (apiCart && apiCart.items) {
                           // Map backend items to store format
