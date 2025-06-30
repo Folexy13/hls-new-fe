@@ -34,7 +34,7 @@ const SignInPage = () => {
         isAuthenticated: true,
       };
       
-      login(user, response.accessToken, response.refreshToken);
+      login(user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Successfully signed in!');
       
       const from = location.state?.from?.pathname || '/dashboard';
