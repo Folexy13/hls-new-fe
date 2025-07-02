@@ -43,8 +43,21 @@ export const authService = {
   },
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post('/api/v2/auth/register', userData);
-    return response.data.data;
+    try {
+      const response = await apiClient.post('/api/v2/auth/register', userData);
+      const data = response.data.data;
+      const token = data.token || data.access_token;
+      if (token) {
+        localStorage.setItem('token', token);
+        console.log('Registration successful, token stored:', token);
+      } else {
+        console.warn('No token found in registration response:', data);
+      }
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   },
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
