@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import QuizForm from '../components/QuizForm';
+import { apiClient } from '../config/axios';
 
 const QuizPage = () => {
   const [code, setCode] = useState('');
   const [showQuiz, setShowQuiz] = useState(false);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const navigate = useNavigate();
 
   const handleCodeSubmit = (e: React.FormEvent) => {
@@ -23,12 +24,56 @@ const QuizPage = () => {
     }
   };
 
-  const handleQuizComplete = (quizData: any) => {
-    console.log('Quiz completed with data:', quizData);
-    toast.success('Quiz completed successfully!');
-    // Navigate to signup page
-    navigate('/auth/signup');
+  const handleQuizComplete = async (quizData: any) => {
+    // Map quizData to API structure
+    const payload = {
+      code: '12345',
+      basic: {
+        gender: quizData.personalInfo.gender,
+        nickname: quizData.personalInfo.name,
+        age: String(quizData.personalInfo.age),
+        weight: String(quizData.personalInfo.weight),
+        height: String(quizData.personalInfo.height),
+      },
+      lifestyle: {
+        habit: quizData.lifestyle.habits,
+        fun: quizData.lifestyle.fun,
+        routine: quizData.lifestyle.routine,
+        career: quizData.personalInfo.activityLevel || '',
+      },
+      preference: {
+        drugForm: quizData.preference.drugForm,
+        minBudget: 0, // Placeholder, adjust if needed
+        maxBudget: 0, // Placeholder, adjust if needed
+      },
+    };
+    try {
+      await apiClient.post('/api/v2/nutrient-types', payload);
+      toast.success('Quiz completed and data submitted successfully!');
+      setQuizSubmitted(true);
+    } catch (error: any) {
+      toast.error('Failed to submit quiz data. Please try again.');
+      console.error(error);
+    }
   };
+
+  if (quizSubmitted) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-8 px-4">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Quiz Submitted!</CardTitle>
+            <CardDescription>Your quiz has been submitted successfully. Please continue to sign up to complete your registration.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => navigate('/auth/signup')}>
+              Continue to Sign Up
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showQuiz) {
     return <QuizForm onComplete={handleQuizComplete} />;

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useStore } from '../store/useStore';
 import { toast } from 'react-toastify';
 import { authService } from '../services/authService';
+import { apiClient } from '../config/axios';
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
@@ -123,7 +124,7 @@ const SignUpPage = () => {
 
     setIsLoading(true);
     try {
-      await authService.register({
+      await apiClient.post('/auth/register', {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
