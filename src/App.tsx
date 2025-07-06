@@ -9,7 +9,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Layout from "./components/Layout";
 import AuthWrapper from "./components/AuthWrapper";
-import Homepage from "./pages/Homepage";
+import Homepage from "./pages/benfek/Homepage";
 import AboutPage from "./pages/AboutPage";
 import QuizPage from "./pages/QuizPage";
 import AuthPage from "./pages/AuthPage";
@@ -23,6 +23,8 @@ import MarketplacePage from "./pages/MarketplacePage";
 import ProductPage from "./pages/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FormPage from "./pages/FormPage";
+import PrincipalHomepage from "./pages/principal/Homepage";
+import WholesalerHomepage from "./pages/wholesaler/Homepage";
 
 const queryClient = new QueryClient();
 
@@ -44,8 +46,8 @@ const App = () => (
               <Route path="/marketplace" element={<MarketplacePage />} />
               <Route path="/product/:id" element={<ProductPage />} />
               
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={
+              {/* Benfek Routes */}
+              <Route path="/benfek/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
@@ -58,6 +60,27 @@ const App = () => (
               <Route path="/podcast" element={
                 <ProtectedRoute>
                   <PodcastPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Principal Routes */}
+              <Route path="/principal" element={
+                <ProtectedRoute>
+                  <PrincipalHomepage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Wholesaler Routes */}
+              <Route path="/wholesaler" element={
+                <ProtectedRoute>
+                  <WholesalerHomepage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Legacy route redirect */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
                 </ProtectedRoute>
               } />
               

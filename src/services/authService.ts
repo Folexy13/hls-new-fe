@@ -1,3 +1,4 @@
+
 import { apiClient } from '../config/axios';
 
 export interface LoginRequest {
@@ -20,6 +21,7 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
+    role: string;
   };
 }
 

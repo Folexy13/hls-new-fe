@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { tokenManager } from '../utils/tokenManager';
@@ -7,6 +8,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  role: string;
   nutrientType?: string;
   isAuthenticated: boolean;
 }

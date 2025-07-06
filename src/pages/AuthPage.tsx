@@ -32,13 +32,30 @@ const SignInPage = () => {
         id: response.user.id,
         email: response.user.email,
         name: `${response.user.firstName} ${response.user.lastName}`,
+        role: response.user.role,
         isAuthenticated: true,
       };
       
-      login(user, response.tokens.accessToken, response.tokens.refreshToken);
+      login(user, response.accessToken, response.refreshToken);
       toast.success('Successfully signed in!');
       
-      const from = location.state?.from?.pathname || '/dashboard';
+      // Role-based routing
+      let redirectPath = '/dashboard'; // default fallback
+      switch (response.user.role) {
+        case 'benfek':
+          redirectPath = '/benfek/dashboard';
+          break;
+        case 'principal':
+          redirectPath = '/principal';
+          break;
+        case 'wholesaler':
+          redirectPath = '/wholesaler';
+          break;
+        default:
+          redirectPath = '/benfek/dashboard';
+      }
+      
+      const from = location.state?.from?.pathname || redirectPath;
       navigate(from, { replace: true });
     } catch (error) {
       console.log(error)
