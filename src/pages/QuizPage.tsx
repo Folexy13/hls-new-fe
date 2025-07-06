@@ -13,6 +13,7 @@ const QuizPage = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const navigate = useNavigate();
 
+  
   const handleCodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (code === '12345') {
