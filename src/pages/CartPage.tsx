@@ -7,9 +7,10 @@ import { useStore } from '../store/useStore';
 import { useCart } from '../hooks/useCart';
 import { Minus, Plus, Trash2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 const CartPage = () => {
-  const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend } = useStore();
+  const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend, user } = useStore();
   const { cart: apiCart, loading, error, refetch } = useCart();
   const [showCheckout, setShowCheckout] = useState(false);
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
@@ -22,8 +23,26 @@ const CartPage = () => {
     }
   };
 
-  const handleCheckout = () => {
-    setShowCheckout(true);
+  const handleCheckout = async () => {
+    if (!user || !user.email) {
+      toast.error('You must be logged in to checkout.');
+      return;
+    }
+    try {
+      const amount = Math.round(apiCart.items.reduce((total, item) => total + (item.supplement.price * item.quantity), 0));
+      const response = await axios.post('/paystack/initialize', {
+        email: user.email,
+        amount,
+      });
+      const url = response.data?.data?.authorization_url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        toast.error('Failed to initialize payment.');
+      }
+    } catch (error) {
+      toast.error('Failed to initialize payment.');
+    }
   };
 
   const handlePayment = async () => {
@@ -210,35 +229,6 @@ const CartPage = () => {
             </Card>
           </div>
         </div>
-
-        {/* Checkout Modal */}
-        <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Checkout</DialogTitle>
-              <DialogDescription>Complete your order</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Card Number</label>
-                <Input placeholder="1234 5678 9012 3456" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Expiry</label>
-                  <Input placeholder="MM/YY" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">CVV</label>
-                  <Input placeholder="123" />
-                </div>
-              </div>
-              <Button className="w-full" onClick={handlePayment}>
-                Pay ${apiCartTotal.toFixed(2)}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Payment Status Modal */}
         <Dialog open={showPaymentStatus} onOpenChange={setShowPaymentStatus}>
