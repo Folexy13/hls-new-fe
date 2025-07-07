@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import QuizForm from '../components/QuizForm';
-import { apiClient } from '../config/axios';
+import QuizForm from '../../components/QuizForm';
+import { apiClient } from '../../config/axios';
+import { quizService } from '@/services/quizService';
 
 const QuizPage = () => {
   const [code, setCode] = useState('');
@@ -25,6 +26,7 @@ const QuizPage = () => {
   };
 
   const handleQuizComplete = async (quizData: any) => {
+    console.log('Quiz Data:', quizData);
     // Map quizData to API structure
     const payload = {
       code: '12345',
@@ -48,7 +50,7 @@ const QuizPage = () => {
       },
     };
     try {
-      await apiClient.post('/api/v2/nutrient-types', payload);
+      // await quizService.submitQuizData(payload);
       toast.success('Quiz completed and data submitted successfully!');
       setQuizSubmitted(true);
     } catch (error: any) {

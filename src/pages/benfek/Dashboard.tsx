@@ -5,8 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { useStore } from '../store/useStore';
 import { ShoppingCart, Eye, EyeOff } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 const Dashboard = () => {
   const { addToCart } = useStore();

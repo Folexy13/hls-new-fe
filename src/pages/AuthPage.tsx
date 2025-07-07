@@ -35,8 +35,8 @@ const SignInPage = () => {
         role: response.user.role,
         isAuthenticated: true,
       };
-      
-      login(user, response.accessToken, response.refreshToken);
+
+      login(user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Successfully signed in!');
       
       // Role-based routing
@@ -141,7 +141,7 @@ const SignUpPage = () => {
 
     setIsLoading(true);
     try {
-      await apiClient.post('/auth/register', {
+      await authService.register({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

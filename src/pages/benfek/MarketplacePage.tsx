@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import vitamins from '../images/vitamins.png';
-import vitamins2 from '../images/vitamins2.png';
-import vitamins3 from '../images/vitamins3.png';
-import vitamins4 from '../images/vitamins4.png';
-import { useStore } from '../store/useStore';
+import vitamins from '../../images/vitamins.png';
+import vitamins2 from '../../images/vitamins2.png';
+import vitamins3 from '../../images/vitamins3.png';
+import vitamins4 from '../../images/vitamins4.png';
+import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
 
 const MarketplacePage: React.FC = () => {

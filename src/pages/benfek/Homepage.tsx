@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -42,7 +41,7 @@ const Homepage: React.FC = () => {
   const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
-
+  const navigate = useNavigate();
   const handleCodeSubmit = () => {
     if (code === '12345') {
       setShowCodeDialog(false);
@@ -695,7 +694,7 @@ const Homepage: React.FC = () => {
               Your health assessment has been completed successfully. You can now proceed to create your account.
             </DialogDescription>
           </DialogHeader>
-          <Button onClick={() => setShowSuccessModal(false)} className="w-full">
+          <Button onClick={() => navigate("/auth/signup")} className="w-full">
             Continue to Sign Up
           </Button>
         </DialogContent>
