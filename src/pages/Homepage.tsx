@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-toastify';
+import { quizService } from '@/services/quizService';
 import doctor from '../images/bannerdoctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
@@ -32,6 +34,7 @@ import {
 } from "../components/ui/carousel"
 
 const Homepage: React.FC = () => {
+  const { user, isAuthenticated } = useStore();
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [code, setCode] = useState('');
@@ -42,6 +45,28 @@ const Homepage: React.FC = () => {
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
   const navigate = useNavigate();
+  
+  // Check if user is logged in and redirect to their role-specific homepage
+  useEffect(() => {
+    if (isAuthenticated && user?.role) {
+      if (user.role === 'principal') {
+        navigate('/principal');
+      } else if (user.role === 'wholesaler') {
+        navigate('/wholesaler');
+      } else if (user.role === 'benfek') {
+        navigate('/benfek');
+      }
+    }
+    
+    // Check if we should show the quiz modal (set by QuizPage)
+    const showQuizModal = window.sessionStorage.getItem('showQuizModal');
+    if (showQuizModal === 'true') {
+      setShowQuizModal(true);
+      setShowCodeDialog(true);
+      window.sessionStorage.removeItem('showQuizModal');
+    }
+  }, [isAuthenticated, user, navigate]);
+  
   const handleCodeSubmit = () => {
     if (code === '12345') {
       setShowCodeDialog(false);
@@ -80,10 +105,11 @@ const Homepage: React.FC = () => {
     if (nutrientStep > 0) setNutrientStep(nutrientStep - 1);
   };
 
-  const handleNutrientSubmit = (e: React.FormEvent) => {
+  const handleNutrientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Log output as requested
-    const output = {
+    // Map data to API structure
+    const payload = {
+      code: '12345',
       basic,
       lifestyle: {
         ...lifestyle,
@@ -96,11 +122,16 @@ const Homepage: React.FC = () => {
         drugForm: preference.drugForm.join(','),
       },
     };
-    // eslint-disable-next-line no-console
-    console.log('Nutrient Assessment Output:', output);
-    setShowNutrientForm(false);
-    setShowSuccessModal(true);
-    // TODO: redirect to signup page after a delay or on button click
+    
+    try {
+      await quizService.submitQuizData(payload);
+      toast.success('Quiz completed and data submitted successfully!');
+      setShowNutrientForm(false);
+      setShowSuccessModal(true);
+    } catch (error: unknown) {
+      toast.error('Failed to submit quiz data. Please try again.');
+      console.error(error);
+    }
   };
 
   const handleQuizStart = () => {

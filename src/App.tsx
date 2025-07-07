@@ -9,7 +9,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import Layout from "./components/Layout";
 import AuthWrapper from "./components/AuthWrapper";
-import Homepage from "./pages/benfek/Homepage";
+import Homepage from "./pages/Homepage";
+import BenfekHomepage from "./pages/benfek/Homepage";
 import AboutPage from "./pages/benfek/AboutPage";
 import QuizPage from "./pages/benfek/QuizPage";
 import AuthPage from "./pages/AuthPage";
@@ -22,7 +23,6 @@ import NotFound from "./pages/benfek/NotFound";
 import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import FormPage from "./pages/benfek/FormPage";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
 
@@ -38,6 +38,7 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<Homepage />} />
+              <Route path="/benfek" element={<BenfekHomepage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/quiz" element={<QuizPage />} />
               <Route path="/auth/*" element={<AuthPage />} />
@@ -47,32 +48,37 @@ const App = () => (
               <Route path="/product/:id" element={<ProductPage />} />
               
               {/* Benfek Routes */}
+              <Route path="/benfek" element={
+                <ProtectedRoute requiredRole="benfek">
+                  <BenfekHomepage />
+                </ProtectedRoute>
+              } />
               <Route path="/benfek/dashboard" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="benfek">
                   <Dashboard />
                 </ProtectedRoute>
               } />
               <Route path="/cart" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="benfek">
                   <CartPage />
                 </ProtectedRoute>
               } />
               <Route path="/podcast" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="benfek">
                   <PodcastPage />
                 </ProtectedRoute>
               } />
               
               {/* Principal Routes */}
               <Route path="/principal" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="principal">
                   <PrincipalHomepage />
                 </ProtectedRoute>
               } />
               
               {/* Wholesaler Routes */}
               <Route path="/wholesaler" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="wholesaler">
                   <WholesalerHomepage />
                 </ProtectedRoute>
               } />
@@ -83,8 +89,6 @@ const App = () => (
                   <Dashboard />
                 </ProtectedRoute>
               } />
-              
-              <Route path="/form" element={<FormPage />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>

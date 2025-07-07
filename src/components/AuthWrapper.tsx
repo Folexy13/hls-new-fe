@@ -24,6 +24,7 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           //   id: response.user.id,
           //   email: response.user.email,
           //   name: `${response.user.firstName} ${response.user.lastName}`,
+          //   role: response.user.role,
           //   isAuthenticated: true,
           // });
           // Fetch cart from backend and sync store
