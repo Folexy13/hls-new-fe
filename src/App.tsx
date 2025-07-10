@@ -85,8 +85,8 @@ const App = () => (
               
               {/* Legacy route redirect */}
               <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
+                <ProtectedRoute requiredRole="principal">
+                  <PrincipalHomepage />
                 </ProtectedRoute>
               } />
               
