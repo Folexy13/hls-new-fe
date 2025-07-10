@@ -24,6 +24,15 @@ import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrincipalHomepage from "./pages/principal/Homepage";
+import AccountPage from "./pages/principal/AccountPage";
+import EarningsPage from "./pages/principal/EarningsPage";
+import WithdrawPage from "./pages/principal/WithdrawPage";
+import BenfeksPage from "./pages/principal/BenfeksPage";
+import PurchasesPage from "./pages/principal/PurchasesPage";
+import AddBenfekPage from "./pages/principal/AddBenfekPage";
+import SupplementsPage from "./pages/principal/SupplementsPage";
+import ArticlesPage from "./pages/principal/ArticlesPage";
+import PodcastsPage from "./pages/principal/PodcastsPage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
 
 const queryClient = new QueryClient();
@@ -75,6 +84,15 @@ const App = () => (
                   <PrincipalHomepage />
                 </ProtectedRoute>
               } />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/earnings" element={<EarningsPage />} />
+              <Route path="/withdraw" element={<WithdrawPage />} />
+              <Route path="/benfeks" element={<BenfeksPage />} />
+              <Route path="/purchases" element={<PurchasesPage />} />
+              <Route path="/add-benfek" element={<AddBenfekPage />} />
+              <Route path="/supplements" element={<SupplementsPage />} />
+              <Route path="/articles" element={<ArticlesPage />} />
+              <Route path="/podcasts" element={<PodcastsPage />} />
               
               {/* Wholesaler Routes */}
               <Route path="/wholesaler" element={
