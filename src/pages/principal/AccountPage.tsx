@@ -1,26 +1,36 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CreditCard } from 'lucide-react';
 
 const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 overflow-hidden">
-      <button
-        onClick={() => navigate('/principal')}
-        className="mr-auto flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded mb-6 hover:bg-emerald-600"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-      </button>
-      <Card className="w-full max-w-md p-6 shadow-lg">
-        <div className="flex flex-wrap items-center justify-between mb-2">
-          <span className="font-bold text-base">Account Transactions</span>
-          <span className="font-medium text-base">Account Balance: <span className="font-bold">₦0</span></span>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50">
+      <div className="w-full flex justify-center mb-8">
+        <button
+          onClick={() => navigate('/principal')}
+          className="flex items-center gap-2 px-5 py-2 border border-emerald-500 text-emerald-700 bg-white rounded-lg shadow-sm hover:bg-emerald-50 hover:border-emerald-600 transition-colors duration-150"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-semibold">Back to Dashboard</span>
+        </button>
+      </div>
+      <Card className="w-full max-w-md p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-emerald-100 p-2 rounded-full">
+            <CreditCard className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">Account</span>
         </div>
-        <hr className="my-2" />
-        <div className="bg-gray-50 rounded border p-3 text-center text-sm font-medium">
-          Egazu Points: Free Trial (31 days validity)
+        <div className="flex flex-wrap items-center justify-between mb-4">
+          <span className="font-medium text-lg text-gray-700">Transactions</span>
+          <span className="font-semibold text-lg text-emerald-600">Account Balance: <span className="font-bold">₦0</span></span>
+        </div>
+        <hr className="my-4" />
+        <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-4 text-center text-base font-semibold text-emerald-700 flex items-center justify-center gap-2">
+          <span>Egazu Points:</span>
+          <span className="bg-emerald-200 text-emerald-900 px-3 py-1 rounded-full font-bold text-sm">Free Trial (31 days validity)</span>
         </div>
       </Card>
     </div>

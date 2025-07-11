@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, UserPlus } from 'lucide-react';
 
 const AddBenfekPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,15 +20,23 @@ const AddBenfekPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 overflow-hidden">
-      <button
-        onClick={() => navigate('/principal')}
-        className="mr-auto flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded mb-6 hover:bg-emerald-600"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-      </button>
-      <Card className="w-full max-w-md md:max-w-lg p-6 shadow-lg">
-        <h1 className="font-bold text-2xl mb-4">Add Benfek</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-emerald-50">
+      <div className="w-full flex justify-center mb-8">
+        <button
+          onClick={() => navigate('/principal')}
+          className="flex items-center gap-2 px-5 py-2 border border-emerald-500 text-emerald-700 bg-white rounded-lg shadow-sm hover:bg-emerald-50 hover:border-emerald-600 transition-colors duration-150"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-semibold">Back to Dashboard</span>
+        </button>
+      </div>
+      <Card className="w-full max-w-md md:max-w-lg p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-emerald-100 p-2 rounded-full">
+            <UserPlus className="w-6 h-6 text-emerald-500" />
+          </div>
+          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">Add Benfek</span>
+        </div>
         <form className="space-y-4">
           <div>
             <label className="block font-medium text-sm mb-1 text-red-600">* Name</label>
@@ -66,8 +74,8 @@ const AddBenfekPage: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <button type="button" onClick={() => navigate('/principal')} className="px-4 py-2 rounded border">Cancel</button>
-            <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+            <button type="button" onClick={() => navigate('/principal')} className="px-4 py-2 rounded border border-emerald-500 text-emerald-700 bg-white hover:bg-emerald-50 hover:border-emerald-600 transition-colors duration-150">Cancel</button>
+            <button type="submit" className="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition-colors duration-150">Save</button>
           </div>
         </form>
       </Card>
