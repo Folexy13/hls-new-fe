@@ -16,20 +16,36 @@ const EarningsPage: React.FC = () => {
           <span className="font-semibold">Back to Dashboard</span>
         </button>
       </div>
-      <Card className="w-full max-w-md p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-emerald-100 p-2 rounded-full">
-            <TrendingUp className="w-6 h-6 text-emerald-500" />
-          </div>
-          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">Earnings</span>
+      <Card className="w-full max-w-5xl p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
+        <div className="mb-2">
+          <span className="text-3xl font-extrabold text-gray-900 tracking-tight">Earnings</span>
         </div>
-        <div className="flex flex-wrap items-center justify-between mb-4">
-          <span className="font-medium text-lg text-gray-700">Total Earnings</span>
-          <span className="font-semibold text-lg text-emerald-600">₦0</span>
+        <div className="mb-6 text-gray-600 text-base">Manage your earnings details below.</div>
+        <div className="bg-gray-50 rounded-lg border border-gray-100 p-6 mb-8">
+          <div className="font-semibold text-lg mb-1">Total Earnings</div>
+          <div className="text-2xl font-bold text-emerald-700">₦0</div>
         </div>
-        <hr className="my-4" />
-        <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-4 text-center text-base font-semibold text-emerald-700">
-          No earnings yet.
+        <div className="bg-gray-50 rounded-lg border border-gray-100 p-2 mb-6 overflow-x-auto">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-3 px-4 font-semibold">Receipt Number</th>
+                <th className="py-3 px-4 font-semibold">Date</th>
+                <th className="py-3 px-4 font-semibold">Total Purchase (₦)</th>
+                <th className="py-3 px-4 font-semibold">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan={4} className="py-12 text-center text-gray-400">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="mx-auto mb-2 text-gray-200"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l9 6 9-6" /></svg>
+                    <span>No data</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>

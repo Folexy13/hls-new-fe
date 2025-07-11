@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mic } from 'lucide-react';
+import { ArrowLeft, Mic, Plus } from 'lucide-react';
 
 const PodcastsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,16 +16,24 @@ const PodcastsPage: React.FC = () => {
           <span className="font-semibold">Back to Dashboard</span>
         </button>
       </div>
-      <Card className="w-full max-w-md p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-emerald-100 p-2 rounded-full">
-            <Mic className="w-6 h-6 text-emerald-500" />
-          </div>
-          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">Podcasts</span>
+      <Card className="w-full max-w-5xl p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
+        <div className="mb-2">
+          <span className="text-3xl font-extrabold text-gray-900 tracking-tight">Podcasts</span>
         </div>
-        <hr className="my-4" />
-        <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-4 text-center text-base font-semibold text-emerald-700">
-          Publish or manage podcasts here.
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search podcasts..."
+            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          />
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[120px] mb-8">
+          <span className="text-gray-400 text-lg">No podcasts found.</span>
+        </div>
+        <div className="mt-2">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-colors duration-150 flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Add Podcast
+          </button>
         </div>
       </Card>
     </div>

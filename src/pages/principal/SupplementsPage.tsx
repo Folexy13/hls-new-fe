@@ -16,16 +16,44 @@ const SupplementsPage: React.FC = () => {
           <span className="font-semibold">Back to Dashboard</span>
         </button>
       </div>
-      <Card className="w-full max-w-md p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="bg-emerald-100 p-2 rounded-full">
-            <Pill className="w-6 h-6 text-emerald-500" />
-          </div>
-          <span className="text-2xl font-extrabold text-gray-900 tracking-tight">Medications</span>
+      <Card className="w-full max-w-5xl p-8 rounded-2xl shadow-2xl border border-gray-100 bg-white">
+        <div className="mb-2">
+          <span className="text-3xl font-extrabold text-gray-900 tracking-tight">Medications</span>
         </div>
-        <hr className="my-4" />
-        <div className="bg-emerald-50 rounded-lg border border-emerald-100 p-4 text-center text-base font-semibold text-emerald-700">
-          Publish or manage medications here.
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search by name..."
+            className="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          />
+        </div>
+        <div className="bg-gray-50 rounded-lg border border-gray-100 p-2 mb-6 overflow-x-auto">
+          <table className="min-w-full text-left">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-3 px-4 font-semibold">Image</th>
+                <th className="py-3 px-4 font-semibold">Name</th>
+                <th className="py-3 px-4 font-semibold">Price (NGN)</th>
+                <th className="py-3 px-4 font-semibold">Expiry Date</th>
+                <th className="py-3 px-4 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-gray-400">
+                  <div className="flex flex-col items-center justify-center">
+                    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="mx-auto mb-2 text-gray-200"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M3 7l9 6 9-6" /></svg>
+                    <span>No data</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-2">
+          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-sm transition-colors duration-150">
+            Add Medication
+          </button>
         </div>
       </Card>
     </div>
