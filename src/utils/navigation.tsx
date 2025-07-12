@@ -3,7 +3,7 @@ import { UserRole } from '../context/roles';
 
 // Common navigation items for all users (public routes)
 export const commonNavigation = [
-  { name: 'Home', href: '/', icon: Home },
+  // { name: 'Home', href: '/', icon: Home },
   // These are now protected by role
   // { name: 'About', href: '/about', icon: BookOpen },
   // { name: 'Quiz', href: '/quiz', icon: User },
@@ -25,6 +25,7 @@ export const roleNavigation = {
     { name: 'Wholesaler Dashboard', href: '/wholesaler', icon: Package },
   ],
   [UserRole.BENFEK]: [
+    { name: 'Home', href: '/', icon: Home },
     { name: 'Benfek Dashboard', href: '/benfek', icon: Briefcase },
     { name: 'About', href: '/about', icon: BookOpen },
     { name: 'Quiz', href: '/quiz', icon: User },
