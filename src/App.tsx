@@ -32,7 +32,7 @@ import WholesalerHomepage from "./pages/wholesaler/Homepage";
 
 // Import Principal pages
 import AccountPage from "./pages/principal/account";
-import AddBenfekPage from "./pages/principal/add-benfek"; 
+import AddBenfekPage from "./pages/principal/add-benfek";
 import BenfeksPage from "./pages/principal/benfeks";
 import EarningsPage from "./pages/principal/earnings";
 import PodcastsPage from "./pages/principal/podcasts";
@@ -61,17 +61,7 @@ const App = () => (
             <Layout>
               <Routes>
                 {/* Public routes */}
-                <Route
-                  path="/"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <Homepage />
-                    </RoleBasedRoute>
-                  }
-                />
+                <Route path="/" element={<Homepage />} />
                 <Route path="/auth/*" element={<AuthPage />} />
 
                 {/* Role-based protected routes */}
@@ -282,7 +272,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                
+
                 {/* Wholesaler Earnings Route */}
                 <Route
                   path="/wholesaler/earnings"
@@ -292,7 +282,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                
+
                 {/* Wholesaler Add Product Route */}
                 <Route
                   path="/wholesaler/add-product"
@@ -302,7 +292,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                
+
                 {/* Wholesaler Products Route */}
                 <Route
                   path="/wholesaler/products"
@@ -312,7 +302,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                
+
                 {/* Wholesaler Orders Route */}
                 <Route
                   path="/wholesaler/orders"
@@ -333,7 +323,6 @@ const App = () => (
                   }
                 />
 
-              
                 <Route
                   path="/cart"
                   element={
