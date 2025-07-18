@@ -11,13 +11,27 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, cartItems, logout, user } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'About', href: '/about', icon: BookOpen },
-    { name: 'Quiz', href: '/quiz', icon: User },
-    { name: 'Form', href: '/form', icon: FileText },
-    { name: 'Support', href: '/support', icon: BookOpen },
-  ];
+  // Filter navigation items based on user role
+  const getFilteredNavigation = () => {
+    const allNavigation = [
+      { name: 'Home', href: '/', icon: Home },
+      { name: 'About', href: '/about', icon: BookOpen },
+      { name: 'Quiz', href: '/quiz', icon: User },
+      { name: 'Form', href: '/form', icon: FileText },
+      { name: 'Support', href: '/support', icon: BookOpen },
+    ];
+
+    // Hide Quiz, Form, and Support for principal users
+    if (user?.role === 'principal') {
+      return allNavigation.filter(item => 
+        !['Quiz', 'Form', 'Support'].includes(item.name)
+      );
+    }
+
+    return allNavigation;
+  };
+
+  const navigation = getFilteredNavigation();
 
   const privateNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
