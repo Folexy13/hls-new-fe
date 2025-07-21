@@ -164,40 +164,6 @@ const WholesalerHomepage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Access Menu */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {isLoading ? (
-              // Skeleton loaders for quick access
-              Array(5).fill(0).map((_, index) => (
-                <Card key={index} className="p-4 flex flex-col items-center">
-                  <Skeleton className="h-10 w-10 rounded-full mb-3" />
-                  <Skeleton className="h-4 w-20" />
-                </Card>
-              ))
-            ) : (
-              // Quick access buttons
-              [
-                { icon: <Pill className="h-6 w-6 text-blue-600" />, label: 'My Products', href: '/wholesaler/products' },
-                { icon: <Plus className="h-6 w-6 text-emerald-600" />, label: 'Add Product', href: '/wholesaler/add-product' },
-                { icon: <ShoppingCart className="h-6 w-6 text-purple-600" />, label: 'Orders', href: '/wholesaler/orders' },
-                { icon: <DollarSign className="h-6 w-6 text-amber-600" />, label: 'Earnings', href: '/wholesaler/earnings' },
-                { icon: <Settings className="h-6 w-6 text-gray-600" />, label: 'Settings', href: '/wholesaler/settings' },
-              ].map((item, index) => (
-                <Link to={item.href} key={index}>
-                  <Card className="p-4 flex flex-col items-center hover:bg-gray-50 transition-colors cursor-pointer">
-                    <div className="bg-gray-100 p-3 rounded-full mb-3">
-                      {item.icon}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                  </Card>
-                </Link>
-              ))
-            )}
-          </div>
-        </div>
-
         {/* Two-column layout for Recent Activity and Top Selling Products */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Activity */}

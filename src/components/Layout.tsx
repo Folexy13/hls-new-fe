@@ -93,24 +93,50 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <>
                   <hr className="my-2" />
                   {privateNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        location.pathname === item.href
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <item.icon className="h-5 w-5 mr-3" />
-                      {item.name}
-                      {item.name === 'Cart' && cartItemCount > 0 && (
-                        <span className="ml-auto bg-emerald-500 text-white text-xs rounded-full px-2 py-0.5">
-                          {cartItemCount}
-                        </span>
-                      )}
-                    </Link>
+                    item.submenu ? (
+                      <div key={item.name} className="group relative">
+                        <button
+                          className="flex items-center px-3 py-2 rounded-md text-sm font-medium w-full text-gray-600 hover:bg-gray-50"
+                        >
+                          <item.icon className="h-5 w-5 mr-3" />
+                          {item.name}
+                          <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {/* Dropdown submenu for desktop */}
+                        <div className="hidden group-hover:block absolute left-0 mt-1 w-48 bg-white shadow-lg rounded-md z-20">
+                          {item.submenu.map((sub) => (
+                            <Link
+                              key={sub.name}
+                              to={sub.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 rounded-md"
+                            >
+                              <sub.icon className="h-4 w-4 mr-2" />
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          location.pathname === item.href
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        {item.name}
+                        {item.name === 'Cart' && cartItemCount > 0 && (
+                          <span className="ml-auto bg-emerald-500 text-white text-xs rounded-full px-2 py-0.5">
+                            {cartItemCount}
+                          </span>
+                        )}
+                      </Link>
+                    )
                   ))}
                   <hr className="my-2" />
                   <button
@@ -177,22 +203,46 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               ))}
               
               {isAuthenticated && privateNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`text-sm font-medium transition-colors relative ${
-                    location.pathname === item.href
-                      ? 'text-emerald-600'
-                      : 'text-gray-600 hover:text-emerald-500'
-                  }`}
-                >
-                  {item.name}
-                  {item.name === 'Cart' && cartItemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </Link>
+                item.submenu ? (
+                  <div key={item.name} className="group relative">
+                    <button
+                      className="text-sm font-medium transition-colors relative flex items-center hover:text-emerald-500 text-gray-600"
+                    >
+                      {item.name}
+                      <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {/* Dropdown submenu for desktop */}
+                    <div className="hidden group-hover:block absolute left-0 mt-2 w-48 bg-white shadow-lg rounded-md z-20">
+                      {item.submenu.map((sub) => (
+                        <Link
+                          key={sub.name}
+                          to={sub.href}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 rounded-md"
+                        >
+                          <sub.icon className="h-4 w-4 mr-2" />
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`text-sm font-medium transition-colors relative ${
+                      location.pathname === item.href
+                        ? 'text-emerald-600'
+                        : 'text-gray-600 hover:text-emerald-500'
+                    }`}
+                  >
+                    {item.name}
+                    {item.name === 'Cart' && cartItemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </Link>
+                )
               ))}
             </nav>
 

@@ -23,6 +23,17 @@ export const roleNavigation = {
   ],
   [UserRole.WHOLESALER]: [
     { name: 'Wholesaler Dashboard', href: '/wholesaler', icon: Package },
+    {
+      name: 'Quick Access',
+      icon: Menu,
+      submenu: [
+        { name: 'My Products', href: '/wholesaler/products', icon: Package },
+        { name: 'Add Product', href: '/wholesaler/add-product', icon: Package },
+        { name: 'Orders', href: '/wholesaler/orders', icon: ShoppingCart },
+        { name: 'Earnings', href: '/wholesaler/earnings', icon: FileText },
+        { name: 'Settings', href: '/wholesaler/settings', icon: FileText },
+      ],
+    },
   ],
   [UserRole.BENFEK]: [
     { name: 'Home', href: '/', icon: Home },
