@@ -38,35 +38,124 @@ const topSellingProducts = [
 const WholesalerHomepage: React.FC = () => {
   const { userRole } = useRBAC();
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [currentStat, setCurrentStat] = useState(0); // for mobile stat navigation
+
   // Simulate loading for demonstration
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
-    
     return () => clearTimeout(timer);
   }, []);
+
+  // Responsive check for mobile
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640); // Tailwind's sm breakpoint
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handlePrevStat = () => {
+    setCurrentStat((prev) => (prev === 0 ? dashboardStats.length - 1 : prev - 1));
+  };
+  const handleNextStat = () => {
+    setCurrentStat((prev) => (prev === dashboardStats.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Dashboard Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="bg-emerald-600 border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Wholesaler Dashboard</h1>
-              <p className="mt-1 text-sm text-gray-500">Welcome back, Wholesaler</p>
+            <div className="text-left w-full">
+              <h1 className="text-3xl font-bold text-white">Wholesaler Dashboard</h1>
+              <p className="mt-1 text-lg text-emerald-100 text-center md:text-left">Welcome back, Wholesaler</p>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-3">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <div className="mt-3 md:mt-0 flex space-x-3 w-full md:w-auto justify-center md:justify-end">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white text-emerald-700 hover:bg-emerald-50 border-none">
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Notifications</span>
               </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white text-emerald-700 hover:bg-emerald-50 border-none">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Settings</span>
+              </Button>
+            </div>
+          </div>
+          {/* Add extra spacing for mobile */}
+          <div className="block md:hidden h-2" />
+
+          {/* Stats Cards inside header */}
+          <div className="mt-10">
+            {/* Desktop: show all stats in a row; Mobile: show one stat with arrows */}
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {isLoading ? (
+                Array(4).fill(0).map((_, index) => (
+                  <Card key={index} className="p-6">
+                    <Skeleton className="h-7 w-1/2 mb-2" />
+                    <Skeleton className="h-9 w-1/3 mb-2" />
+                    <Skeleton className="h-5 w-1/4" />
+                  </Card>
+                ))
+              ) : (
+                dashboardStats.map((stat, index) => (
+                  <div
+                    key={index}
+                    className={
+                      `flex items-center gap-4 p-6 bg-white rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg min-h-[110px]`
+                    }
+                  >
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full ${stat.color} bg-opacity-20`}>
+                      <span className={`text-xl ${stat.color} flex items-center`}>{stat.icon}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+                      <p className="text-xs font-medium text-emerald-600 flex items-center">
+                        <TrendingUp className="h-3 w-3 mr-1 text-emerald-600" />
+                        {stat.change} from last month
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {/* Mobile: show one stat with arrows */}
+            <div className="sm:hidden flex items-center justify-center gap-2">
+              <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handlePrevStat} aria-label="Previous Stat">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </Button>
+              {isLoading ? (
+                <Card className="p-6 w-64">
+                  <Skeleton className="h-7 w-1/2 mb-2" />
+                  <Skeleton className="h-9 w-1/3 mb-2" />
+                  <Skeleton className="h-5 w-1/4" />
+                </Card>
+              ) : (
+                <div
+                  className={`flex items-center gap-4 p-6 w-64 bg-white rounded-xl shadow-md border border-gray-100 min-h-[110px]`}
+                >
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full ${dashboardStats[currentStat].color} bg-opacity-20`}>
+                    <span className={`text-xl ${dashboardStats[currentStat].color} flex items-center`}>{dashboardStats[currentStat].icon}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">{dashboardStats[currentStat].title}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{dashboardStats[currentStat].value}</h3>
+                    <p className="text-xs font-medium text-emerald-600 flex items-center">
+                      <TrendingUp className="h-3 w-3 mr-1 text-emerald-600" />
+                      {dashboardStats[currentStat].change} from last month
+                    </p>
+                  </div>
+                </div>
+              )}
+              <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handleNextStat} aria-label="Next Stat">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </Button>
             </div>
           </div>
@@ -75,39 +164,6 @@ const WholesalerHomepage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {isLoading ? (
-            // Skeleton loaders for stats
-            Array(4).fill(0).map((_, index) => (
-              <Card key={index} className="p-6">
-                <Skeleton className="h-7 w-1/2 mb-2" />
-                <Skeleton className="h-9 w-1/3 mb-2" />
-                <Skeleton className="h-5 w-1/4" />
-              </Card>
-            ))
-          ) : (
-            // Actual stats cards
-            dashboardStats.map((stat, index) => (
-              <Card key={index} className="p-6 border-l-4" style={{ borderLeftColor: stat.color.replace('bg-', '') }}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                    <h3 className="text-2xl font-bold mt-1 text-gray-900">{stat.value}</h3>
-                    <p className="text-xs font-medium text-emerald-600 mt-1 flex items-center">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      {stat.change} from last month
-                    </p>
-                  </div>
-                  <div className={`${stat.color} text-white p-2 rounded-lg`}>
-                    {stat.icon}
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
-        </div>
-
         {/* Quick Access Menu */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Access</h2>
