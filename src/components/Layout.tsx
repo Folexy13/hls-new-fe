@@ -285,7 +285,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {isAuthenticated && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
           <div className="flex justify-around py-2">
-            {privateNavigation.slice(0, 4).map((item) => (
+            {privateNavigation.filter(item => !item.submenu).slice(0, 4).map((item) => (
               <Link
                 key={item.name}
                 to={item.href}

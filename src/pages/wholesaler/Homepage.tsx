@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,11 @@ import {
   Plus, Users, BarChart2
 } from 'lucide-react';
 import { useRBAC } from '../../context/useRBAC';
+
+// Add animation for drawer
+// In your global CSS (e.g., index.css), add:
+// @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+// .animate-slideUp { animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1); }
 
 // Mock data for dashboard stats
 const dashboardStats = [
@@ -39,6 +44,10 @@ const WholesalerHomepage: React.FC = () => {
   const { userRole } = useRBAC();
   const [isLoading, setIsLoading] = useState(false);
   const [currentStat, setCurrentStat] = useState(0); // for mobile stat navigation
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const carouselInterval = useRef<NodeJS.Timeout | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   // Simulate loading for demonstration
   useEffect(() => {
@@ -60,6 +69,18 @@ const WholesalerHomepage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Carousel auto-slide logic (mobile only)
+  useEffect(() => {
+    if (!isMobile) return;
+    if (carouselInterval.current) clearInterval(carouselInterval.current);
+    carouselInterval.current = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % recentActivities.length);
+    }, 4000);
+    return () => {
+      if (carouselInterval.current) clearInterval(carouselInterval.current);
+    };
+  }, [isMobile]);
+
   const handlePrevStat = () => {
     setCurrentStat((prev) => (prev === 0 ? dashboardStats.length - 1 : prev - 1));
   };
@@ -70,14 +91,23 @@ const WholesalerHomepage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Dashboard Header */}
-      <div className="bg-emerald-600 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div className="bg-emerald-600 border-b relative">
+        {/* Mobile: Settings and Notifications at corners */}
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-center md:hidden z-10">
+          <Button variant="ghost" size="icon" className="text-white">
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white">
+            <Bell className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pt-14 md:pt-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="text-left w-full">
-              <h1 className="text-3xl font-bold text-white">Wholesaler Dashboard</h1>
+              <h1 className="text-3xl font-bold text-white text-center md:text-left">Wholesaler Dashboard</h1>
               <p className="mt-1 text-lg text-emerald-100 text-center md:text-left">Welcome back, Wholesaler</p>
             </div>
-            <div className="mt-3 md:mt-0 flex space-x-3 w-full md:w-auto justify-center md:justify-end">
+            <div className="mt-3 md:mt-0 flex space-x-3 w-full md:w-auto justify-center md:justify-end hidden md:flex">
               <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white text-emerald-700 hover:bg-emerald-50 border-none">
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Notifications</span>
@@ -166,56 +196,7 @@ const WholesalerHomepage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Two-column layout for Recent Activity and Top Selling Products */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Activity */}
-          <div className="lg:col-span-1">
-            <Card className="overflow-hidden">
-              <div className="p-6 bg-white border-b">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Activity className="h-5 w-5 mr-2 text-emerald-600" />
-                  Recent Activity
-                </h2>
-              </div>
-              <div className="divide-y">
-                {isLoading ? (
-                  // Skeleton loaders for activities
-                  Array(4).fill(0).map((_, index) => (
-                    <div key={index} className="p-4 flex items-start space-x-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="flex-1">
-                        <Skeleton className="h-4 w-3/4 mb-2" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Actual activity items
-                  recentActivities.map((activity) => (
-                    <div key={activity.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex items-start space-x-3">
-                        <div className="bg-gray-100 p-2 rounded-full">
-                          {activity.icon}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {activity.product && <span className="font-medium">{activity.product}</span>}
-                            {activity.amount && <span className="font-medium">{activity.amount}</span>}
-                            {' • '}{activity.time}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="p-4 bg-gray-50 border-t">
-                <Button variant="link" className="w-full text-sm text-emerald-600">
-                  View All Activity
-                </Button>
-              </div>
-            </Card>
-          </div>
-
+          {/* Remove Recent Activity card from here for mobile */}
           {/* Top Selling Products */}
           <div className="lg:col-span-2">
             <Card className="overflow-hidden">
@@ -277,6 +258,80 @@ const WholesalerHomepage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Remove mobile carousel and 'Recent Activities' text from footer */}
+      <footer className="fixed bottom-0 left-0 w-full bg-white border-t shadow-lg z-50 md:hidden">
+        {/* Existing footer content (e.g., Wholesaler Dashboard text/icon) */}
+        <div className="flex flex-col items-center py-2">
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <Package className="h-4 w-4 text-emerald-600" />
+            Wholesaler Dashboard
+          </span>
+        </div>
+      </footer>
+
+      {/* FAB for Recent Activities (mobile only) */}
+      <button
+        className="fixed bottom-20 right-5 z-50 md:hidden bg-emerald-600 text-white rounded-full shadow-lg w-14 h-14 flex items-center justify-center active:scale-95 transition-all"
+        onClick={() => setDrawerOpen(true)}
+        aria-label="Show Recent Activities"
+      >
+        <Bell className="h-7 w-7" />
+        {/* Optionally add a badge for new activities */}
+        {/* <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full px-1.5">3</span> */}
+      </button>
+
+      {/* Drawer/modal for full recent activity section */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:hidden">
+          <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setDrawerOpen(false)} />
+          <div className="relative w-full bg-white rounded-t-2xl shadow-lg max-h-[80vh] overflow-y-auto animate-slideUp">
+            <div className="flex justify-between items-center px-4 pt-4 pb-2 border-b">
+              <span className="font-semibold text-lg text-gray-900 flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-emerald-600" />
+                Recent Activity
+              </span>
+              <button onClick={() => setDrawerOpen(false)} className="text-gray-500 text-2xl font-bold">&times;</button>
+            </div>
+            <div className="divide-y">
+              {isLoading ? (
+                Array(4).fill(0).map((_, index) => (
+                  <div key={index} className="p-4 flex items-start space-x-3">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                recentActivities.map((activity) => (
+                  <div key={activity.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-gray-100 p-2 rounded-full">
+                        {activity.icon}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {activity.product && <span className="font-medium">{activity.product}</span>}
+                          {activity.amount && <span className="font-medium">{activity.amount}</span>}
+                          {' • '}{activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 border-t">
+              <Button variant="link" className="w-full text-sm text-emerald-600" onClick={() => setDrawerOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
