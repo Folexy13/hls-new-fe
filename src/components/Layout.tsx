@@ -1,23 +1,44 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
-import { useRBAC } from '../context/useRBAC';
-import { UserRole } from '../context/roles';
-import { commonNavigation, getNavigationByRole, NavigationItem } from '../utils/navigation';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { isAuthenticated, cartItems, logout, user } = useStore();
-  const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Get navigation items based on authentication and role
-  // Only show common navigation items to unauthenticated users or if they match current role permission
-  const navigation = isAuthenticated ? [] : commonNavigation.filter(item => item.href === '/');
-  const privateNavigation = isAuthenticated ? getNavigationByRole(userRole) : [];
+  // Filter navigation items based on user role
+  const getFilteredNavigation = () => {
+    const allNavigation = [
+      { name: 'Home', href: '/', icon: Home },
+      { name: 'About', href: '/about', icon: BookOpen },
+      { name: 'Quiz', href: '/quiz', icon: User },
+      { name: 'Form', href: '/form', icon: FileText },
+      { name: 'Support', href: '/support', icon: BookOpen },
+    ];
+
+    // Hide Quiz, Form, and Support for principal users
+    if (user?.role === 'principal') {
+      return allNavigation.filter(item => 
+        !['Quiz', 'Form', 'Support'].includes(item.name)
+      );
+    }
+
+    return allNavigation;
+  };
+
+  const navigation = getFilteredNavigation();
+
+  const privateNavigation = [
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Cart', href: '/cart', icon: ShoppingCart },
+    { name: 'Form', href: '/form', icon: FileText },
+    { name: 'Podcast', href: '/podcast', icon: Headphones },
+  ];
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -35,7 +56,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <img src={logo} alt="HLS Logo" className="h-8" />
           </Link>
           <div className="flex items-center space-x-4">
-            {isAuthenticated && userRole === UserRole.BENFEK && (
+            {isAuthenticated && (
               <Link to="/cart" className="relative p-2">
                 <ShoppingCart className="h-6 w-6 text-gray-600" />
                 {cartItemCount > 0 && (
@@ -58,22 +79,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {mobileMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-white shadow-lg border-t z-40">
             <nav className="px-4 py-2 space-y-1">
-              {/* Always show Home link */}
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Home className="h-5 w-5 mr-3" />
-                Home
-              </Link>
-              
-              {/* Show other public navigation only for unauthenticated users */}
-              {!isAuthenticated && navigation.slice(1).map((item) => (
+              {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -175,20 +181,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </Link>
             
             <nav className="flex space-x-8">
-              {/* Always show Home link */}
-              <Link
-                to="/"
-                className={`text-sm font-medium transition-colors ${
-                  location.pathname === '/'
-                    ? 'text-emerald-600'
-                    : 'text-gray-600 hover:text-emerald-500'
-                }`}
-              >
-                Home
-              </Link>
-              
-              {/* Show navigation based on authentication status */}
-              {!isAuthenticated && navigation.slice(1).map((item) => (
+              {navigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -258,7 +251,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-600">
                     Hi, {user?.name || 'User'}!
-                    {userRole && <span className="ml-1 text-xs text-gray-500">({userRole})</span>}
                   </span>
                   <Button 
                     onClick={handleLogout}

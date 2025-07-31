@@ -2,18 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   TrendingUp, DollarSign, Package, ShoppingCart,
   Pill, CreditCard, Activity, Calendar, Bell, Settings,
   Plus, Users, BarChart2
 } from 'lucide-react';
-import { useRBAC } from '../../context/useRBAC';
-
-// Add animation for drawer
-// In your global CSS (e.g., index.css), add:
-// @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-// .animate-slideUp { animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1); }
 
 // Mock data for dashboard stats
 const dashboardStats = [
@@ -31,23 +24,20 @@ const recentActivities = [
   { id: 4, action: 'New product added', product: 'Ibuprofen 400mg', time: 'Yesterday', icon: <Plus className="h-4 w-4 text-amber-500" /> },
 ];
 
-// Mock data for top selling products
+// Mock data for top selling products with local image placeholders
 const topSellingProducts = [
-  { id: 1, name: 'Paracetamol 500mg', sales: 245, revenue: '₦122,500', image: 'https://via.placeholder.com/40/4299E1/FFFFFF?text=P' },
-  { id: 2, name: 'Vitamin C 1000mg', sales: 189, revenue: '₦94,500', image: 'https://via.placeholder.com/40/48BB78/FFFFFF?text=V' },
-  { id: 3, name: 'Ibuprofen 400mg', sales: 156, revenue: '₦78,000', image: 'https://via.placeholder.com/40/ED8936/FFFFFF?text=I' },
-  { id: 4, name: 'Amoxicillin 250mg', sales: 132, revenue: '₦66,000', image: 'https://via.placeholder.com/40/9F7AEA/FFFFFF?text=A' },
-  { id: 5, name: 'Multivitamin Complex', sales: 98, revenue: '₦49,000', image: 'https://via.placeholder.com/40/F56565/FFFFFF?text=M' },
+  { id: 1, name: 'Paracetamol 500mg', sales: 245, revenue: '₦122,500', color: 'bg-blue-500', letter: 'P' },
+  { id: 2, name: 'Vitamin C 1000mg', sales: 189, revenue: '₦94,500', color: 'bg-green-500', letter: 'V' },
+  { id: 3, name: 'Ibuprofen 400mg', sales: 156, revenue: '₦78,000', color: 'bg-orange-500', letter: 'I' },
+  { id: 4, name: 'Amoxicillin 250mg', sales: 132, revenue: '₦66,000', color: 'bg-purple-500', letter: 'A' },
+  { id: 5, name: 'Multivitamin Complex', sales: 98, revenue: '₦49,000', color: 'bg-red-500', letter: 'M' },
 ];
 
 const WholesalerHomepage: React.FC = () => {
-  const { userRole } = useRBAC();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStat, setCurrentStat] = useState(0); // for mobile stat navigation
+  const [currentStat, setCurrentStat] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const carouselInterval = useRef<NodeJS.Timeout | null>(null);
-  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Simulate loading for demonstration
   useEffect(() => {
@@ -59,31 +49,19 @@ const WholesalerHomepage: React.FC = () => {
   }, []);
 
   // Responsive check for mobile
-  const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 640); // Tailwind's sm breakpoint
+      setIsMobile(window.innerWidth < 640);
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Carousel auto-slide logic (mobile only)
-  useEffect(() => {
-    if (!isMobile) return;
-    if (carouselInterval.current) clearInterval(carouselInterval.current);
-    carouselInterval.current = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % recentActivities.length);
-    }, 4000);
-    return () => {
-      if (carouselInterval.current) clearInterval(carouselInterval.current);
-    };
-  }, [isMobile]);
-
   const handlePrevStat = () => {
     setCurrentStat((prev) => (prev === 0 ? dashboardStats.length - 1 : prev - 1));
   };
+  
   const handleNextStat = () => {
     setCurrentStat((prev) => (prev === dashboardStats.length - 1 ? 0 : prev + 1));
   };
@@ -118,28 +96,25 @@ const WholesalerHomepage: React.FC = () => {
               </Button>
             </div>
           </div>
-          {/* Add extra spacing for mobile */}
           <div className="block md:hidden h-2" />
 
           {/* Stats Cards inside header */}
           <div className="mt-10">
-            {/* Desktop: show all stats in a row; Mobile: show one stat with arrows */}
+            {/* Desktop: show all stats in a row */}
             <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {isLoading ? (
                 Array(4).fill(0).map((_, index) => (
                   <Card key={index} className="p-6">
-                    <Skeleton className="h-7 w-1/2 mb-2" />
-                    <Skeleton className="h-9 w-1/3 mb-2" />
-                    <Skeleton className="h-5 w-1/4" />
+                    <div className="h-7 w-1/2 mb-2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-9 w-1/3 mb-2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-5 w-1/4 bg-gray-200 rounded animate-pulse" />
                   </Card>
                 ))
               ) : (
                 dashboardStats.map((stat, index) => (
                   <div
                     key={index}
-                    className={
-                      `flex items-center gap-4 p-6 bg-white rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg min-h-[110px]`
-                    }
+                    className="flex items-center gap-4 p-6 bg-white rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg min-h-[110px]"
                   >
                     <div className={`flex items-center justify-center w-12 h-12 rounded-full ${stat.color} bg-opacity-20`}>
                       <span className={`text-xl ${stat.color} flex items-center`}>{stat.icon}</span>
@@ -156,21 +131,22 @@ const WholesalerHomepage: React.FC = () => {
                 ))
               )}
             </div>
+            
             {/* Mobile: show one stat with arrows */}
             <div className="sm:hidden flex items-center justify-center gap-2">
               <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handlePrevStat} aria-label="Previous Stat">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
               </Button>
               {isLoading ? (
                 <Card className="p-6 w-64">
-                  <Skeleton className="h-7 w-1/2 mb-2" />
-                  <Skeleton className="h-9 w-1/3 mb-2" />
-                  <Skeleton className="h-5 w-1/4" />
+                  <div className="h-7 w-1/2 mb-2 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-9 w-1/3 mb-2 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 w-1/4 bg-gray-200 rounded animate-pulse" />
                 </Card>
               ) : (
-                <div
-                  className={`flex items-center gap-4 p-6 w-64 bg-white rounded-xl shadow-md border border-gray-100 min-h-[110px]`}
-                >
+                <div className="flex items-center gap-4 p-6 w-64 bg-white rounded-xl shadow-md border border-gray-100 min-h-[110px]">
                   <div className={`flex items-center justify-center w-12 h-12 rounded-full ${dashboardStats[currentStat].color} bg-opacity-20`}>
                     <span className={`text-xl ${dashboardStats[currentStat].color} flex items-center`}>{dashboardStats[currentStat].icon}</span>
                   </div>
@@ -185,7 +161,9 @@ const WholesalerHomepage: React.FC = () => {
                 </div>
               )}
               <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handleNextStat} aria-label="Next Stat">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </Button>
             </div>
           </div>
@@ -194,9 +172,7 @@ const WholesalerHomepage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Two-column layout for Recent Activity and Top Selling Products */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Remove Recent Activity card from here for mobile */}
           {/* Top Selling Products */}
           <div className="lg:col-span-2">
             <Card className="overflow-hidden">
@@ -205,63 +181,35 @@ const WholesalerHomepage: React.FC = () => {
                   <BarChart2 className="h-5 w-5 text-blue-500" />
                   <h2 className="text-lg font-semibold text-gray-900">Top Selling Products</h2>
                 </div>
-                <Link to="/wholesaler/products">
-                  <Button variant="outline" size="sm">View All</Button>
-                </Link>
               </div>
               <div className="p-6">
-                {isLoading ? (
-                  // Skeleton loaders for products
-                  Array(5).fill(0).map((_, index) => (
-                    <div key={index} className="flex items-center justify-between py-3 border-b last:border-0">
-                      <div className="flex items-center space-x-3">
-                        <Skeleton className="h-10 w-10 rounded" />
+                <div className="space-y-4">
+                  {topSellingProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-10 h-10 rounded flex items-center justify-center text-white font-bold ${product.color}`}>
+                          {product.letter}
+                        </div>
                         <div>
-                          <Skeleton className="h-4 w-32 mb-1" />
-                          <Skeleton className="h-3 w-16" />
+                          <h3 className="font-medium text-gray-900">{product.name}</h3>
+                          <p className="text-sm text-gray-500">{product.sales} units sold</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <Skeleton className="h-4 w-16 mb-1 ml-auto" />
-                        <Skeleton className="h-3 w-20 ml-auto" />
+                        <p className="font-medium text-gray-900">{product.revenue}</p>
+                        <p className="text-sm text-gray-500">Revenue</p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  // Actual product items
-                  topSellingProducts.map((product) => (
-                    <div key={product.id} className="flex items-center justify-between py-3 border-b last:border-0 hover:bg-gray-50 px-2 rounded-md">
-                      <div className="flex items-center space-x-3">
-                        <img src={product.image} alt={product.name} className="h-10 w-10 rounded object-cover" />
-                        <div>
-                          <p className="font-medium text-gray-900">{product.name}</p>
-                          <p className="text-xs text-gray-500">{product.sales} units sold</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-emerald-600">{product.revenue}</p>
-                        <p className="text-xs text-gray-500">Total Revenue</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="p-4 bg-gray-50 border-t">
-                <Link to="/wholesaler/add-product">
-                  <Button className="w-full flex items-center justify-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add New Product
-                  </Button>
-                </Link>
+                  ))}
+                </div>
               </div>
             </Card>
           </div>
         </div>
       </div>
 
-      {/* Remove mobile carousel and 'Recent Activities' text from footer */}
+      {/* Mobile footer */}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t shadow-lg z-50 md:hidden">
-        {/* Existing footer content (e.g., Wholesaler Dashboard text/icon) */}
         <div className="flex flex-col items-center py-2">
           <span className="text-xs text-gray-500 flex items-center gap-1">
             <Package className="h-4 w-4 text-emerald-600" />
@@ -277,15 +225,13 @@ const WholesalerHomepage: React.FC = () => {
         aria-label="Show Recent Activities"
       >
         <Bell className="h-7 w-7" />
-        {/* Optionally add a badge for new activities */}
-        {/* <span className="absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full px-1.5">3</span> */}
       </button>
 
       {/* Drawer/modal for full recent activity section */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 flex items-end md:hidden">
           <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setDrawerOpen(false)} />
-          <div className="relative w-full bg-white rounded-t-2xl shadow-lg max-h-[80vh] overflow-y-auto animate-slideUp">
+          <div className="relative w-full bg-white rounded-t-2xl shadow-lg max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center px-4 pt-4 pb-2 border-b">
               <span className="font-semibold text-lg text-gray-900 flex items-center">
                 <Activity className="h-5 w-5 mr-2 text-emerald-600" />
@@ -297,10 +243,10 @@ const WholesalerHomepage: React.FC = () => {
               {isLoading ? (
                 Array(4).fill(0).map((_, index) => (
                   <div key={index} className="p-4 flex items-start space-x-3">
-                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
                     <div className="flex-1">
-                      <Skeleton className="h-4 w-3/4 mb-2" />
-                      <Skeleton className="h-3 w-1/2" />
+                      <div className="h-4 w-3/4 mb-2 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse" />
                     </div>
                   </div>
                 ))
@@ -336,4 +282,4 @@ const WholesalerHomepage: React.FC = () => {
   );
 };
 
-export default WholesalerHomepage;
+export default WholesalerHomepage; 
