@@ -1,21 +1,37 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText } from 'lucide-react';
+import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const { isAuthenticated, cartItems, setSidebarOpen, sidebarOpen } = useStore();
+  const { isAuthenticated, cartItems, logout, user } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'About', href: '/about', icon: BookOpen },
-    { name: 'Quiz', href: '/quiz', icon: User },
-    { name: 'Form', href: '/form', icon: FileText },
-    { name: 'Support', href: '/support', icon: BookOpen },
-  ];
+  // Filter navigation items based on user role
+  const getFilteredNavigation = () => {
+    const allNavigation = [
+      { name: 'Home', href: '/', icon: Home },
+      { name: 'About', href: '/about', icon: BookOpen },
+      { name: 'Quiz', href: '/quiz', icon: User },
+      { name: 'Form', href: '/form', icon: FileText },
+      { name: 'Support', href: '/support', icon: BookOpen },
+    ];
+
+    // Hide Quiz, Form, and Support for principal users
+    if (user?.role === 'principal') {
+      return allNavigation.filter(item => 
+        !['Quiz', 'Form', 'Support'].includes(item.name)
+      );
+    }
+
+    return allNavigation;
+  };
+
+  const navigation = getFilteredNavigation();
 
   const privateNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -25,6 +41,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   ];
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,25 +99,59 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <>
                   <hr className="my-2" />
                   {privateNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        location.pathname === item.href
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <item.icon className="h-5 w-5 mr-3" />
-                      {item.name}
-                      {item.name === 'Cart' && cartItemCount > 0 && (
-                        <span className="ml-auto bg-emerald-500 text-white text-xs rounded-full px-2 py-0.5">
-                          {cartItemCount}
-                        </span>
-                      )}
-                    </Link>
+                    item.submenu ? (
+                      <div key={item.name} className="group relative">
+                        <button
+                          className="flex items-center px-3 py-2 rounded-md text-sm font-medium w-full text-gray-600 hover:bg-gray-50"
+                        >
+                          <item.icon className="h-5 w-5 mr-3" />
+                          {item.name}
+                          <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {/* Dropdown submenu for desktop */}
+                        <div className="hidden group-hover:block absolute left-0 mt-1 w-48 bg-white shadow-lg rounded-md z-20">
+                          {item.submenu.map((sub) => (
+                            <Link
+                              key={sub.name}
+                              to={sub.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 rounded-md"
+                            >
+                              <sub.icon className="h-4 w-4 mr-2" />
+                              {sub.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                          location.pathname === item.href
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        {item.name}
+                        {item.name === 'Cart' && cartItemCount > 0 && (
+                          <span className="ml-auto bg-emerald-500 text-white text-xs rounded-full px-2 py-0.5">
+                            {cartItemCount}
+                          </span>
+                        )}
+                      </Link>
+                    )
                   ))}
+                  <hr className="my-2" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    Logout
+                  </button>
                 </>
               )}
               
@@ -141,22 +196,46 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               ))}
               
               {isAuthenticated && privateNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`text-sm font-medium transition-colors relative ${
-                    location.pathname === item.href
-                      ? 'text-emerald-600'
-                      : 'text-gray-600 hover:text-emerald-500'
-                  }`}
-                >
-                  {item.name}
-                  {item.name === 'Cart' && cartItemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {cartItemCount}
-                    </span>
-                  )}
-                </Link>
+                item.submenu ? (
+                  <div key={item.name} className="group relative">
+                    <button
+                      className="text-sm font-medium transition-colors relative flex items-center hover:text-emerald-500 text-gray-600"
+                    >
+                      {item.name}
+                      <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    {/* Dropdown submenu for desktop */}
+                    <div className="hidden group-hover:block absolute left-0 mt-2 w-48 bg-white shadow-lg rounded-md z-20">
+                      {item.submenu.map((sub) => (
+                        <Link
+                          key={sub.name}
+                          to={sub.href}
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 rounded-md"
+                        >
+                          <sub.icon className="h-4 w-4 mr-2" />
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`text-sm font-medium transition-colors relative ${
+                      location.pathname === item.href
+                        ? 'text-emerald-600'
+                        : 'text-gray-600 hover:text-emerald-500'
+                    }`}
+                  >
+                    {item.name}
+                    {item.name === 'Cart' && cartItemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </Link>
+                )
               ))}
             </nav>
 
@@ -169,8 +248,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   Sign In
                 </Link>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Welcome back!</span>
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-600">
+                    Hi, {user?.name || 'User'}!
+                  </span>
+                  <Button 
+                    onClick={handleLogout}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </Button>
                 </div>
               )}
             </div>
@@ -187,7 +277,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {isAuthenticated && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
           <div className="flex justify-around py-2">
-            {privateNavigation.map((item) => (
+            {privateNavigation.filter(item => !item.submenu).slice(0, 4).map((item) => (
               <Link
                 key={item.name}
                 to={item.href}

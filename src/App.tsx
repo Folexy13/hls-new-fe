@@ -1,3 +1,5 @@
+
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,78 +9,165 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import Layout from "./components/Layout";
+import AuthWrapper from "./components/AuthWrapper";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import Homepage from "./pages/Homepage";
-import AboutPage from "./pages/AboutPage";
-import QuizPage from "./pages/QuizPage";
+import BenfekHomepage from "./pages/benfek/Homepage";
+import AboutPage from "./pages/benfek/AboutPage";
+import QuizPage from "./pages/benfek/QuizPage";
 import AuthPage from "./pages/AuthPage";
-import SupportPage from "./pages/SupportPage";
-import Dashboard from "./pages/Dashboard";
-import CartPage from "./pages/CartPage";
-import PodcastPage from "./pages/PodcastPage";
-import BlogPage from "./pages/BlogPage";
-import NotFound from "./pages/NotFound";
-import MarketplacePage from "./pages/MarketplacePage";
-import ProductPage from "./pages/ProductPage";
+import SupportPage from "./pages/benfek/SupportPage";
+import Dashboard from "./pages/benfek/Dashboard";
+import CartPage from "./pages/benfek/CartPage";
+import PodcastPage from "./pages/benfek/PodcastPage";
+import BlogPage from "./pages/benfek/BlogPage";
+import NotFound from "./pages/benfek/NotFound";
+import MarketplacePage from "./pages/benfek/MarketplacePage";
+import ProductPage from "./pages/benfek/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-import FormPage from "./pages/FormPage";
+import PrincipalHomepage from "./pages/principal/Homepage";
+import AccountPage from "./pages/principal/AccountPage";
+import EarningsPage from "./pages/principal/EarningsPage";
+import WithdrawPage from "./pages/principal/WithdrawPage";
+import BenfeksPage from "./pages/principal/BenfeksPage";
+import PurchasesPage from "./pages/principal/PurchasesPage";
+import AddBenfekPage from "./pages/principal/AddBenfekPage";
+import SupplementsPage from "./pages/principal/SupplementsPage";
+import ArticlesPage from "./pages/principal/ArticlesPage";
+import PodcastsPage from "./pages/principal/PodcastsPage";
+import WholesalerHomepage from "./pages/wholesaler/Homepage";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Homepage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/quiz" element={<QuizPage />} />
-            <Route path="/auth/*" element={<AuthPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/blog/:id" element={<BlogPage />} />
-            <Route path="/marketplace" element={<MarketplacePage />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-            
-            {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/cart" element={
-              <ProtectedRoute>
-                <CartPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/podcast" element={
-              <ProtectedRoute>
-                <PodcastPage />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/form" element={<FormPage />} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-      
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthWrapper>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/benfek" element={<BenfekHomepage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/quiz" element={<QuizPage />} />
+                <Route path="/auth/*" element={<AuthPage />} />
+                <Route path="/support" element={<SupportPage />} />
+                <Route path="/blog/:id" element={<BlogPage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
+                
+                {/* Benfek Routes */}
+                <Route path="/benfek" element={
+                  <ProtectedRoute requiredRole="benfek">
+                    <BenfekHomepage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/benfek/dashboard" element={
+                  <ProtectedRoute requiredRole="benfek">
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cart" element={
+                  <ProtectedRoute requiredRole="benfek">
+                    <CartPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/podcast" element={
+                  <ProtectedRoute requiredRole="benfek">
+                    <PodcastPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Principal Routes */}
+                <Route path="/principal" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <PrincipalHomepage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/account" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <AccountPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/earnings" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <EarningsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/withdraw" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <WithdrawPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/benfeks" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <BenfeksPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/purchases" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <PurchasesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/add-benfek" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <AddBenfekPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/supplements" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <SupplementsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/articles" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <ArticlesPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/podcasts" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <PodcastsPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Wholesaler Routes */}
+                <Route path="/wholesaler" element={
+                  <ProtectedRoute requiredRole="wholesaler">
+                    <WholesalerHomepage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Legacy route redirect */}
+                <Route path="/dashboard" element={
+                  <ProtectedRoute requiredRole="principal">
+                    <PrincipalHomepage />
+                  </ProtectedRoute>
+                } />
+                
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </AuthWrapper>
+        </BrowserRouter>
+        
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

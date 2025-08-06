@@ -1,5 +1,5 @@
 
-import Homepage from './Homepage';
+import Homepage from '../Homepage';
 
 const Index = () => {
   return <Homepage />;

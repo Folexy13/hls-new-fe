@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useStore } from '../store/useStore';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,22 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-toastify';
-import { quizService } from '@/services/quizService';
-import doctor from '../images/bannerdoctor.png'
-import leftPill from '../images/leftPill.png';
-import rightPill from '../images/rightPill.png';
-import vitamins from '../images/vitamins.png'
-import vitamins2 from '../images/vitamins2.png'
-import vitamins3 from '../images/vitamins3.png'
-import vitamins4 from '../images/vitamins4.png'
-import patient from '../images/patient.jpg'
-import bose from '../images/avwenagha-bose.jpg'
-import joy from '../images/joy.jpeg'
-import walter from '../images/walker-okolie.jpg'
-import samson from '../images/samson-ojo.jpeg'
-import nick from '../images/nick-ozonuma.jpg'
-import eriscyl from '../images/ericsyl-john.jpg'
-import mimi from '../images/mimi-gloria.jpg'
+import doctor from '../../images/bannerdoctor.png'
+import leftPill from '../../images/leftPill.png';
+import rightPill from '../../images/rightPill.png';
+import vitamins from '../../images/vitamins.png'
+import vitamins2 from '../../images/vitamins2.png'
+import vitamins3 from '../../images/vitamins3.png'
+import vitamins4 from '../../images/vitamins4.png'
+import patient from '../../images/patient.jpg'
+import bose from '../../images/avwenagha-bose.jpg'
+import joy from '../../images/joy.jpeg'
+import walter from '../../images/walker-okolie.jpg'
+import samson from '../../images/samson-ojo.jpeg'
+import nick from '../../images/nick-ozonuma.jpg'
+import eriscyl from '../../images/ericsyl-john.jpg'
+import mimi from '../../images/mimi-gloria.jpg'
 
 import {
   Carousel,
@@ -31,10 +29,9 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from "../components/ui/carousel"
+} from "../../components/ui/carousel"
 
-const Homepage: React.FC = () => {
-  const { user, isAuthenticated } = useStore();
+const BenfekHomepage: React.FC = () => {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [code, setCode] = useState('');
@@ -45,28 +42,6 @@ const Homepage: React.FC = () => {
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
   const navigate = useNavigate();
-  
-  // Check if user is logged in and redirect to their role-specific homepage
-  useEffect(() => {
-    if (isAuthenticated && user?.role) {
-      if (user.role === 'principal') {
-        navigate('/principal');
-      } else if (user.role === 'wholesaler') {
-        navigate('/wholesaler');
-      } else if (user.role === 'benfek') {
-        navigate('/benfek');
-      }
-    }
-    
-    // Check if we should show the quiz modal (set by QuizPage)
-    const showQuizModal = window.sessionStorage.getItem('showQuizModal');
-    if (showQuizModal === 'true') {
-      setShowQuizModal(true);
-      setShowCodeDialog(true);
-      window.sessionStorage.removeItem('showQuizModal');
-    }
-  }, [isAuthenticated, user, navigate]);
-  
   const handleCodeSubmit = () => {
     if (code === '12345') {
       setShowCodeDialog(false);
@@ -105,11 +80,10 @@ const Homepage: React.FC = () => {
     if (nutrientStep > 0) setNutrientStep(nutrientStep - 1);
   };
 
-  const handleNutrientSubmit = async (e: React.FormEvent) => {
+  const handleNutrientSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Map data to API structure
-    const payload = {
-      code: '12345',
+    // Log output as requested
+    const output = {
       basic,
       lifestyle: {
         ...lifestyle,
@@ -122,16 +96,11 @@ const Homepage: React.FC = () => {
         drugForm: preference.drugForm.join(','),
       },
     };
-    
-    try {
-      await quizService.submitQuizData(payload);
-      toast.success('Quiz completed and data submitted successfully!');
-      setShowNutrientForm(false);
-      setShowSuccessModal(true);
-    } catch (error: unknown) {
-      toast.error('Failed to submit quiz data. Please try again.');
-      console.error(error);
-    }
+    // eslint-disable-next-line no-console
+    console.log('Nutrient Assessment Output:', output);
+    setShowNutrientForm(false);
+    setShowSuccessModal(true);
+    // TODO: redirect to signup page after a delay or on button click
   };
 
   const handleQuizStart = () => {
@@ -297,8 +266,130 @@ const Homepage: React.FC = () => {
     },
   ];
 
+  // Benfek-specific dashboard stats
+  const dashboardStats = [
+    {
+      title: "Health Score",
+      value: "85/100",
+      icon: CheckCircle,
+      change: "+5%",
+      color: "bg-green-500"
+    },
+    {
+      title: "Supplements",
+      value: "4",
+      icon: Package,
+      change: "Active",
+      color: "bg-blue-500"
+    },
+    {
+      title: "Next Delivery",
+      value: "3 days",
+      icon: Truck,
+      change: "On time",
+      color: "bg-purple-500"
+    },
+    {
+      title: "Rewards",
+      value: "₦12,500",
+      icon: Gift,
+      change: "Available",
+      color: "bg-orange-500"
+    }
+  ];
+
   return (
     <div className="min-h-screen">
+      {/* Benfek Dashboard Section */}
+      <section className="bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Your Health Dashboard</h1>
+            <p className="text-gray-600 mt-2">Welcome back! Here's your personalized health overview.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {dashboardStats.map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-2 rounded-lg ${stat.color}`}>
+                      <stat.icon className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-green-600">{stat.change}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-medium text-gray-500">{stat.title}</h3>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Supplement Plan</CardTitle>
+                <CardDescription>Current supplements in your personalized plan</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { name: "Vitamin D3 Complex", dosage: "1 tablet daily", time: "Morning", status: "Active" },
+                    { name: "Omega-3 Fish Oil", dosage: "2 capsules daily", time: "With meals", status: "Active" },
+                    { name: "Magnesium Glycinate", dosage: "1 tablet", time: "Evening", status: "Active" },
+                    { name: "Zinc + Vitamin C", dosage: "1 tablet", time: "Morning", status: "Active" }
+                  ].map((supplement, i) => (
+                    <div key={i} className="flex items-center justify-between border-b pb-3">
+                      <div>
+                        <p className="font-medium">{supplement.name}</p>
+                        <p className="text-sm text-gray-500">{supplement.dosage} • {supplement.time}</p>
+                      </div>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        {supplement.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full">
+                  View Full Plan
+                </Button>
+              </CardFooter>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Health Insights</CardTitle>
+                <CardDescription>Personalized recommendations based on your profile</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { title: "Increase Vitamin D intake", description: "Your recent assessment shows slightly low Vitamin D levels." },
+                    { title: "Consider adding Zinc", description: "Based on your lifestyle, Zinc may help support your immune system." },
+                    { title: "Hydration reminder", description: "Remember to drink at least 2 liters of water daily." },
+                    { title: "Sleep optimization", description: "Your sleep pattern indicates you could benefit from magnesium before bed." }
+                  ].map((insight, i) => (
+                    <div key={i} className="border-b pb-3">
+                      <p className="font-medium">{insight.title}</p>
+                      <p className="text-sm text-gray-500">{insight.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" className="w-full">
+                  View All Insights
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </section>
+      
       {/* Hero Section */}
       <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Content Container */}
@@ -734,4 +825,4 @@ const Homepage: React.FC = () => {
   );
 };
 
-export default Homepage;
+export default BenfekHomepage;
