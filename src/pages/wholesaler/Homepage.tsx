@@ -1,441 +1,285 @@
-
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, Package, ShoppingCart, Plus, Eye } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'react-toastify';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import doctor from '../../images/bannerdoctor.png'
-import leftPill from '../../images/leftPill.png';
-import rightPill from '../../images/rightPill.png';
-import vitamins from '../../images/vitamins.png'
-import vitamins2 from '../../images/vitamins2.png'
-import vitamins3 from '../../images/vitamins3.png'
-import vitamins4 from '../../images/vitamins4.png'
-
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "../../components/ui/carousel"
-import { quizService } from '@/services/quizService';
+  TrendingUp, DollarSign, Package, ShoppingCart,
+  Pill, CreditCard, Activity, Calendar, Bell, Settings,
+  Plus, Users, BarChart2
+} from 'lucide-react';
+
+// Mock data for dashboard stats
+const dashboardStats = [
+  { title: 'Total Earnings', value: '₦850,000', icon: <DollarSign className="h-5 w-5" />, change: '+12%', color: 'bg-emerald-500' },
+  { title: 'Active Products', value: '24', icon: <Pill className="h-5 w-5" />, change: '+5%', color: 'bg-blue-500' },
+  { title: 'Total Orders', value: '156', icon: <ShoppingCart className="h-5 w-5" />, change: '+18%', color: 'bg-purple-500' },
+  { title: 'Commission Rate', value: '15%', icon: <TrendingUp className="h-5 w-5" />, change: '+2%', color: 'bg-amber-500' },
+];
+
+// Mock data for recent activities
+const recentActivities = [
+  { id: 1, action: 'New order received', product: 'Paracetamol 500mg', time: '2 hours ago', icon: <ShoppingCart className="h-4 w-4 text-blue-500" /> },
+  { id: 2, action: 'Product approved', product: 'Vitamin C 1000mg', time: '4 hours ago', icon: <Pill className="h-4 w-4 text-emerald-500" /> },
+  { id: 3, action: 'Commission paid', amount: '₦25,000', time: 'Yesterday', icon: <CreditCard className="h-4 w-4 text-purple-500" /> },
+  { id: 4, action: 'New product added', product: 'Ibuprofen 400mg', time: 'Yesterday', icon: <Plus className="h-4 w-4 text-amber-500" /> },
+];
+
+// Mock data for top selling products with local image placeholders
+const topSellingProducts = [
+  { id: 1, name: 'Paracetamol 500mg', sales: 245, revenue: '₦122,500', color: 'bg-blue-500', letter: 'P' },
+  { id: 2, name: 'Vitamin C 1000mg', sales: 189, revenue: '₦94,500', color: 'bg-green-500', letter: 'V' },
+  { id: 3, name: 'Ibuprofen 400mg', sales: 156, revenue: '₦78,000', color: 'bg-orange-500', letter: 'I' },
+  { id: 4, name: 'Amoxicillin 250mg', sales: 132, revenue: '₦66,000', color: 'bg-purple-500', letter: 'A' },
+  { id: 5, name: 'Multivitamin Complex', sales: 98, revenue: '₦49,000', color: 'bg-red-500', letter: 'M' },
+];
 
 const WholesalerHomepage: React.FC = () => {
-  const [showQuizModal, setShowQuizModal] = useState(false);
-  const [showCodeDialog, setShowCodeDialog] = useState(false);
-  const [code, setCode] = useState('');
-  const [showNutrientForm, setShowNutrientForm] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [nutrientStep, setNutrientStep] = useState(0); // 0: Basic, 1: Lifestyle, 2: Preference
-  const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
-  const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
-  const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
-  const navigate = useNavigate();
-  
-  const handleCodeSubmit = () => {
-    if (code === '12345') {
-      setShowCodeDialog(false);
-      setShowNutrientForm(true);
-      setNutrientStep(0);
-      toast.success('Code verified! Please fill out the nutrient form.');
-    } else {
-      toast.error('Invalid code. Please try again.');
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentStat, setCurrentStat] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleNutrientNext = () => {
-    // Validate current step
-    if (nutrientStep === 0) {
-      if (!basic.gender || !basic.age || !basic.weight || !basic.height) {
-        toast.error('Please fill all required basic fields.');
-        return;
-      }
-    }
-    if (nutrientStep === 1) {
-      if (!lifestyle.career) {
-        toast.error('Please fill all required lifestyle fields.');
-        return;
-      }
-    }
-    if (nutrientStep === 2) {
-      if (!preference.minBudget || !preference.maxBudget) {
-        toast.error('Please fill all required preference fields.');
-        return;
-      }
-    }
-    if (nutrientStep < 2) setNutrientStep(nutrientStep + 1);
-  };
+  // Simulate loading for demonstration
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleNutrientBack = () => {
-    if (nutrientStep > 0) setNutrientStep(nutrientStep - 1);
-  };
-
-  const handleNutrientSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Map data to API structure
-    const payload = {
-      code: '12345',
-      basic,
-      lifestyle: {
-        ...lifestyle,
-        habit: lifestyle.habit.join(','),
-        fun: lifestyle.fun.join(','),
-        routine: lifestyle.routine.join(','),
-      },
-      preference: {
-        ...preference,
-        drugForm: preference.drugForm.join(','),
-      },
+  // Responsive check for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 640);
     };
-    
-    try {
-      await quizService.submitQuizData(payload);
-      toast.success('Quiz completed and data submitted successfully!');
-      setShowNutrientForm(false);
-      setShowSuccessModal(true);
-    } catch (error: unknown) {
-      toast.error('Failed to submit quiz data. Please try again.');
-      console.error(error);
-    }
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handlePrevStat = () => {
+    setCurrentStat((prev) => (prev === 0 ? dashboardStats.length - 1 : prev - 1));
   };
-
-  const handleQuizStart = () => {
-    setShowQuizModal(true);
-    setShowCodeDialog(true);
+  
+  const handleNextStat = () => {
+    setCurrentStat((prev) => (prev === dashboardStats.length - 1 ? 0 : prev + 1));
   };
-
-  // Wholesaler-specific dashboard stats
-  const dashboardStats = [
-    {
-      title: "Total Orders",
-      value: "342",
-      icon: ShoppingCart,
-      change: "+8%",
-      color: "bg-blue-500"
-    },
-    {
-      title: "Inventory Items",
-      value: "128",
-      icon: Package,
-      change: "+12%",
-      color: "bg-green-500"
-    },
-    {
-      title: "Revenue",
-      value: "₦8.2M",
-      icon: Banknote,
-      change: "+15%",
-      color: "bg-purple-500"
-    },
-    {
-      title: "Benfeks Served",
-      value: "876",
-      icon: Users,
-      change: "+22%",
-      color: "bg-orange-500"
-    }
-  ];
-
-  // Sample inventory data
-  const inventoryItems = [
-    { id: 1, name: "Vitamin D3 Complex", stock: 124, price: 14999, status: "In Stock" },
-    { id: 2, name: "Omega-3 Fish Oil", stock: 86, price: 17499, status: "In Stock" },
-    { id: 3, name: "Magnesium Glycinate", stock: 12, price: 12499, status: "Low Stock" },
-    { id: 4, name: "Whey Protein Isolate", stock: 0, price: 24999, status: "Out of Stock" },
-    { id: 5, name: "Zinc + Vitamin C", stock: 45, price: 9999, status: "In Stock" }
-  ];
 
   return (
-    <div className="min-h-screen">
-      {/* Wholesaler Dashboard Section */}
-      <section className="bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Wholesaler Dashboard</h1>
-            <p className="text-gray-600 mt-2">Manage your inventory and track your sales.</p>
+    <div className="min-h-screen bg-gray-50 pb-16">
+      {/* Dashboard Header */}
+      <div className="bg-emerald-600 border-b relative">
+        {/* Mobile: Settings and Notifications at corners */}
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-center md:hidden z-10">
+          <Button variant="ghost" size="icon" className="text-white">
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white">
+            <Bell className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pt-14 md:pt-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="text-left w-full">
+              <h1 className="text-3xl font-bold text-white text-center md:text-left">Wholesaler Dashboard</h1>
+              <p className="mt-1 text-lg text-emerald-100 text-center md:text-left">Welcome back, Wholesaler</p>
+            </div>
+            <div className="mt-3 md:mt-0 flex space-x-3 w-full md:w-auto justify-center md:justify-end hidden md:flex">
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white text-emerald-700 hover:bg-emerald-50 border-none">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Notifications</span>
+              </Button>
+              <Button variant="secondary" size="sm" className="flex items-center gap-2 bg-white text-emerald-700 hover:bg-emerald-50 border-none">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+            </div>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {dashboardStats.map((stat, index) => (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-2 rounded-lg ${stat.color}`}>
-                      <stat.icon className="h-6 w-6 text-white" />
+          <div className="block md:hidden h-2" />
+
+          {/* Stats Cards inside header */}
+          <div className="mt-10">
+            {/* Desktop: show all stats in a row */}
+            <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {isLoading ? (
+                Array(4).fill(0).map((_, index) => (
+                  <Card key={index} className="p-6">
+                    <div className="h-7 w-1/2 mb-2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-9 w-1/3 mb-2 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-5 w-1/4 bg-gray-200 rounded animate-pulse" />
+                  </Card>
+                ))
+              ) : (
+                dashboardStats.map((stat, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-4 p-6 bg-white rounded-xl shadow-md border border-gray-100 transition-transform hover:scale-105 hover:shadow-lg min-h-[110px]"
+                  >
+                    <div className={`flex items-center justify-center w-12 h-12 rounded-full ${stat.color} bg-opacity-20`}>
+                      <span className={`text-xl ${stat.color} flex items-center`}>{stat.icon}</span>
                     </div>
-                    <span className="text-sm font-medium text-green-600">{stat.change}</span>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-medium text-gray-500">{stat.title}</h3>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Inventory Management</CardTitle>
-                  <CardDescription>Monitor stock levels and product availability</CardDescription>
-                </div>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-gray-500">Product</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-500">Stock</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-500">Price</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                        <th className="text-right py-3 px-4 font-medium text-gray-500">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {inventoryItems.map((item) => (
-                        <tr key={item.id} className="border-b">
-                          <td className="py-3 px-4">{item.name}</td>
-                          <td className="py-3 px-4">{item.stock}</td>
-                          <td className="py-3 px-4">₦{item.price.toLocaleString()}</td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              item.status === "In Stock" ? "bg-green-100 text-green-800" :
-                              item.status === "Low Stock" ? "bg-yellow-100 text-yellow-800" :
-                              "bg-red-100 text-red-800"
-                            }`}>
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" size="sm">Previous</Button>
-                <Button variant="outline" size="sm">Next</Button>
-              </CardFooter>
-            </Card>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-                <CardDescription>Latest orders from beneficiaries</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((_, i) => (
-                    <div key={i} className="flex items-center justify-between border-b pb-3">
-                      <div>
-                        <p className="font-medium">Order #{1000 + i}</p>
-                        <p className="text-sm text-gray-500">3 items • ₦{(12500 + i * 1000).toLocaleString()}</p>
-                      </div>
-                      <Button variant="outline" size="sm">Process</Button>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-500 mb-1">{stat.title}</p>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+                      <p className="text-xs font-medium text-emerald-600 flex items-center">
+                        <TrendingUp className="h-3 w-3 mr-1 text-emerald-600" />
+                        {stat.change} from last month
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                ))
+              )}
+            </div>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Customers</CardTitle>
-                <CardDescription>Beneficiaries with highest order value</CardDescription>
-              </CardHeader>
-              <CardContent>
+            {/* Mobile: show one stat with arrows */}
+            <div className="sm:hidden flex items-center justify-center gap-2">
+              <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handlePrevStat} aria-label="Previous Stat">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Button>
+              {isLoading ? (
+                <Card className="p-6 w-64">
+                  <div className="h-7 w-1/2 mb-2 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-9 w-1/3 mb-2 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 w-1/4 bg-gray-200 rounded animate-pulse" />
+                </Card>
+              ) : (
+                <div className="flex items-center gap-4 p-6 w-64 bg-white rounded-xl shadow-md border border-gray-100 min-h-[110px]">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full ${dashboardStats[currentStat].color} bg-opacity-20`}>
+                    <span className={`text-xl ${dashboardStats[currentStat].color} flex items-center`}>{dashboardStats[currentStat].icon}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-500 mb-1">{dashboardStats[currentStat].title}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-1">{dashboardStats[currentStat].value}</h3>
+                    <p className="text-xs font-medium text-emerald-600 flex items-center">
+                      <TrendingUp className="h-3 w-3 mr-1 text-emerald-600" />
+                      {dashboardStats[currentStat].change} from last month
+                    </p>
+                  </div>
+                </div>
+              )}
+              <Button size="icon" variant="secondary" className="bg-white text-emerald-700 border-none" onClick={handleNextStat} aria-label="Next Stat">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Top Selling Products */}
+          <div className="lg:col-span-2">
+            <Card className="overflow-hidden">
+              <div className="p-6 bg-white border-b flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <BarChart2 className="h-5 w-5 text-blue-500" />
+                  <h2 className="text-lg font-semibold text-gray-900">Top Selling Products</h2>
+                </div>
+              </div>
+              <div className="p-6">
                 <div className="space-y-4">
-                  {[
-                    { name: "John Doe", orders: 12, value: 145000 },
-                    { name: "Jane Smith", orders: 8, value: 120000 },
-                    { name: "Robert Johnson", orders: 6, value: 98000 },
-                    { name: "Emily Davis", orders: 5, value: 85000 },
-                    { name: "Michael Brown", orders: 4, value: 72000 }
-                  ].map((customer, i) => (
-                    <div key={i} className="flex items-center justify-between border-b pb-3">
-                      <div>
-                        <p className="font-medium">{customer.name}</p>
-                        <p className="text-sm text-gray-500">{customer.orders} orders</p>
+                  {topSellingProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-10 h-10 rounded flex items-center justify-center text-white font-bold ${product.color}`}>
+                          {product.letter}
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-gray-900">{product.name}</h3>
+                          <p className="text-sm text-gray-500">{product.sales} units sold</p>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₦{customer.value.toLocaleString()}</p>
-                        <p className="text-xs text-gray-500">Lifetime value</p>
+                        <p className="font-medium text-gray-900">{product.revenue}</p>
+                        <p className="text-sm text-gray-500">Revenue</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Quiz Modal */}
-      <Dialog open={showQuizModal} onOpenChange={setShowQuizModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Health Assessment Quiz</DialogTitle>
-            <DialogDescription>Enter your quiz code to begin the assessment</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile footer */}
+      <footer className="fixed bottom-0 left-0 w-full bg-white border-t shadow-lg z-50 md:hidden">
+        <div className="flex flex-col items-center py-2">
+          <span className="text-xs text-gray-500 flex items-center gap-1">
+            <Package className="h-4 w-4 text-emerald-600" />
+            Wholesaler Dashboard
+          </span>
+        </div>
+      </footer>
 
-      {/* Code Dialog */}
-      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter Quiz Code</DialogTitle>
-            <DialogDescription>Please enter your unique quiz code to proceed</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Enter quiz code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <Button onClick={handleCodeSubmit} className="w-full">
-              Verify Code
-            </Button>
+      {/* FAB for Recent Activities (mobile only) */}
+      <button
+        className="fixed bottom-20 right-5 z-50 md:hidden bg-emerald-600 text-white rounded-full shadow-lg w-14 h-14 flex items-center justify-center active:scale-95 transition-all"
+        onClick={() => setDrawerOpen(true)}
+        aria-label="Show Recent Activities"
+      >
+        <Bell className="h-7 w-7" />
+      </button>
+
+      {/* Drawer/modal for full recent activity section */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:hidden">
+          <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setDrawerOpen(false)} />
+          <div className="relative w-full bg-white rounded-t-2xl shadow-lg max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center px-4 pt-4 pb-2 border-b">
+              <span className="font-semibold text-lg text-gray-900 flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-emerald-600" />
+                Recent Activity
+              </span>
+              <button onClick={() => setDrawerOpen(false)} className="text-gray-500 text-2xl font-bold">&times;</button>
+            </div>
+            <div className="divide-y">
+              {isLoading ? (
+                Array(4).fill(0).map((_, index) => (
+                  <div key={index} className="p-4 flex items-start space-x-3">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+                    <div className="flex-1">
+                      <div className="h-4 w-3/4 mb-2 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 w-1/2 bg-gray-200 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                recentActivities.map((activity) => (
+                  <div key={activity.id} className="p-4 hover:bg-gray-50">
+                    <div className="flex items-start space-x-3">
+                      <div className="bg-gray-100 p-2 rounded-full">
+                        {activity.icon}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {activity.product && <span className="font-medium">{activity.product}</span>}
+                          {activity.amount && <span className="font-medium">{activity.amount}</span>}
+                          {' • '}{activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="p-4 bg-gray-50 border-t">
+              <Button variant="link" className="w-full text-sm text-emerald-600" onClick={() => setDrawerOpen(false)}>
+                Close
+              </Button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Nutrient Form Modal - Multi-step */}
-      <Dialog open={showNutrientForm} onOpenChange={setShowNutrientForm}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nutrient Assessment Form</DialogTitle>
-            <DialogDescription>Fill out each section. Click Next to continue.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleNutrientSubmit} className="space-y-4">
-            {/* Step 1: Basic */}
-            {nutrientStep === 0 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Gender</Label>
-                    <Select value={basic.gender} onValueChange={v => setBasic(b => ({ ...b, gender: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Nickname (optional)</Label>
-                    <Input value={basic.nickname} onChange={e => setBasic(b => ({ ...b, nickname: e.target.value }))} placeholder="Nickname" />
-                  </div>
-                  <div>
-                    <Label>Age</Label>
-                    <Input type="number" value={basic.age} onChange={e => setBasic(b => ({ ...b, age: e.target.value }))} placeholder="Enter your age" />
-                  </div>
-                  <div>
-                    <Label>Weight (kg)</Label>
-                    <Input type="number" value={basic.weight} onChange={e => setBasic(b => ({ ...b, weight: e.target.value }))} placeholder="Enter weight" />
-                  </div>
-                  <div>
-                    <Label>Height (cm)</Label>
-                    <Input type="number" value={basic.height} onChange={e => setBasic(b => ({ ...b, height: e.target.value }))} placeholder="Enter height" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
-                </div>
-              </div>
-            )}
-            {/* Step 2: Lifestyle */}
-            {nutrientStep === 1 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Habit (comma separated)</Label>
-                    <Input value={lifestyle.habit.join(',')} onChange={e => setLifestyle(l => ({ ...l, habit: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. running, yoga" />
-                  </div>
-                  <div>
-                    <Label>Fun (comma separated)</Label>
-                    <Input value={lifestyle.fun.join(',')} onChange={e => setLifestyle(l => ({ ...l, fun: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. reading, music" />
-                  </div>
-                  <div>
-                    <Label>Routine (comma separated)</Label>
-                    <Input value={lifestyle.routine.join(',')} onChange={e => setLifestyle(l => ({ ...l, routine: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. morning, night" />
-                  </div>
-                  <div>
-                    <Label>Career</Label>
-                    <Input value={lifestyle.career} onChange={e => setLifestyle(l => ({ ...l, career: e.target.value }))} placeholder="e.g. developer" />
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
-                </div>
-              </div>
-            )}
-            {/* Step 3: Preference */}
-            {nutrientStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Drug Form (comma separated)</Label>
-                    <Input value={preference.drugForm.join(',')} onChange={e => setPreference(p => ({ ...p, drugForm: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. tablet, capsule" />
-                  </div>
-                  <div>
-                    <Label>Min Budget</Label>
-                    <Input type="number" value={preference.minBudget} onChange={e => setPreference(p => ({ ...p, minBudget: e.target.value }))} placeholder="e.g. 1000" />
-                  </div>
-                  <div>
-                    <Label>Max Budget</Label>
-                    <Input type="number" value={preference.maxBudget} onChange={e => setPreference(p => ({ ...p, maxBudget: e.target.value }))} placeholder="e.g. 5000" />
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
-                  <Button type="submit">Submit</Button>
-                </div>
-              </div>
-            )}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assessment Complete!</DialogTitle>
-            <DialogDescription>
-              Your health assessment has been completed successfully. You can now proceed to create your account.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => navigate("/auth/signup")} className="w-full">
-            Continue to Sign Up
-          </Button>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 };
 
-export default WholesalerHomepage;
+export default WholesalerHomepage; 
