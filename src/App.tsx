@@ -15,6 +15,7 @@ import Homepage from "./pages/Homepage";
 import BenfekHomepage from "./pages/benfek/Homepage";
 import AboutPage from "./pages/benfek/AboutPage";
 import QuizPage from "./pages/benfek/QuizPage";
+import AssessmentPage from "./pages/AssessmentPage";
 import AuthPage from "./pages/AuthPage";
 import SupportPage from "./pages/benfek/SupportPage";
 import Dashboard from "./pages/benfek/Dashboard";
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/benfek" element={<BenfekHomepage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/quiz" element={<QuizPage />} />
+                <Route path="/assessment" element={<AssessmentPage />} />
                 <Route path="/auth/*" element={<AuthPage />} />
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/blog/:id" element={<BlogPage />} />

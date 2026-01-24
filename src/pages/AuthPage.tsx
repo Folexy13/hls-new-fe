@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useStore } from '../store/useStore';
 import { toast } from 'react-toastify';
 import { authService } from '../services/authService';
-import { apiClient } from '../config/axios';
+import SignUpSelectPage from './auth/SignUpSelectPage';
+import SignUpBenfekPage from './auth/SignUpBenfekPage';
+import SignUpPrincipalPage from './auth/SignUpPrincipalPage';
+import SignUpWholesalerPage from './auth/SignUpWholesalerPage';
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
@@ -86,9 +90,8 @@ const SignInPage = () => {
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
@@ -281,15 +284,26 @@ const ForgotPasswordPage = () => {
 
 const AuthPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 lg:py-4">
-      <div className="w-full max-w-md">
-        <Routes>
-          <Route path="signin" element={<SignInPage />} />
-          <Route path="signup" element={<SignUpPage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-        </Routes>
-      </div>
-    </div>
+    <Routes>
+      <Route path="signin" element={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 lg:py-4">
+          <div className="w-full max-w-md">
+            <SignInPage />
+          </div>
+        </div>
+      } />
+      <Route path="signup" element={<SignUpSelectPage />} />
+      <Route path="signup/benfek" element={<SignUpBenfekPage />} />
+      <Route path="signup/principal" element={<SignUpPrincipalPage />} />
+      <Route path="signup/wholesaler" element={<SignUpWholesalerPage />} />
+      <Route path="forgot-password" element={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 lg:py-4">
+          <div className="w-full max-w-md">
+            <ForgotPasswordPage />
+          </div>
+        </div>
+      } />
+    </Routes>
   );
 };
 

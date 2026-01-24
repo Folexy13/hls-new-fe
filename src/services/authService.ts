@@ -10,6 +10,7 @@ export interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
+  role?: 'benfek' | 'principal' | 'wholesaler';
 }
 
 export interface AuthResponse {
