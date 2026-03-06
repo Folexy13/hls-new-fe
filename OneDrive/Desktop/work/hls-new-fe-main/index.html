@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HLS - Health & Wellness Platform</title>
+    <meta name="description" content="Your complete health and wellness companion with personalized nutrition and supplements" />
+    <meta name="author" content="HLS Platform" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#10b981" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="HLS" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/placeholder.svg" />
+
+    <!-- Social Meta Tags -->
+    <meta property="og:title" content="HLS - Health & Wellness Platform" />
+    <meta property="og:description" content="Your complete health and wellness companion with personalized nutrition and supplements" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/placeholder.svg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="HLS - Health & Wellness Platform" />
+    <meta name="twitter:description" content="Your complete health and wellness companion" />
+    <meta name="twitter:image" content="/placeholder.svg" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script> -->
+  </body>
+</html>

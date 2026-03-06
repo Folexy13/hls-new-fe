@@ -1,0 +1,201 @@
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { tokenManager } from '../utils/tokenManager';
+import { cartService } from '../services/cartService';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  nutrientType?: string;
+  isAuthenticated: boolean;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  description: string;
+  category: 'vitamin' | 'mineral' | 'protein' | 'supplement';
+}
+
+export interface CartItem extends Product {
+  quantity: number;
+}
+
+export interface QuizData {
+  age: number;
+  gender: 'male' | 'female' | 'other';
+  activityLevel: 'low' | 'moderate' | 'high';
+  healthGoals: string[];
+  dietaryRestrictions: string[];
+  nutrientType: string;
+}
+
+interface StoreState {
+  // Auth
+  user: User | null;
+  isAuthenticated: boolean;
+  
+  // Quiz
+  quizData: QuizData | null;
+  quizCompleted: boolean;
+  
+  // Cart
+  cartItems: CartItem[];
+  cartTotal: number;
+  
+  // UI
+  sidebarOpen: boolean;
+  currentTab: string;
+  
+  // Actions
+  setUser: (user: User) => void;
+  login: (user: User, accessToken: string, refreshToken: string) => void;
+  logout: () => void;
+  setQuizData: (data: QuizData) => void;
+  addToCart: (product: Product) => void;
+  removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  setSidebarOpen: (open: boolean) => void;
+  setCurrentTab: (tab: string) => void;
+  setCartFromBackend: (items: CartItem[]) => void;
+}
+
+export const useStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      user: null,
+      isAuthenticated: false,
+      quizData: null,
+      quizCompleted: false,
+      cartItems: [],
+      cartTotal: 0,
+      sidebarOpen: false,
+      currentTab: 'overview',
+
+      // Actions
+      setUser: (user) =>
+        set({ user, isAuthenticated: true }),
+
+      login: (user, accessToken, refreshToken) => {
+        console.log('User logged in:', user);
+        console.log('Access Token:', accessToken);  
+        tokenManager.setTokens(accessToken, refreshToken);
+        set({ user, isAuthenticated: true });
+      },
+
+      logout: () => {
+        const refreshToken = tokenManager.getRefreshToken();
+        if (refreshToken) {
+          // Fire and forget logout request
+          import('../services/authService').then(({ authService }) => {
+            authService.logout(refreshToken).catch(console.error);
+          });
+        }
+        tokenManager.clearTokens();
+        set({ 
+          user: null, 
+          isAuthenticated: false, 
+          cartItems: [], 
+          cartTotal: 0 
+        });
+      },
+
+      setQuizData: (data) =>
+        set({ quizData: data, quizCompleted: true }),
+
+      addToCart: async (product) => {
+        try {
+          await cartService.addItemToCart(Number(product.id), 1);
+          set((state) => {
+            const existingItem = state.cartItems.find(item => item.id === product.id);
+            let newCartItems;
+            if (existingItem) {
+              newCartItems = state.cartItems.map(item =>
+                item.id === product.id
+                  ? { ...item, quantity: item.quantity + 1 }
+                  : item
+              );
+            } else {
+              newCartItems = [...state.cartItems, { ...product, quantity: 1 }];
+            }
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to add item to cart:', error);
+        }
+      },
+
+      removeFromCart: async (productId) => {
+        try {
+          await cartService.removeCartItem(Number(productId));
+          set((state) => {
+            const newCartItems = state.cartItems.filter(item => item.id !== productId);
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to remove item from cart:', error);
+        }
+      },
+
+      updateCartQuantity: async (productId: string, quantity: number) => {
+        // Find the cart item to get its numeric id (API expects number)
+        const state = get();
+        const item = state.cartItems.find(item => item.id === productId);
+        if (!item) return;
+        try {
+          await cartService.updateCartItem(Number(productId), quantity);
+          set((state) => {
+            const newCartItems = state.cartItems.map(item =>
+              item.id === productId ? { ...item, quantity } : item
+            );
+            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            return { cartItems: newCartItems, cartTotal };
+          });
+        } catch (error) {
+          console.error('Failed to update cart item quantity:', error);
+          // Optionally, show a toast or error message here
+        }
+      },
+
+      clearCart: async () => {
+        try {
+          await cartService.clearCart();
+          set({ cartItems: [], cartTotal: 0 });
+        } catch (error) {
+          console.error('Failed to clear cart:', error);
+        }
+      },
+
+      setSidebarOpen: (open) =>
+        set({ sidebarOpen: open }),
+
+      setCurrentTab: (tab) =>
+        set({ currentTab: tab }),
+
+      setCartFromBackend: (items) => set({
+        cartItems: items,
+        cartTotal: items.reduce((total, item) => total + (item.price * item.quantity), 0)
+      }),
+    }),
+    {
+      name: 'hls-storage',
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+        quizData: state.quizData,
+        quizCompleted: state.quizCompleted,
+        cartItems: state.cartItems,
+        cartTotal: state.cartTotal,
+      }),
+    }
+  )
+);
