@@ -255,7 +255,7 @@ const AboutPage: React.FC = () => {
               }}
               className="w-full"
             >
-              <CarouselContent className="-ml-2 md:-ml-4">
+              <CarouselContent className="-ml-2 md:-ml-0">
                 {stakeholders.map((stakeholder, index) => (
                   <CarouselItem key={index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
                     <Card className="group overflow-hidden hover:shadow-2xl transition-all duration-500 border-0 bg-white h-full">
@@ -327,7 +327,7 @@ const AboutPage: React.FC = () => {
               }}
               className="w-full"
             >
-              <CarouselContent className="-ml-2 md:-ml-4">
+              <CarouselContent className="-ml-2 md:-ml-0">
                 {testimonials.map((testimonial, index) => (
                   <CarouselItem key={index} className="pl-2 md:pl-4 basis-full md:basis-1/2">
                     <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 transition-all duration-300 h-full">

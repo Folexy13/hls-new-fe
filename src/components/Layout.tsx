@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut } from 'lucide-react';
@@ -25,6 +25,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     logout();
     setMobileMenuOpen(false);
   };
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [location.pathname, location.hash]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,33 +72,31 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/'
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${location.pathname === '/'
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'text-gray-600 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <Home className="h-5 w-5 mr-3" />
                 Home
               </Link>
-              
+
               {/* Show other public navigation only for unauthenticated users */}
               {!isAuthenticated && navigation.slice(1).map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                    location.pathname === item.href
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${location.pathname === item.href
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <item.icon className="h-5 w-5 mr-3" />
                   {item.name}
                 </Link>
               ))}
-              
+
               {isAuthenticated && (
                 <>
                   <hr className="my-2" />
@@ -97,11 +105,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       key={item.name}
                       to={item.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                        location.pathname === item.href
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${location.pathname === item.href
                           ? 'bg-emerald-100 text-emerald-700'
                           : 'text-gray-600 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       <item.icon className="h-5 w-5 mr-3" />
                       {item.name}
@@ -122,7 +129,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </button>
                 </>
               )}
-              
+
               {!isAuthenticated && (
                 <>
                   <hr className="my-2" />
@@ -147,44 +154,41 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <Link to="/">
               <img src={logo} alt="HLS Logo" className="h-10" />
             </Link>
-            
+
             <nav className="flex space-x-8">
               {/* Always show Home link */}
               <Link
                 to="/"
-                className={`text-sm font-medium transition-colors ${
-                  location.pathname === '/'
+                className={`text-sm font-medium transition-colors ${location.pathname === '/'
                     ? 'text-emerald-600'
                     : 'text-gray-600 hover:text-emerald-500'
-                }`}
+                  }`}
               >
                 Home
               </Link>
-              
+
               {/* Show navigation based on authentication status */}
               {!isAuthenticated && navigation.slice(1).map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`text-sm font-medium transition-colors ${
-                    location.pathname === item.href
+                  className={`text-sm font-medium transition-colors ${location.pathname === item.href
                       ? 'text-emerald-600'
                       : 'text-gray-600 hover:text-emerald-500'
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </Link>
               ))}
-              
+
               {isAuthenticated && privateNavigation.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`text-sm font-medium transition-colors relative ${
-                    location.pathname === item.href
+                  className={`text-sm font-medium transition-colors relative ${location.pathname === item.href
                       ? 'text-emerald-600'
                       : 'text-gray-600 hover:text-emerald-500'
-                  }`}
+                    }`}
                 >
                   {item.name}
                   {item.name === 'Cart' && cartItemCount > 0 && (
@@ -210,7 +214,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     Hi, {user?.name || 'User'}!
                     {userRole && <span className="ml-1 text-xs text-gray-500">({userRole})</span>}
                   </span>
-                  <Button 
+                  <Button
                     onClick={handleLogout}
                     variant="outline"
                     size="sm"
@@ -239,11 +243,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link
                 key={item.name}
                 to={item.href}
-                className={`flex flex-col items-center py-2 px-3 relative ${
-                  location.pathname === item.href
+                className={`flex flex-col items-center py-2 px-3 relative ${location.pathname === item.href
                     ? 'text-emerald-600'
                     : 'text-gray-600'
-                }`}
+                  }`}
               >
                 <item.icon className="h-6 w-6" />
                 <span className="text-xs mt-1">{item.name}</span>
