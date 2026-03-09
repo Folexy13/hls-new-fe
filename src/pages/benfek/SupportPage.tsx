@@ -62,7 +62,7 @@ const SupportPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Contact Form */}
-          <Card id="contact">
+          <Card>
             <CardHeader>
               <CardTitle>Contact Support</CardTitle>
               <CardDescription>Send us a message and we'll get back to you as soon as possible</CardDescription>
@@ -74,7 +74,7 @@ const SupportPage = () => {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Your full name"
                   />
                 </div>
@@ -84,13 +84,13 @@ const SupportPage = () => {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="Your email address"
                   />
                 </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
@@ -107,7 +107,7 @@ const SupportPage = () => {
                   <Input
                     id="subject"
                     value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
                     placeholder="Brief description of your issue"
                   />
                 </div>
@@ -116,7 +116,7 @@ const SupportPage = () => {
                   <Textarea
                     id="message"
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onChange={(e) => setFormData({...formData, message: e.target.value})}
                     placeholder="Describe your issue in detail"
                     rows={4}
                   />
@@ -185,7 +185,7 @@ const SupportPage = () => {
         </div>
 
         {/* FAQ Section */}
-        <Card id="faq">
+        <Card>
           <CardHeader>
             <CardTitle>Frequently Asked Questions</CardTitle>
             <CardDescription>Find quick answers to common questions</CardDescription>
@@ -199,55 +199,6 @@ const SupportPage = () => {
                 </AccordionItem>
               ))}
             </Accordion>
-          </CardContent>
-        </Card>
-      </div>
-      {/* Privacy Policy */}
-      <Card id="privacy" className="mt-8">
-        <CardHeader>
-          <CardTitle>Privacy Policy</CardTitle>
-          <CardDescription>How we handle your information</CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600 leading-relaxed space-y-3">
-          <p>
-            We use your information to deliver personalized recommendations and improve your experience.
-            Your data is protected and never sold.
-          </p>
-          <p>
-            If you need a full policy document, contact support and we’ll provide the latest version.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Connect */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <Card id="newsletter">
-          <CardHeader>
-            <CardTitle>Newsletter</CardTitle>
-            <CardDescription>Get wellness tips and updates</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-gray-600">
-            Subscribe to receive health insights, new products, and offers.
-          </CardContent>
-        </Card>
-
-        <Card id="social">
-          <CardHeader>
-            <CardTitle>Social Media</CardTitle>
-            <CardDescription>Follow us for daily tips</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-gray-600">
-            Connect with us on social platforms for bite-sized wellness guidance.
-          </CardContent>
-        </Card>
-
-        <Card id="community">
-          <CardHeader>
-            <CardTitle>Community</CardTitle>
-            <CardDescription>Join the conversation</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-gray-600">
-            Ask questions, share progress, and learn with others on the same journey.
           </CardContent>
         </Card>
       </div>
