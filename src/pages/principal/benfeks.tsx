@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Search, UserPlus, Filter, Download, MoreHorizontal,
-  ChevronDown, Eye, Edit, Trash2, ArrowUpDown,
+  ChevronDown, Eye, Edit, ArrowUpDown,
   Copy, CheckCircle
 } from 'lucide-react';
 
@@ -331,9 +331,7 @@ const BenfeksPage: React.FC = () => {
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          
                         </div>
                       </TableCell>
                     </TableRow>

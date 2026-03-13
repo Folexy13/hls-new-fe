@@ -55,6 +55,7 @@ import ResearcherAuthPage from "./pages/researcher/ResearcherAuthpage";
 import AuthSignupPage from "./pages/AuthsignupPage";
 import PrincipalSignupPage from "./pages/principal/principalSignupPage";
 import WholesalerSignupPage from "./pages/wholesaler/WholesalerSignupPage";
+import Users from "./pages/principal/users";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
                 <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
                 <Route path="/assessment" element={<AssessmentPage />} />
+                <Route path="/principal/users" element={<Users />} />
 
                 {/* Role-based protected routes */}
                 {/* Benfek Routes */}
@@ -181,6 +183,10 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
+                  <Route
+                  path="/principal/Homepage"
+                  element={<PrincipalHomepage />}
+                />
 
                 {/* Principal Account Route */}
                 <Route
@@ -228,13 +234,17 @@ const App = () => (
                   }
                 />
                 {/* Principal Medications Route */}
-                <Route
+                {/* <Route
                   path="/principal/medications"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <MedicationsPage />
                     </RoleBasedRoute>
                   }
+                /> */}
+                <Route
+                  path="/principal/medications"
+                  element={<MedicationsPage />}
                 />
 
                 {/* Principal Settings Route */}

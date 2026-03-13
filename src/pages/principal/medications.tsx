@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Table, TableBody, TableCaption, TableCell, 
-  TableHead, TableHeader, TableRow 
+import {
+  Table, TableBody, TableCaption, TableCell,
+  TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
-import { 
-  Pagination, PaginationContent, PaginationItem, 
-  PaginationLink, PaginationNext, PaginationPrevious 
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious
 } from '@/components/ui/pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,9 +47,9 @@ const mockMedications: Medication[] = Array(50).fill(0).map((_, i) => {
     'Atorvastatin', 'Lisinopril', 'Albuterol', 'Omeprazole',
     'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Gabapentin'
   ][Math.floor(Math.random() * 12)] + ` ${Math.floor(Math.random() * 500) + 100}mg`;
-  
+
   const category = ['Pain Relief', 'Antibiotics', 'Diabetes', 'Cardiovascular', 'Respiratory', 'Gastrointestinal'][Math.floor(Math.random() * 6)];
-  
+
   return {
     id: i + 1,
     name,
@@ -73,6 +73,7 @@ const MedicationsPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
+  const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
   const [newMedication, setNewMedication] = useState<Partial<Medication>>({
     name: '',
     category: '',
@@ -84,9 +85,9 @@ const MedicationsPage: React.FC = () => {
     image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med'
   });
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  
+
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockMedications.length / itemsPerPage);
+
 
   // Simulate loading data
   useEffect(() => {
@@ -95,7 +96,7 @@ const MedicationsPage: React.FC = () => {
       setMedications(mockMedications);
       setIsLoading(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -110,11 +111,23 @@ const MedicationsPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = medications.filter(medication => 
+  const filteredData = medications.filter(medication =>
     medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     medication.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  // Simulate loading data
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setMedications(mockMedications);
+      setIsLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Medication] < b[sortField as keyof Medication]) return sortDirection === 'asc' ? -1 : 1;
@@ -132,19 +145,19 @@ const MedicationsPage: React.FC = () => {
   const getPaginationItems = () => {
     const items = [];
     const maxVisiblePages = 5;
-    
+
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
     const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
+
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       items.push(
         <PaginationItem key={i}>
-          <PaginationLink 
-            onClick={() => setCurrentPage(i)} 
+          <PaginationLink
+            onClick={() => setCurrentPage(i)}
             isActive={currentPage === i}
           >
             {i}
@@ -152,7 +165,7 @@ const MedicationsPage: React.FC = () => {
         </PaginationItem>
       );
     }
-    
+
     return items;
   };
 
@@ -172,7 +185,7 @@ const MedicationsPage: React.FC = () => {
       default:
         bgColor = 'bg-gray-100 text-gray-800';
     }
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${bgColor}`}>
         {status}
@@ -202,26 +215,46 @@ const MedicationsPage: React.FC = () => {
 
   // Handle form submission
   const handleSubmit = () => {
-    // Create a new medication with a unique ID
-    const newId = Math.max(...medications.map(m => m.id), 0) + 1;
-    const medicationToAdd: Medication = {
-      id: newId,
-      name: newMedication.name || 'New Medication',
-      category: newMedication.category || 'Other',
-      price: newMedication.price || '₦0.00',
-      stock: newMedication.stock || 0,
-      manufacturer: newMedication.manufacturer || 'Unknown',
-      status: newMedication.status as string || 'In Stock',
-      dateAdded: new Date().toLocaleDateString(),
-      image: newMedication.image || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-      description: newMedication.description
-    };
+    if (editingMedicationId !== null) {
+      setMedications(prev =>
+        prev.map(medication =>
+          medication.id === editingMedicationId
+            ? {
+              ...medication,
+              name: newMedication.name || medication.name,
+              category: newMedication.category || medication.category,
+              price: newMedication.price || medication.price,
+              stock: Number(newMedication.stock ?? medication.stock),
+              manufacturer: newMedication.manufacturer || medication.manufacturer,
+              status: (newMedication.status as string) || medication.status,
+              description: newMedication.description || medication.description,
+              image: newMedication.image || medication.image,
+            }
+            : medication
+        )
+      );
+    } else {
+      const newId = Math.max(...medications.map(m => m.id), 0) + 1;
 
-    // Add to medications list
-    setMedications(prev => [medicationToAdd, ...prev]);
-    
-    // Close modal and reset form
+      const medicationToAdd: Medication = {
+        id: newId,
+        name: newMedication.name || 'New Medication',
+        category: newMedication.category || 'Other',
+        price: newMedication.price || '₦0.00',
+        stock: Number(newMedication.stock) || 0,
+        manufacturer: newMedication.manufacturer || 'Unknown',
+        status: (newMedication.status as string) || 'In Stock',
+        dateAdded: new Date().toLocaleDateString(),
+        image: newMedication.image || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
+        description: newMedication.description,
+      };
+
+      setMedications(prev => [medicationToAdd, ...prev]);
+    }
+
     setIsModalOpen(false);
+    setEditingMedicationId(null);
+    setSelectedMedication(null);
     setNewMedication({
       name: '',
       category: '',
@@ -230,7 +263,7 @@ const MedicationsPage: React.FC = () => {
       manufacturer: '',
       status: 'In Stock',
       description: '',
-      image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med'
+      image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
     });
     setPreviewImage(null);
   };
@@ -239,6 +272,28 @@ const MedicationsPage: React.FC = () => {
   const viewMedication = (medication: Medication) => {
     setSelectedMedication(medication);
     setIsModalOpen(true);
+  };
+  const editMedication = (medication: Medication) => {
+    setSelectedMedication(null);
+    setEditingMedicationId(medication.id);
+    setNewMedication({
+      name: medication.name,
+      category: medication.category,
+      price: medication.price,
+      stock: medication.stock,
+      manufacturer: medication.manufacturer,
+      status: medication.status,
+      description: medication.description || '',
+      image: medication.image,
+    });
+    setPreviewImage(medication.image);
+    setIsModalOpen(true);
+  };
+  const deleteMedication = (id: number) => {
+    const confirmed = window.confirm("Are you sure you want to delete this medication?");
+    if (!confirmed) return;
+
+    setMedications(prev => prev.filter(medication => medication.id !== id));
   };
 
   return (
@@ -258,6 +313,18 @@ const MedicationsPage: React.FC = () => {
                 className="flex items-center gap-2"
                 onClick={() => {
                   setSelectedMedication(null);
+                  setEditingMedicationId(null);
+                  setNewMedication({
+                    name: '',
+                    category: '',
+                    price: '',
+                    stock: 0,
+                    manufacturer: '',
+                    status: 'In Stock',
+                    description: '',
+                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
+                  });
+                  setPreviewImage(null);
                   setIsModalOpen(true);
                 }}
               >
@@ -303,9 +370,9 @@ const MedicationsPage: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('id')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -315,9 +382,9 @@ const MedicationsPage: React.FC = () => {
                   </TableHead>
                   <TableHead className="w-16">Image</TableHead>
                   <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('name')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -326,9 +393,9 @@ const MedicationsPage: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('category')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -337,9 +404,9 @@ const MedicationsPage: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('price')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -348,9 +415,9 @@ const MedicationsPage: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('stock')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -359,9 +426,9 @@ const MedicationsPage: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('manufacturer')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -370,9 +437,9 @@ const MedicationsPage: React.FC = () => {
                     </Button>
                   </TableHead>
                   <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleSort('status')}
                       className="flex items-center gap-1 p-0 h-auto font-medium"
                     >
@@ -427,10 +494,20 @@ const MedicationsPage: React.FC = () => {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => editMedication(medication)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500"
+                            onClick={() => deleteMedication(medication.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -458,16 +535,16 @@ const MedicationsPage: React.FC = () => {
               <Pagination className="order-1 sm:order-2">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
+                    <PaginationPrevious
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                     />
                   </PaginationItem>
-                  
+
                   {getPaginationItems()}
-                  
+
                   <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
                     />
@@ -483,7 +560,13 @@ const MedicationsPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={selectedMedication ? "Medication Details" : "Add New Medication"}
+        title={
+          selectedMedication
+            ? "Medication Details"
+            : editingMedicationId !== null
+              ? "Edit Medication"
+              : "Add New Medication"
+        }
         size="lg"
       >
         {selectedMedication ? (
@@ -502,7 +585,7 @@ const MedicationsPage: React.FC = () => {
                   <h3 className="text-xl font-bold text-gray-900">{selectedMedication.name}</h3>
                   <p className="text-sm text-gray-500">{selectedMedication.category}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Price</p>
@@ -523,12 +606,12 @@ const MedicationsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-medium text-gray-900 mb-2">Description</h4>
               <p className="text-gray-700">{selectedMedication.description || "No description available."}</p>
             </div>
-            
+
             <div className="flex justify-end">
               <Button
                 variant="outline"
@@ -564,11 +647,12 @@ const MedicationsPage: React.FC = () => {
                     accept="image/*"
                     className="hidden"
                     onChange={handleImageUpload}
+                    title = "Upload medication image"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">Upload image</p>
               </div>
-              
+
               <div className="flex-1 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -629,6 +713,7 @@ const MedicationsPage: React.FC = () => {
                       name="status"
                       value={newMedication.status}
                       onChange={handleInputChange}
+                      title = "Medication status"
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="In Stock">In Stock</option>
@@ -639,7 +724,7 @@ const MedicationsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -651,11 +736,26 @@ const MedicationsPage: React.FC = () => {
                 className="min-h-32"
               />
             </div>
-            
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingMedicationId(null);
+                  setSelectedMedication(null);
+                  setNewMedication({
+                    name: '',
+                    category: '',
+                    price: '',
+                    stock: 0,
+                    manufacturer: '',
+                    status: 'In Stock',
+                    description: '',
+                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
+                  });
+                  setPreviewImage(null);
+                }}
               >
                 Cancel
               </Button>
@@ -664,7 +764,7 @@ const MedicationsPage: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
-                Save Medication
+                {editingMedicationId !== null ? "Update Medication" : "Save Medication"}
               </Button>
             </div>
           </div>

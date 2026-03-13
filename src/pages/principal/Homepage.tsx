@@ -12,29 +12,46 @@ import {
 // Dashboard sections with navigation links
 const principalDashboardSections = [
   {
-    title: 'Wallet',
+    title: "Wallet",
     items: [
-      { icon: <CreditCard className="h-6 w-6 text-emerald-600" />, label: 'Account', href: '/principal/account' },
-      { icon: <TrendingUp className="h-6 w-6 text-emerald-600" />, label: 'Earnings', href: '/principal/earnings' },
-      { icon: <DollarSign className="h-6 w-6 text-emerald-600" />, label: 'Withdraw', href: '/principal/withdraw' },
-    ],
+      { icon: <CreditCard className="h-6 w-6 text-emerald-600" />, label: "Account", href: "/principal/account" },
+      { icon: <TrendingUp className="h-6 w-6 text-emerald-600" />, label: "Earnings", href: "/principal/earnings" },
+      { icon: <DollarSign className="h-6 w-6 text-emerald-600" />, label: "Withdraw", href: "/principal/withdraw" },
+    ]
   },
+
   {
-    title: 'Directory',
+    title: "Network",
     items: [
-      { icon: <Users className="h-6 w-6 text-indigo-600" />, label: 'Benfeks', href: '/principal/benfeks' },
-      { icon: <ShoppingCart className="h-6 w-6 text-indigo-600" />, label: 'Purchases', href: '/principal/purchases' },
-      { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: 'Add Benfek', href: '/principal/add-benfek' },
-    ],
+      { icon: <Users className="h-6 w-6 text-indigo-600" />, label: "Benfeks", href: "/principal/benfeks" },
+      { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: "Add Benfek", href: "/principal/add-benfek" },
+      { icon: <User className="h-6 w-6 text-indigo-600" />, label: "Users", href: "/principal/users" },
+    ]
   },
+
   {
-    title: 'Publish',
+    title: "Store",
     items: [
-      { icon: <Pill className="h-6 w-6 text-purple-600" />, label: 'Medications', href: '/principal/medications' },
-      { icon: <FileText className="h-6 w-6 text-purple-600" />, label: 'Articles', href: '/principal/articles' },
-      { icon: <Mic className="h-6 w-6 text-purple-600" />, label: 'Podcasts', href: '/principal/podcasts' },
-    ],
+      { icon: <Pill className="h-6 w-6 text-purple-600" />, label: "Medications", href: "/principal/medications" },
+      { icon: <ShoppingCart className="h-6 w-6 text-purple-600" />, label: "Purchases", href: "/principal/purchases" },
+    ]
   },
+
+  {
+    title: "Content",
+    items: [
+      { icon: <FileText className="h-6 w-6 text-blue-600" />, label: "Articles", href: "/principal/articles" },
+      { icon: <Mic className="h-6 w-6 text-blue-600" />, label: "Podcasts", href: "/principal/podcasts" },
+    ]
+  },
+
+  {
+    title: "System",
+    items: [
+      { icon: <Settings className="h-6 w-6 text-gray-600" />, label: "Settings", href: "/principal/settings" },
+    ]
+  }
+
 ];
 
 // Mock data for dashboard stats
@@ -55,14 +72,14 @@ const recentActivities = [
 
 const PrincipalHomepage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Simulate loading for demonstration
   React.useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -140,12 +157,15 @@ const PrincipalHomepage: React.FC = () => {
             ) : (
               // Quick access buttons
               [
-                { icon: <Users className="h-6 w-6 text-indigo-600" />, label: 'Benfeks', href: '/principal/benfeks' },
-                { icon: <ShoppingCart className="h-6 w-6 text-emerald-600" />, label: 'Purchases', href: '/principal/purchases' },
-                { icon: <Pill className="h-6 w-6 text-purple-600" />, label: 'Medications', href: '/principal/medications' },
-                { icon: <TrendingUp className="h-6 w-6 text-amber-600" />, label: 'Earnings', href: '/principal/earnings' },
-                { icon: <FileText className="h-6 w-6 text-blue-600" />, label: 'Articles', href: '/principal/articles' },
-                { icon: <Settings className="h-6 w-6 text-gray-600" />, label: 'Settings', href: '/principal/settings' },
+                
+                  { icon: <Users className="h-6 w-6 text-indigo-600" />, label: "Benfeks", href: "/principal/benfeks" },
+                  { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: "Add Benfek", href: "/principal/add-benfek" },
+                  { icon: <Pill className="h-6 w-6 text-purple-600" />, label: "Medications", href: "/principal/medications" },
+                  { icon: <ShoppingCart className="h-6 w-6 text-emerald-600" />, label: "Purchases", href: "/principal/purchases" },
+                  { icon: <TrendingUp className="h-6 w-6 text-amber-600" />, label: "Earnings", href: "/principal/earnings" },
+                  { icon: <DollarSign className="h-6 w-6 text-green-600" />, label: "Withdraw", href: "/principal/withdraw" },
+                
+
               ].map((item, index) => (
                 <Link to={item.href} key={index}>
                   <Card className="p-4 flex flex-col items-center hover:bg-gray-50 transition-colors cursor-pointer">
