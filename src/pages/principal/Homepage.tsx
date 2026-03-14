@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
+import { useStore } from '@/store/useStore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -8,63 +9,142 @@ import {
   UserPlus, Pill, FileText, Mic, Activity, DollarSign,
   BarChart2, Calendar, Bell, Settings
 } from 'lucide-react';
+import { apiClient } from '@/config/axios';
 
 // Dashboard sections with navigation links
 const principalDashboardSections = [
   {
-    title: 'Wallet',
+    title: "Wallet",
     items: [
-      { icon: <CreditCard className="h-6 w-6 text-emerald-600" />, label: 'Account', href: '/principal/account' },
-      { icon: <TrendingUp className="h-6 w-6 text-emerald-600" />, label: 'Earnings', href: '/principal/earnings' },
-      { icon: <DollarSign className="h-6 w-6 text-emerald-600" />, label: 'Withdraw', href: '/principal/withdraw' },
-    ],
+      { icon: <CreditCard className="h-6 w-6 text-emerald-600" />, label: "Account", href: "/principal/account" },
+      { icon: <TrendingUp className="h-6 w-6 text-emerald-600" />, label: "Earnings", href: "/principal/earnings" },
+      { icon: <DollarSign className="h-6 w-6 text-emerald-600" />, label: "Withdraw", href: "/principal/withdraw" },
+    ]
   },
+
   {
-    title: 'Directory',
+    title: "Network",
     items: [
-      { icon: <Users className="h-6 w-6 text-indigo-600" />, label: 'Benfeks', href: '/principal/benfeks' },
-      { icon: <ShoppingCart className="h-6 w-6 text-indigo-600" />, label: 'Purchases', href: '/principal/purchases' },
-      { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: 'Add Benfek', href: '/principal/add-benfek' },
-    ],
+      { icon: <Users className="h-6 w-6 text-indigo-600" />, label: "Benfeks", href: "/principal/benfeks" },
+      { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: "Add Benfek", href: "/principal/add-benfek" },
+      { icon: <User className="h-6 w-6 text-indigo-600" />, label: "Users", href: "/principal/users" },
+    ]
   },
+
   {
-    title: 'Publish',
+    title: "Store",
     items: [
-      { icon: <Pill className="h-6 w-6 text-purple-600" />, label: 'Medications', href: '/principal/medications' },
-      { icon: <FileText className="h-6 w-6 text-purple-600" />, label: 'Articles', href: '/principal/articles' },
-      { icon: <Mic className="h-6 w-6 text-purple-600" />, label: 'Podcasts', href: '/principal/podcasts' },
-    ],
+      { icon: <Pill className="h-6 w-6 text-purple-600" />, label: "Medications", href: "/principal/medications" },
+      { icon: <ShoppingCart className="h-6 w-6 text-purple-600" />, label: "Purchases", href: "/principal/purchases" },
+    ]
   },
+
+  {
+    title: "Content",
+    items: [
+      { icon: <FileText className="h-6 w-6 text-blue-600" />, label: "Articles", href: "/principal/articles" },
+      { icon: <Mic className="h-6 w-6 text-blue-600" />, label: "Podcasts", href: "/principal/podcasts" },
+    ]
+  },
+
+  {
+    title: "System",
+    items: [
+      { icon: <Settings className="h-6 w-6 text-gray-600" />, label: "Settings", href: "/principal/settings" },
+    ]
+  }
+
 ];
 
-// Mock data for dashboard stats
-const dashboardStats = [
-  { title: 'Total Benfeks', value: '124', icon: <Users className="h-5 w-5" />, change: '+12%', color: 'bg-blue-500' },
-  { title: 'Monthly Revenue', value: '₦1.2M', icon: <DollarSign className="h-5 w-5" />, change: '+8%', color: 'bg-emerald-500' },
-  { title: 'Active Products', value: '37', icon: <Pill className="h-5 w-5" />, change: '+5%', color: 'bg-purple-500' },
-  { title: 'Total Orders', value: '243', icon: <ShoppingCart className="h-5 w-5" />, change: '+18%', color: 'bg-amber-500' },
-];
+// Interface for dashboard stats
+interface DashboardStats {
+  totalBenfeks: number;
+  walletBalance: number;
+  totalWithdrawals: number;
+  pendingWithdrawals: number;
+}
 
-// Mock data for recent activities
-const recentActivities = [
-  { id: 1, action: 'New benfek registered', user: 'John Doe', time: '2 hours ago', icon: <UserPlus className="h-4 w-4 text-emerald-500" /> },
-  { id: 2, action: 'New order placed', user: 'Sarah Johnson', time: '4 hours ago', icon: <ShoppingCart className="h-4 w-4 text-blue-500" /> },
-  { id: 3, action: 'New article published', user: 'Admin', time: 'Yesterday', icon: <FileText className="h-4 w-4 text-purple-500" /> },
-  { id: 4, action: 'Withdrawal processed', user: 'Finance Dept', time: 'Yesterday', icon: <CreditCard className="h-4 w-4 text-amber-500" /> },
-];
+// Interface for benfek data
+interface BenfekData {
+  id: number;
+  code: string;
+  benfekName: string;
+  benfekPhone: string;
+  registrationStatus: string;
+  createdAt?: string;
+}
 
 const PrincipalHomepage: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Simulate loading for demonstration
-  React.useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalBenfeks: 0,
+    walletBalance: 0,
+    totalWithdrawals: 0,
+    pendingWithdrawals: 0,
+  });
+  const [recentBenfeks, setRecentBenfeks] = useState<BenfekData[]>([]);
+  const { user } = useStore();
+
+  // Fetch real data from API
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch benfeks count
+        const benfeksResponse = await apiClient.get('/quiz-code/benfeks?page=1&limit=5');
+        const benfeksData = benfeksResponse.data?.data;
+        
+        // Fetch income summary
+        const incomeResponse = await apiClient.get('/principals/me/income-summary');
+        const incomeData = incomeResponse.data?.data;
+
+        setStats({
+          totalBenfeks: benfeksData?.pagination?.total || 0,
+          walletBalance: incomeData?.walletBalance || 0,
+          totalWithdrawals: incomeData?.withdrawals?.totalCompleted || 0,
+          pendingWithdrawals: incomeData?.withdrawals?.totalPending || 0,
+        });
+
+        // Set recent benfeks for activity feed
+        setRecentBenfeks(benfeksData?.benfeks || []);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1000000) {
+      return `₦${(amount / 1000000).toFixed(1)}M`;
+    } else if (amount >= 1000) {
+      return `₦${(amount / 1000).toFixed(1)}K`;
+    }
+    return `₦${amount.toLocaleString()}`;
+  };
+
+  // Dynamic dashboard stats based on real data
+  const dashboardStats = [
+    { title: 'Total Benfeks', value: stats.totalBenfeks.toString(), icon: <Users className="h-5 w-5" />, change: '', color: 'bg-blue-500' },
+    { title: 'Wallet Balance', value: formatCurrency(stats.walletBalance), icon: <DollarSign className="h-5 w-5" />, change: '', color: 'bg-emerald-500' },
+    { title: 'Total Withdrawn', value: formatCurrency(stats.totalWithdrawals), icon: <CreditCard className="h-5 w-5" />, change: '', color: 'bg-purple-500' },
+    { title: 'Pending Withdrawals', value: formatCurrency(stats.pendingWithdrawals), icon: <Activity className="h-5 w-5" />, change: '', color: 'bg-amber-500' },
+  ];
+
+  // Dynamic recent activities based on real benfeks
+  const recentActivities = recentBenfeks.map((benfek, index) => ({
+    id: benfek.id || index,
+    action: benfek.registrationStatus === 'registered' ? 'Benfek registered' : 'Quiz code created',
+    user: benfek.benfekName || 'Unknown',
+    time: benfek.createdAt ? new Date(benfek.createdAt).toLocaleDateString() : 'Recently',
+    icon: benfek.registrationStatus === 'registered' 
+      ? <UserPlus className="h-4 w-4 text-emerald-500" />
+      : <FileText className="h-4 w-4 text-blue-500" />,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
@@ -74,7 +154,7 @@ const PrincipalHomepage: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Principal Dashboard</h1>
-              <p className="mt-1 text-sm text-gray-500">Welcome back, NEJJE</p>
+              <p className="mt-1 text-sm text-gray-500">Welcome back, {user?.name || 'Principal'}</p>
             </div>
             <div className="mt-4 md:mt-0 flex space-x-3">
               <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -140,12 +220,15 @@ const PrincipalHomepage: React.FC = () => {
             ) : (
               // Quick access buttons
               [
-                { icon: <Users className="h-6 w-6 text-indigo-600" />, label: 'Benfeks', href: '/principal/benfeks' },
-                { icon: <ShoppingCart className="h-6 w-6 text-emerald-600" />, label: 'Purchases', href: '/principal/purchases' },
-                { icon: <Pill className="h-6 w-6 text-purple-600" />, label: 'Medications', href: '/principal/medications' },
-                { icon: <TrendingUp className="h-6 w-6 text-amber-600" />, label: 'Earnings', href: '/principal/earnings' },
-                { icon: <FileText className="h-6 w-6 text-blue-600" />, label: 'Articles', href: '/principal/articles' },
-                { icon: <Settings className="h-6 w-6 text-gray-600" />, label: 'Settings', href: '/principal/settings' },
+                
+                  { icon: <Users className="h-6 w-6 text-indigo-600" />, label: "Benfeks", href: "/principal/benfeks" },
+                  { icon: <UserPlus className="h-6 w-6 text-indigo-600" />, label: "Add Benfek", href: "/principal/add-benfek" },
+                  { icon: <Pill className="h-6 w-6 text-purple-600" />, label: "Medications", href: "/principal/medications" },
+                  { icon: <ShoppingCart className="h-6 w-6 text-emerald-600" />, label: "Purchases", href: "/principal/purchases" },
+                  { icon: <TrendingUp className="h-6 w-6 text-amber-600" />, label: "Earnings", href: "/principal/earnings" },
+                  { icon: <DollarSign className="h-6 w-6 text-green-600" />, label: "Withdraw", href: "/principal/withdraw" },
+                
+
               ].map((item, index) => (
                 <Link to={item.href} key={index}>
                   <Card className="p-4 flex flex-col items-center hover:bg-gray-50 transition-colors cursor-pointer">

@@ -43,18 +43,22 @@ apiClient.interceptors.response.use(
             refreshToken
           });
           console.log('Token refreshed successfully:', response.data);
-          const { access_token, refresh_token: newRefreshToken } = response.data;
-          tokenManager.setTokens(access_token, newRefreshToken);
+          const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+          tokenManager.setTokens(accessToken, newRefreshToken);
 
           // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
-          
-          // Refresh failed, clear tokens
-          // tokenManager.clearTokens();
-          // window.location.href = '/auth/signin';
+          console.error('Token refresh failed, logging out:', refreshError);
+          tokenManager.clearTokens();
+          window.location.href = '/auth/signin';
+          return Promise.reject(refreshError);
         }
+      } else {
+        // No refresh token available, force logout
+        tokenManager.clearTokens();
+        window.location.href = '/auth/signin';
       }
     }
 

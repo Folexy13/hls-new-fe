@@ -5,13 +5,14 @@ const TOKEN_EXPIRY_KEY = 'tokenExpiry';
 
 export const tokenManager = {
   setTokens(accessToken: string, refreshToken: string) {
-    console.log('Setting tokens:', { accessToken, refreshToken });
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    console.log('Setting tokens:', { accessToken: accessToken.substring(0, 20) + '...', refreshToken: refreshToken.substring(0, 20) + '...' });
+    // Use localStorage for persistence across page refreshes
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     // Set expiry to 7 days from now
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
-    sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryDate.toISOString());
+    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryDate.toISOString());
   },
 
   getAccessToken(): string | null {
@@ -19,7 +20,7 @@ export const tokenManager = {
       this.clearTokens();
       return null;
     }
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
   },
 
   getRefreshToken(): string | null {
@@ -27,17 +28,17 @@ export const tokenManager = {
       this.clearTokens();
       return null;
     }
-    return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
   clearTokens() {
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
   },
 
   isTokenExpired(): boolean {
-    const expiry = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
+    const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
     if (!expiry) return true;
     return new Date() > new Date(expiry);
   },
