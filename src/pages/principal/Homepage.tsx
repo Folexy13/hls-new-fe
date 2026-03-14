@@ -91,11 +91,11 @@ const PrincipalHomepage: React.FC = () => {
       setIsLoading(true);
       try {
         // Fetch benfeks count
-        const benfeksResponse = await apiClient.get('/quiz-code/benfeks?page=1&limit=5');
+        const benfeksResponse = await apiClient.get('/api/v2/quiz-code/benfeks?page=1&limit=5');
         const benfeksData = benfeksResponse.data?.data;
         
         // Fetch income summary
-        const incomeResponse = await apiClient.get('/principals/me/income-summary');
+        const incomeResponse = await apiClient.get('/api/v2/principals/me/income-summary');
         const incomeData = incomeResponse.data?.data;
 
         setStats({

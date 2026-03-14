@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 
 // Define the Medication type
 type Medication = {
@@ -251,22 +252,29 @@ const MedicationsPage: React.FC = () => {
     }
   };
 
-  // Upload image to Cloudinary
+  // Upload image to Cloudinary (Direct from frontend)
   const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
     try {
       setIsUploading(true);
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'supplements');
       
-      const response = await apiClient.post('/api/v2/supplements/upload-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
       });
       
-      return response.data?.data?.imageUrl || null;
+      const data = await response.json();
+      
+      if (data.secure_url) {
+        return data.secure_url;
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
     } catch (error) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload image to Cloudinary:', error);
       toast.error('Failed to upload image. Please try again.');
       return null;
     } finally {
