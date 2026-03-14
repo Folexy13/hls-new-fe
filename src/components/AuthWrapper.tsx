@@ -9,24 +9,33 @@ interface AuthWrapperProps {
 }
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  const { setUser, logout, isAuthenticated, setCartFromBackend } = useStore();
+  const { setUser, logout, isAuthenticated, user, setCartFromBackend } = useStore();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const initializeAuth = async () => {
+      // If user is already authenticated from persisted state and has valid tokens, skip refresh
+      if (isAuthenticated && user && tokenManager.hasValidTokens()) {
+        console.log('User already authenticated from persisted state');
+        setIsLoading(false);
+        return;
+      }
+
       const refreshToken = tokenManager.getRefreshToken();
       
-      if (refreshToken && !tokenManager.isTokenExpired()) {
+      // Only try to refresh if we have a token but no authenticated user
+      if (refreshToken && !tokenManager.isTokenExpired() && !isAuthenticated) {
         try {
           const response = await authService.refreshToken(refreshToken);
           tokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
-          // setUser({
-          //   id: response.user.id,
-          //   email: response.user.email,
-          //   name: `${response.user.firstName} ${response.user.lastName}`,
-          //   role: response.user.role,
-          //   isAuthenticated: true,
-          // });
+          // Update user state after successful token refresh
+          setUser({
+            id: response.user.id,
+            email: response.user.email,
+            name: `${response.user.firstName} ${response.user.lastName}`,
+            role: response.user.role,
+            isAuthenticated: true,
+          });
           // Fetch cart from backend and sync store
           try {
             const cartResp = await cartService.getCart();
@@ -50,6 +59,7 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           logout();
         }
       } else if (!tokenManager.hasValidTokens() && isAuthenticated) {
+        // Tokens expired but user thinks they're authenticated - log them out
         logout();
       }
       
@@ -57,7 +67,7 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     };
 
     initializeAuth();
-  }, [setUser, logout, isAuthenticated, setCartFromBackend]);
+  }, [setUser, logout, isAuthenticated, user, setCartFromBackend]);
 
   if (isLoading) {
     return (

@@ -13,9 +13,31 @@ const SignInPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useStore();
+  const { login, isAuthenticated, user } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Redirect authenticated users to their dashboard
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      let redirectPath = '/dashboard';
+      switch (user.role) {
+        case 'benfek':
+          redirectPath = '/benfek/dashboard';
+          break;
+        case 'principal':
+          redirectPath = '/principal';
+          break;
+        case 'wholesaler':
+          redirectPath = '/wholesaler';
+          break;
+        default:
+          redirectPath = '/benfek/dashboard';
+      }
+      // Use window.location for a hard redirect to ensure URL changes
+      window.location.href = redirectPath;
+    }
+  }, [isAuthenticated, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
