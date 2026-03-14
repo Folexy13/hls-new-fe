@@ -51,7 +51,10 @@ import SettingsPage from "./pages/principal/settings";
 import AddProductPage from "./pages/wholesaler/add-product";
 import OrdersPage from "./pages/wholesaler/orders";
 import ProductsPage from "./pages/wholesaler/products";
-
+import ResearcherAuthPage from "./pages/researcher/ResearcherAuthpage";
+import AuthSignupPage from "./pages/AuthsignupPage";
+import PrincipalSignupPage from "./pages/principal/principalSignupPage";
+import WholesalerSignupPage from "./pages/wholesaler/WholesalerSignupPage";
 
 const queryClient = new QueryClient();
 
@@ -69,7 +72,11 @@ const App = () => (
 
                 <Route path="/" element={<Homepage />} />
                 <Route path="/auth/*" element={<AuthPage />} />
-              
+                <Route path="/researcher/auth/*" element={<ResearcherAuthPage />} />
+                <Route path="/auth/signup" element={<AuthSignupPage />} />
+                <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
+                <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
+                <Route path="/assessment" element={<AssessmentPage />} />
 
                 {/* Role-based protected routes */}
                 {/* Benfek Routes */}
