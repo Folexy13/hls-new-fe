@@ -29,6 +29,7 @@ import ProductPage from "./pages/benfek/ProductPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
+import AssessmentPage from "./pages/Assessmentpage";
 
 // Import Principal pages
 import AccountPage from "./pages/principal/account";
@@ -47,6 +48,13 @@ import WholesalerAddProductPage from "./pages/wholesaler/add-product";
 import WholesalerProductsPage from "./pages/wholesaler/products";
 import WholesalerOrdersPage from "./pages/wholesaler/orders";
 import SettingsPage from "./pages/principal/settings";
+import AddProductPage from "./pages/wholesaler/add-product";
+import OrdersPage from "./pages/wholesaler/orders";
+import ProductsPage from "./pages/wholesaler/products";
+import ResearcherAuthPage from "./pages/researcher/ResearcherAuthpage";
+import AuthSignupPage from "./pages/AuthsignupPage";
+import PrincipalSignupPage from "./pages/principal/principalSignupPage";
+import WholesalerSignupPage from "./pages/wholesaler/WholesalerSignupPage";
 
 const queryClient = new QueryClient();
 
@@ -61,8 +69,14 @@ const App = () => (
             <Layout>
               <Routes>
                 {/* Public routes */}
+
                 <Route path="/" element={<Homepage />} />
                 <Route path="/auth/*" element={<AuthPage />} />
+                <Route path="/researcher/auth/*" element={<ResearcherAuthPage />} />
+                <Route path="/auth/signup" element={<AuthSignupPage />} />
+                <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
+                <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
+                <Route path="/assessment" element={<AssessmentPage />} />
 
                 {/* Role-based protected routes */}
                 {/* Benfek Routes */}
@@ -167,6 +181,10 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
+                  <Route
+                  path="/principal/Homepage"
+                  element={<PrincipalHomepage />}
+                />
 
                 {/* Principal Account Route */}
                 <Route
@@ -214,13 +232,17 @@ const App = () => (
                   }
                 />
                 {/* Principal Medications Route */}
-                <Route
+                {/* <Route
                   path="/principal/medications"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <MedicationsPage />
                     </RoleBasedRoute>
                   }
+                /> */}
+                <Route
+                  path="/principal/medications"
+                  element={<MedicationsPage />}
                 />
 
                 {/* Principal Settings Route */}
