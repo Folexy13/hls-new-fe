@@ -32,12 +32,13 @@ const MarketplacePage: React.FC = () => {
       try {
         setLoading(true);
         const response = await apiClient.get('/api/v2/supplements/all');
+        console.log(response)
         const supplements = response.data?.data?.supplements || [];
         const mapped: Product[] = supplements.map((s: any) => ({
           id: String(s.id),
           name: s.name,
-          price: s.price,
-          image: s.image || '/placeholder.svg',
+          price: Number(s.price),
+          image: s.image || s.imageUrl || '/placeholder.svg',
           description: s.description,
           category: 'supplement',
           vendor: 'HLS',
@@ -52,7 +53,7 @@ const MarketplacePage: React.FC = () => {
     };
 
     fetchSupplements();
-  }, [rawProducts]);
+  }, []);
 
   // Remove duplicate products by name
   const allProducts = useMemo(() => {
@@ -63,7 +64,7 @@ const MarketplacePage: React.FC = () => {
       seen.add(key);
       return true;
     });
-  }, []);
+  }, [rawProducts]);
 
   const vendorProducts = allProducts;
   const hlsProducts = allProducts;

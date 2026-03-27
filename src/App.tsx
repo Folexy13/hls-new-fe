@@ -26,6 +26,7 @@ import BlogPage from "./pages/benfek/BlogPage";
 import NotFound from "./pages/benfek/NotFound";
 import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
+import QuizFormPage from "./pages/benfek/QuizFormPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
@@ -84,6 +85,8 @@ const App = () => (
                 <Route path="/principal/users" element={<UsersPage />} />
                  <Route path="/assessment" element={<AssessmentPage/>} />
                  <Route path="/principal/benfeks" element={<BenfeksPage />} />
+                 <Route path="/quiz" element={<QuizPage />} />
+                 <Route path="/benfek/quiz-form" element={<QuizFormPage />} />
 
 
                 {/* Role-based protected routes */}
@@ -121,17 +124,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                <Route
-                  path="/quiz"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <QuizPage />
-                    </RoleBasedRoute>
-                  }
-                />
+                
                 <Route
                   path="/support"
                   element={

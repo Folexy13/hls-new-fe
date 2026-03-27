@@ -39,7 +39,7 @@ const QuizPage = () => {
       );
 
       toast.success('Code validated successfully');
-      navigate('/quiz-form');
+      navigate('/benfek/quiz-form');
     } catch (error) {
       toast.error('Unable to validate code. Please try again.');
     } finally {

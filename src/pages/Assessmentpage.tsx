@@ -69,7 +69,7 @@ const AssessmentPage: React.FC = () => {
     sessionStorage.setItem('validatedBenfekPhone', quizData.benfekPhone || '');
 
     // Move to next step
-    navigate('/auth/signup/researcher');
+    navigate('/benfek/quiz-form');
   };
 
   return (

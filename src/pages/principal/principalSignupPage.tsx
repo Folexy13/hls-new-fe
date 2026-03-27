@@ -105,7 +105,7 @@ const PrincipalSignupPage = () => {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.post("/api/v2/principals", {
+      const response = await apiClient.post("/api/v2/auth/register", {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim(),
