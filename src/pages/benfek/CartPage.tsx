@@ -7,7 +7,7 @@ import { useStore } from '../../store/useStore';
 import { useCart } from '../../hooks/useCart';
 import { Minus, Plus, Trash2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import { apiClient } from '@/config/axios';
 
 const CartPage = () => {
   const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend, user } = useStore();
@@ -29,11 +29,7 @@ const CartPage = () => {
       return;
     }
     try {
-      const amount = Math.round(apiCart.items.reduce((total, item) => total + (item.supplement.price * item.quantity), 0));
-      const response = await axios.post('/paystack/initialize', {
-        email: user.email,
-        amount,
-      });
+      const response = await apiClient.post('/api/v2/paystack/checkout', {});
       const url = response.data?.data?.authorization_url;
       if (url) {
         window.location.href = url;

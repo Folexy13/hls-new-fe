@@ -34,16 +34,20 @@ const AssessmentPage: React.FC = () => {
     setQuizData(null);
 
     try {
-      // Replace this endpoint with your actual backend endpoint
-      const response = await apiClient.get(`/api/v2/quiz-code/validate/${quizCode.trim()}`);
+      const response = await apiClient.post('/api/v2/quiz-code/validate', {
+        code: quizCode.trim(),
+      });
 
-      const data = response.data?.data || response.data;
+      const data = response.data?.data;
+      const quizCodeData = data?.quizCode;
 
       setQuizData({
-        code: data?.code || quizCode,
-        benfekName: data?.benfekName || data?.name || '',
-        benfekPhone: data?.benfekPhone || data?.phone || '',
-        principalName: data?.principalName || '',
+        code: quizCodeData?.code || quizCode,
+        benfekName: quizCodeData?.benfekName || '',
+        benfekPhone: quizCodeData?.benfekPhone || '',
+        principalName: quizCodeData?.createdBy
+          ? `${quizCodeData.createdBy.firstName} ${quizCodeData.createdBy.lastName}`.trim()
+          : '',
       });
 
       setIsValidated(true);
