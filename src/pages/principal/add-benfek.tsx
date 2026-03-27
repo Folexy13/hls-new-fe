@@ -3,14 +3,14 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
+import {
   Form,
   FormControl,
   FormDescription,
@@ -21,8 +21,8 @@ import {
 } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  UserPlus, CheckCircle, Upload, X, 
+import {
+  UserPlus, CheckCircle, Upload, X,
   Info, AlertCircle, Mail
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -35,6 +35,8 @@ const formSchema = z.object({
   lastName: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   phone: z.string().min(10, { message: 'Phone number must be at least 10 characters.' }),
+  age: z.string().min(1, { message: 'Age is required.' }),
+  gender: z.string().min(1, { message: 'Please select a gender.' }),
   specialty: z.string().min(1, { message: 'Please select a specialty.' }),
   licenseNumber: z.string().min(5, { message: 'License number must be at least 5 characters.' }),
   address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
@@ -53,7 +55,7 @@ const AddBenfekPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  
+
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -62,6 +64,8 @@ const AddBenfekPage: React.FC = () => {
       lastName: '',
       email: '',
       phone: '',
+      age: '',
+      gender: '',
       specialty: '',
       licenseNumber: '',
       address: '',
@@ -76,13 +80,13 @@ const AddBenfekPage: React.FC = () => {
   // Handle form submission
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       console.log(values);
       setIsSubmitting(false);
       setIsSuccess(true);
-      
+
       // Reset form after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
@@ -102,7 +106,7 @@ const AddBenfekPage: React.FC = () => {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
     } else if (e.type === 'dragleave') {
@@ -115,7 +119,7 @@ const AddBenfekPage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setUploadedFile(e.dataTransfer.files[0]);
     }
@@ -129,14 +133,14 @@ const AddBenfekPage: React.FC = () => {
   // Handle bulk upload submission
   const handleBulkUpload = () => {
     if (!uploadedFile) return;
-    
+
     setIsSubmitting(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
-      
+
       // Reset after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
@@ -149,7 +153,7 @@ const AddBenfekPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Page Header */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Add Benfek</h1>
@@ -162,34 +166,45 @@ const AddBenfekPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isSuccess ? (
           <Card className="max-w-3xl mx-auto">
             <div className="p-6 flex flex-col items-center text-center">
               <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="h-8 w-8 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Benfek Added Successfully</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Benfek Added Successfully
+              </h2>
               <p className="text-gray-600 mb-6 max-w-md">
-                The benfek has been added to your network successfully. They will receive an email with instructions to set up their account.
+                The benfek has been added to your network successfully. They will
+                receive an email with instructions to set up their account.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button onClick={() => setIsSuccess(false)}>
                   Add Another Benfek
                 </Button>
-                <Button variant="outline" onClick={() => window.location.href = '/principal/benfeks'}>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.href = '/principal/benfeks'}
+                >
                   View All Benfeks
                 </Button>
               </div>
             </div>
           </Card>
         ) : (
-          <Tabs defaultValue="manual" value={activeTab} onValueChange={setActiveTab} className="max-w-3xl mx-auto">
+          <Tabs
+            defaultValue="manual"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="max-w-3xl mx-auto"
+          >
             <TabsList className="grid grid-cols-2 w-full mb-8">
               <TabsTrigger value="manual">Manual Entry</TabsTrigger>
               <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
             </TabsList>
-            
+
             {/* Manual Entry Tab */}
             <TabsContent value="manual">
               <Card>
@@ -202,13 +217,16 @@ const AddBenfekPage: React.FC = () => {
                     Enter the details of the benfek you want to add to your network.
                   </p>
                 </div>
-                <div className="p-6">
+
+                <div className="p-4 sm:p-6">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       {/* Personal Information */}
                       <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Personal Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h4 className="text-md font-medium text-gray-900 mb-4">
+                          Personal Information
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                           <FormField
                             control={form.control}
                             name="firstName"
@@ -222,7 +240,7 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="lastName"
@@ -236,7 +254,7 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="email"
@@ -250,7 +268,7 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="phone"
@@ -264,21 +282,63 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
+
+                          <FormField
+                            control={form.control}
+                            name="age"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Age</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="e.g. 32" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="gender"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Gender</FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select gender" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="male">Male</SelectItem>
+                                    <SelectItem value="female">Female</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </div>
-                      
+
                       {/* Professional Information */}
                       <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Professional Information</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <h4 className="text-md font-medium text-gray-900 mb-4">
+                          Professional Information
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                           <FormField
                             control={form.control}
                             name="specialty"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Specialty</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
+                                <Select
+                                  onValueChange={field.onChange}
                                   defaultValue={field.value}
                                 >
                                   <FormControl>
@@ -301,7 +361,7 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="licenseNumber"
@@ -317,11 +377,13 @@ const AddBenfekPage: React.FC = () => {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Address Information */}
                       <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Address Information</h4>
-                        <div className="grid grid-cols-1 gap-4">
+                        <h4 className="text-md font-medium text-gray-900 mb-4">
+                          Address Information
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 sm:gap-5">
                           <FormField
                             control={form.control}
                             name="address"
@@ -335,8 +397,8 @@ const AddBenfekPage: React.FC = () => {
                               </FormItem>
                             )}
                           />
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                             <FormField
                               control={form.control}
                               name="city"
@@ -350,7 +412,7 @@ const AddBenfekPage: React.FC = () => {
                                 </FormItem>
                               )}
                             />
-                            
+
                             <FormField
                               control={form.control}
                               name="state"
@@ -367,11 +429,13 @@ const AddBenfekPage: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Additional Information */}
                       <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">Additional Information</h4>
-                        <div className="grid grid-cols-1 gap-4">
+                        <h4 className="text-md font-medium text-gray-900 mb-4">
+                          Additional Information
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4 sm:gap-5">
                           <FormField
                             control={form.control}
                             name="bio"
@@ -379,25 +443,25 @@ const AddBenfekPage: React.FC = () => {
                               <FormItem>
                                 <FormLabel>Bio</FormLabel>
                                 <FormControl>
-                                  <Textarea 
-                                    placeholder="Brief description of the benfek's background and expertise..." 
+                                  <Textarea
+                                    placeholder="Brief description of the benfek's background and expertise..."
                                     className="min-h-32"
-                                    {...field} 
+                                    {...field}
                                   />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={form.control}
                             name="commissionRate"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Commission Rate</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
+                                <Select
+                                  onValueChange={field.onChange}
                                   defaultValue={field.value}
                                 >
                                   <FormControl>
@@ -423,7 +487,7 @@ const AddBenfekPage: React.FC = () => {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Terms and Conditions */}
                       <FormField
                         control={form.control}
@@ -448,18 +512,34 @@ const AddBenfekPage: React.FC = () => {
                           </FormItem>
                         )}
                       />
-                      
+
                       {/* Submit Button */}
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         className="w-full"
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? (
                           <div className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
                             </svg>
                             Processing...
                           </div>
@@ -472,7 +552,7 @@ const AddBenfekPage: React.FC = () => {
                 </div>
               </Card>
             </TabsContent>
-            
+
             {/* Bulk Upload Tab */}
             <TabsContent value="bulk">
               <Card>
@@ -485,20 +565,26 @@ const AddBenfekPage: React.FC = () => {
                     Upload a CSV file containing multiple benfeks to add them all at once.
                   </p>
                 </div>
-                <div className="p-6">
+
+                <div className="p-4 sm:p-6">
                   <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4 flex items-start">
                     <Info className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
                     <div>
                       <h4 className="text-blue-800 font-medium">CSV Format Instructions</h4>
                       <p className="text-blue-700 text-sm mt-1">
-                        Your CSV file should include the following columns: firstName, lastName, email, phone, specialty, licenseNumber, address, city, state, commissionRate.
+                        Your CSV file should include the following columns:
+                        firstName, lastName, email, phone, age, gender, specialty,
+                        licenseNumber, address, city, state, commissionRate.
                       </p>
-                      <Button variant="link" className="text-blue-700 p-0 h-auto text-sm mt-1">
+                      <Button
+                        variant="link"
+                        className="text-blue-700 p-0 h-auto text-sm mt-1"
+                      >
                         Download Template
                       </Button>
                     </div>
                   </div>
-                  
+
                   {uploadedFile ? (
                     <div className="border rounded-md p-4 mb-6">
                       <div className="flex items-center justify-between">
@@ -513,9 +599,9 @@ const AddBenfekPage: React.FC = () => {
                             </p>
                           </div>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={handleRemoveFile}
                           className="h-8 w-8 text-gray-500 hover:text-red-500"
                         >
@@ -524,7 +610,7 @@ const AddBenfekPage: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <div 
+                    <div
                       className={`border-2 border-dashed rounded-md p-8 mb-6 text-center ${
                         dragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300'
                       }`}
@@ -547,10 +633,10 @@ const AddBenfekPage: React.FC = () => {
                           accept=".csv"
                           className="hidden"
                           onChange={handleFileChange}
-                          title="..."
+                          title="Upload CSV file"
                         />
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={() => document.getElementById('file-upload')?.click()}
                         >
                           Browse Files
@@ -558,33 +644,50 @@ const AddBenfekPage: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {uploadedFile && (
                     <div className="mb-6 bg-amber-50 border border-amber-200 rounded-md p-4 flex items-start">
                       <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-3" />
                       <div>
                         <h4 className="text-amber-800 font-medium">Important Note</h4>
                         <p className="text-amber-700 text-sm mt-1">
-                          All benfeks will receive an email invitation to join your network. Make sure all email addresses are correct.
+                          All benfeks will receive an email invitation to join your network.
+                          Make sure all email addresses are correct.
                         </p>
                       </div>
                     </div>
                   )}
-                  
-                  <div className="flex items-center justify-between">
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center text-sm text-gray-500">
                       <Mail className="h-4 w-4 mr-1" />
                       Invitations will be sent automatically
                     </div>
-                    <Button 
+                    <Button
                       onClick={handleBulkUpload}
                       disabled={!uploadedFile || isSubmitting}
                     >
                       {isSubmitting ? (
                         <div className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
                           </svg>
                           Processing...
                         </div>

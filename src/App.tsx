@@ -41,6 +41,7 @@ import MedicationsPage from "./pages/principal/medications";
 import PurchasesPage from "./pages/principal/purchases";
 import ArticlesPage from "./pages/principal/articles";
 import WithdrawPage from "./pages/principal/withdraw";
+import UsersPage from "./pages/principal/users";
 
 // Import Wholesaler pages
 import WholesalerEarningsPage from "./pages/wholesaler/earnings";
@@ -76,7 +77,14 @@ const App = () => (
                 <Route path="/auth/signup" element={<AuthSignupPage />} />
                 <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
                 <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
-                <Route path="/assessment" element={<AssessmentPage />} />
+                <Route path="/principal" element={<PrincipalHomepage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
+                <Route path="/principal/add-benfek" element={<AddBenfekPage />} />
+                <Route path="/principal/users" element={<UsersPage />} />
+                 <Route path="/assessment" element={<AssessmentPage/>} />
+                 <Route path="/principal/benfeks" element={<BenfeksPage />} />
+
 
                 {/* Role-based protected routes */}
                 {/* Benfek Routes */}
@@ -146,7 +154,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                <Route
+                {/* <Route
                   path="/marketplace"
                   element={
                     <RoleBasedRoute
@@ -156,7 +164,7 @@ const App = () => (
                       <MarketplacePage />
                     </RoleBasedRoute>
                   }
-                />
+                /> */}
                 <Route
                   path="/product/:id"
                   element={
@@ -181,7 +189,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                  <Route
+                <Route
                   path="/principal/Homepage"
                   element={<PrincipalHomepage />}
                 />
@@ -196,23 +204,23 @@ const App = () => (
                   }
                 />
                 {/* Principal Add Benfek Route */}
-                <Route
+                {/* <Route
                   path="/principal/add-benfek"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <AddBenfekPage />
                     </RoleBasedRoute>
                   }
-                />
+                /> */}
                 {/* Principal Benfeks Route */}
-                <Route
+                {/* <Route
                   path="/principal/benfeks"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <BenfeksPage />
                     </RoleBasedRoute>
                   }
-                />
+                /> */}
                 {/* Principal Earnings Route */}
                 <Route
                   path="/principal/earnings"
@@ -363,6 +371,7 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
+                
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

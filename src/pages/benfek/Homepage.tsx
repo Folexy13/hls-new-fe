@@ -22,6 +22,7 @@ import samson from '../../images/samson-ojo.jpeg'
 import nick from '../../images/nick-ozonuma.jpg'
 import eriscyl from '../../images/ericsyl-john.jpg'
 import mimi from '../../images/mimi-gloria.jpg'
+import { Package } from "lucide-react";
 
 import {
   Carousel,
@@ -30,6 +31,14 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../../components/ui/carousel"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from "@/components/ui/card";
 
 const BenfekHomepage: React.FC = () => {
   const [showQuizModal, setShowQuizModal] = useState(false);
@@ -307,7 +316,7 @@ const BenfekHomepage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Your Health Dashboard</h1>
             <p className="text-gray-600 mt-2">Welcome back! Here's your personalized health overview.</p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {dashboardStats.map((stat, index) => (
               <Card key={index}>
@@ -326,7 +335,7 @@ const BenfekHomepage: React.FC = () => {
               </Card>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -359,7 +368,7 @@ const BenfekHomepage: React.FC = () => {
                 </Button>
               </CardFooter>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Health Insights</CardTitle>
@@ -389,7 +398,7 @@ const BenfekHomepage: React.FC = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Hero Section */}
       <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Content Container */}
@@ -453,7 +462,7 @@ const BenfekHomepage: React.FC = () => {
           <div className="text-center mb-6 sm:mb-12">
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Why take the quiz?</h2>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {whyTakeQuiz.map((item, index) => (
@@ -480,7 +489,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Featured Products</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Premium supplements backed by science</p>
             <div className="mt-3 sm:mt-6">
-              <Link 
+              <Link
                 to="/marketplace"
                 className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-xs sm:text-base"
               >
@@ -488,7 +497,7 @@ const BenfekHomepage: React.FC = () => {
               </Link>
             </div>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {products.map((product) => (
@@ -530,7 +539,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">What Our Customers Say</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Real stories from real people</p>
           </div>
-          
+
           <Carousel className="w-full max-w-5xl mx-auto">
             <CarouselContent>
               {testimonials.map((testimonial, index) => (
@@ -571,7 +580,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Frequently Asked Questions</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Everything you need to know</p>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {faqs.map((faq, index) => (
@@ -598,7 +607,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Latest from Our Blog</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Health insights and tips from our experts</p>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {blogs.map((blog) => (
@@ -615,7 +624,7 @@ const BenfekHomepage: React.FC = () => {
                       <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
                       <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
                       <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
-                      <Link 
+                      <Link
                         to={`/blog/${blog.id}`}
                         className="text-emerald-600 font-medium hover:opacity-80 inline-block text-xs sm:text-base"
                       >
