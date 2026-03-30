@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle, Save, User } from 'lucide-react';
@@ -46,6 +47,7 @@ const SettingsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
+              <BackToDashboardButton className="mb-3" />
               <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Manage your account settings and preferences

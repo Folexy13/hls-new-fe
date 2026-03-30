@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
@@ -191,6 +192,7 @@ const BenfeksPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
+              <BackToDashboardButton className="mb-3 text-white/80 hover:text-white" />
               <p className="text-xs uppercase tracking-[0.3em] text-slate-300 font-semibold">Directory</p>
               <h1 className="text-2xl sm:text-3xl font-bold mt-2">Benfeks</h1>
               <p className="mt-2 text-sm text-slate-300">

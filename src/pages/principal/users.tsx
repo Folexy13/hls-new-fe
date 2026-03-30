@@ -1,4 +1,5 @@
 import { useState } from "react";
+import BackToDashboardButton from "@/components/BackToDashboardButton";
 
 type PrincipalUser = {
     id: string;
@@ -30,6 +31,7 @@ const Users = () => {
     const [status, setStatus] = useState<"Active" | "Inactive" | "Suspended">(
         "Active"
     );
+    const [isDirty, setIsDirty] = useState(false);
 
     const handleAddUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,6 +60,7 @@ const Users = () => {
         setStatus("Active");
         setEditingUserId(null);
         setShowForm(false);
+        setIsDirty(false);
     };
     const handleDeleteUser = (id: string) => {
         const confirmed = window.confirm("Are you sure you want to delete this principal user?");
@@ -71,10 +74,12 @@ const Users = () => {
         setStatus(user.status);
         setEditingUserId(user.id);
         setShowForm(true);
+        setIsDirty(false);
     };
 
     return (
         <div className="p-6">
+            <BackToDashboardButton isDirty={isDirty} className="mb-3" />
             <h1 className="text-2xl font-bold mb-2">Principal Users</h1>
             <p className="text-gray-500 mb-6">Manage principal account users</p>
 
@@ -86,7 +91,10 @@ const Users = () => {
                 />
 
                 <button
-                    onClick={() => setShowForm(true)}
+                    onClick={() => {
+                        setShowForm(true);
+                        setIsDirty(false);
+                    }}
                     className="bg-emerald-600 text-white px-4 py-2 rounded-lg"
                 >
                     Add Principal User
@@ -106,7 +114,10 @@ const Users = () => {
                         type="text"
                         placeholder="Full name"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => {
+                            setName(e.target.value);
+                            setIsDirty(true);
+                        }}
                         className="border px-4 py-2 rounded-lg w-full"
                         required
                     />
@@ -115,7 +126,10 @@ const Users = () => {
                         type="email"
                         placeholder="Email address"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            setIsDirty(true);
+                        }}
                         className="border px-4 py-2 rounded-lg w-full"
                         required
                     />
@@ -125,9 +139,10 @@ const Users = () => {
                     <select
                         title="User status"
                         value={status}
-                        onChange={(e) =>
-                            setStatus(e.target.value as "Active" | "Inactive" | "Suspended")
-                        }
+                        onChange={(e) => {
+                            setStatus(e.target.value as "Active" | "Inactive" | "Suspended");
+                            setIsDirty(true);
+                        }}
                         className="border px-4 py-2 rounded-lg w-full"
                     ></select>
 
@@ -150,6 +165,7 @@ const Users = () => {
                                 setName("")
                                 setEmail("")
                                 setStatus("Active")
+                                setIsDirty(false)
                             }}
                             className="bg-gray-200 px-4 py-2 rounded-lg"
                         >

@@ -30,6 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 
 // Define form validation schema
 const formSchema = z.object({
@@ -79,6 +80,7 @@ const AddBenfekPage: React.FC = () => {
       termsAccepted: false,
     },
   });
+  const isDirty = form.formState.isDirty || !!uploadedFile;
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -175,6 +177,7 @@ return (
       {/* Page Header */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <BackToDashboardButton isDirty={isDirty} className="mb-4 text-white/80 hover:text-white" />
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-slate-300 font-semibold">Create Quiz</p>

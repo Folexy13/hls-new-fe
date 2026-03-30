@@ -174,12 +174,12 @@ const App = () => (
                 <Route
                   path="/principal"
                   element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.PRINCIPAL]}
-                      fallbackPath="/"
-                    >
+                    // <RoleBasedRoute
+                    //   allowedRoles={[UserRole.PRINCIPAL]}
+                    //   fallbackPath="/"
+                    // >
                       <PrincipalHomepage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 <Route
@@ -191,16 +191,16 @@ const App = () => (
                 <Route
                   path="/principal/account"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <AccountPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Add Benfek Route */}
                 {/* <Route
                   path="/principal/add-benfek"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <AddBenfekPage />
                     </RoleBasedRoute>
                   }
@@ -218,18 +218,18 @@ const App = () => (
                 <Route
                   path="/principal/earnings"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <EarningsPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Podcasts Route */}
                 <Route
                   path="/principal/podcasts"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <PodcastsPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Medications Route */}
@@ -250,36 +250,36 @@ const App = () => (
                 <Route
                   path="/principal/settings"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <SettingsPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Purchases Route */}
                 <Route
                   path="/principal/purchases"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <PurchasesPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Articles Route */}
                 <Route
                   path="/principal/articles"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <ArticlesPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* Principal Withdraw Route */}
                 <Route
                   path="/principal/withdraw"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
                       <WithdrawPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
 
