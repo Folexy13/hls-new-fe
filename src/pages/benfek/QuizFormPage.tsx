@@ -106,6 +106,7 @@ const QuizFormPage: React.FC = () => {
   const gameIntervalRef = useRef<number | null>(null);
   const [preGameCountdown, setPreGameCountdown] = useState(PRE_GAME_COUNTDOWN);
   const preGameIntervalRef = useRef<number | null>(null);
+  const spawnIndexRef = useRef(0);
 
   const validatedQuizCode = sessionStorage.getItem('validatedQuizCode') || '';
   const validatedBenfekName = sessionStorage.getItem('validatedBenfekName') || '';
@@ -202,8 +203,8 @@ const QuizFormPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await quizService.submitQuizData(payload);
-      toast.success('Assessment completed successfully. Please sign in.');
-      navigate('/auth/signin');
+      toast.success('Assessment completed successfully.');
+      navigate('/benfek/dashboard');
     } catch (error) {
       console.error(error);
       toast.error('Failed to submit quiz data. Please try again.');
@@ -308,15 +309,43 @@ const QuizFormPage: React.FC = () => {
         const motionDuration =
           motion === 'sweep'
             ? value >= 4
-              ? 2.2
-              : 3.4
-            : value >= 4
-              ? 1.6
-              : 2.6;
+              ? 2.0
+              : value <= 2
+                ? 1.8
+                : 2.6
+            : value >= 5
+              ? 1.1
+              : value >= 4
+                ? 1.4
+                : value <= 2
+                  ? 1.6
+                  : 2.2;
+        const spawnGrid = [
+          { x: 12, y: 20 },
+          { x: 32, y: 20 },
+          { x: 52, y: 20 },
+          { x: 72, y: 20 },
+          { x: 12, y: 40 },
+          { x: 32, y: 40 },
+          { x: 52, y: 40 },
+          { x: 72, y: 40 },
+          { x: 12, y: 60 },
+          { x: 32, y: 60 },
+          { x: 52, y: 60 },
+          { x: 72, y: 60 },
+        ];
+        const position = spawnGrid[spawnIndexRef.current % spawnGrid.length];
+        spawnIndexRef.current += 1;
+        const jitterX = (Math.random() - 0.5) * 6;
+        const jitterY = (Math.random() - 0.5) * 6;
+        const randomX = Math.random() * 85 + 5;
+        const randomY = Math.random() * 70 + 15;
+        const baseX = value >= 4 ? randomX : position.x + jitterX;
+        const baseY = value >= 4 ? randomY : position.y + jitterY;
         const newCoin: Coin = {
           id: `${Date.now()}-${Math.random()}`,
-          x: Math.random() * 85 + 5,
-          y: Math.random() * 70 + 15,
+          x: Math.min(92, Math.max(8, baseX)),
+          y: Math.min(80, Math.max(12, baseY)),
           value,
           label: chosen.label,
           icon: chosen.icon,
@@ -563,7 +592,7 @@ const QuizFormPage: React.FC = () => {
                     </Button>
                   ) : (
                     <Button type="button" onClick={() => beginGame(null)}>
-                      Play Final Game
+                      Next
                     </Button>
                   )}
                 </div>
@@ -574,8 +603,12 @@ const QuizFormPage: React.FC = () => {
       </div>
 
       {showGame && (
-        <div className="fixed inset-0 z-40 bg-gradient-to-br from-emerald-50 via-white to-amber-50">
+        <div className="fixed inset-0 z-40 bg-gradient-to-br from-emerald-900 via-slate-900 to-amber-900">
           <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.25),_transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(251,191,36,0.2),_transparent_60%)]" />
+            <div className="absolute inset-0 opacity-30 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.02)_40%,rgba(255,255,255,0)_60%)]" />
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle,_rgba(255,255,255,0.12)_1px,_transparent_1px)] [background-size:26px_26px]" />
             <div className="absolute top-6 left-6 rounded-full bg-white/80 px-4 py-2 shadow-md text-sm font-semibold text-slate-700">
               Score: {gameScore} gz
             </div>
@@ -586,7 +619,7 @@ const QuizFormPage: React.FC = () => {
                     key={`${coin.id}-${index}`}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-md border border-emerald-100"
                   >
-                    <div className="text-emerald-600">{coin.icon}</div>
+                    <div className="text-emerald-600 [&>svg]:h-5 [&>svg]:w-5 [&>img]:h-6 [&>img]:w-6">{coin.icon}</div>
                   </div>
                 ))}
               </div>
@@ -613,42 +646,39 @@ const QuizFormPage: React.FC = () => {
 
           <div className="relative w-full h-full overflow-hidden">
             {!gameRunning && !gameDone && preGameCountdown > 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-between py-16 pointer-events-none">
-                <div className="grid grid-cols-4 gap-4 rounded-3xl bg-white/80 p-6 shadow-lg">
-                  {[...currentGameOptions, ...(unrelatedOptionsByStep[nutrientStep] || [])]
-                    .slice(0, 4)
-                    .map((opt) => (
+              <div className="absolute inset-0 pointer-events-none">
+                {[...currentGameOptions, ...(unrelatedOptionsByStep[nutrientStep] || [])]
+                  .slice(0, 8)
+                  .map((opt, index) => {
+                    const positions = [
+                      { left: '40%', top: '16%' },
+                      { left: '60%', top: '16%' },
+                      { left: '22%', top: '32%' },
+                      { left: '78%', top: '32%' },
+                      { left: '14%', top: '54%' },
+                      { left: '86%', top: '54%' },
+                      { left: '30%', top: '74%' },
+                      { left: '66%', top: '74%' },
+                    ];
+                    const pos = positions[index] || positions[0];
+                    return (
                       <div
                         key={opt.id}
-                        className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-100 bg-white shadow-sm"
+                        className="absolute flex h-24 w-24 items-center justify-center rounded-full border border-emerald-100 bg-white/90 shadow-md"
+                        style={{ left: pos.left, top: pos.top }}
                       >
-                        <div className="flex flex-col items-center text-emerald-600">
+                        <div className="flex flex-col items-center text-emerald-600 [&>svg]:h-8 [&>svg]:w-8 [&>img]:h-10 [&>img]:w-10">
                           {opt.icon}
                           <span className="text-[10px] font-semibold">{opt.value} gz</span>
                         </div>
                       </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-4 gap-4 rounded-3xl bg-white/80 p-6 shadow-lg">
-                  {[...currentGameOptions, ...(unrelatedOptionsByStep[nutrientStep] || [])]
-                    .slice(4, 8)
-                    .map((opt) => (
-                      <div
-                        key={`${opt.id}-bottom`}
-                        className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-100 bg-white shadow-sm"
-                      >
-                        <div className="flex flex-col items-center text-emerald-600">
-                          {opt.icon}
-                          <span className="text-[10px] font-semibold">{opt.value} gz</span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
+                    );
+                  })}
               </div>
             )}
             {coins.map((coin) => {
               const size =
-                coin.value >= 5 ? 70 : coin.value >= 4 ? 80 : coin.value >= 3 ? 90 : coin.value >= 2 ? 100 : 110;
+                coin.value >= 5 ? 96 : coin.value >= 4 ? 112 : coin.value >= 3 ? 124 : coin.value >= 2 ? 136 : 148;
               const motionName =
                 coin.motion === 'float'
                   ? 'floatY'
@@ -676,7 +706,7 @@ const QuizFormPage: React.FC = () => {
                   ['--dy' as string]: `${(Math.random() - 0.5) * 160}px`,
                 }}
               >
-                <div className="flex flex-col items-center text-emerald-600">
+                <div className="flex flex-col items-center text-emerald-600 [&>svg]:h-8 [&>svg]:w-8 [&>img]:h-10 [&>img]:w-10">
                   {coin.icon}
                   <span className="text-[10px] font-semibold">{coin.value} gz</span>
                 </div>

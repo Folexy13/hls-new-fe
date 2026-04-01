@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Bell, Settings } from 'lucide-react';
@@ -13,6 +13,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, cartItems, logout, user } = useStore();
   const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [hidePrincipalFooter, setHidePrincipalFooter] = useState(false);
 
   // Get navigation items based on authentication and role
   // Only show common navigation items to unauthenticated users or if they match current role permission
@@ -21,11 +22,25 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifications = 3;
+  const isIOS = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  }, []);
 
   const handleLogout = () => {
     logout();
     setMobileMenuOpen(false);
   };
+
+  useEffect(() => {
+    if (!isIOS) return;
+    const handleScroll = () => {
+      setHidePrincipalFooter(window.scrollY > 0);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isIOS]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -253,7 +268,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
 
       {isAuthenticated && userRole === UserRole.PRINCIPAL && (
-        <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+        <footer className={`fixed bottom-0 left-0 right-0 z-40 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 transition-transform ${hidePrincipalFooter ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 gap-2 flex items-center justify-center">
             <Settings color='white' />
             <Link

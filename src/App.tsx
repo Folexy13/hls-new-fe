@@ -105,12 +105,12 @@ const App = () => (
                 <Route
                   path="/benfek/dashboard"
                   element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
+                    // <RoleBasedRoute
+                    //   allowedRoles={[UserRole.BENFEK]}
+                    //   fallbackPath="/"
+                    // >
                       <Dashboard />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 <Route
