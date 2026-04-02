@@ -1,12 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'react-toastify';
 import doctor from '../../images/bannerdoctor.png'
 import leftPill from '../../images/leftPill.png';
 import rightPill from '../../images/rightPill.png';
@@ -22,6 +17,7 @@ import samson from '../../images/samson-ojo.jpeg'
 import nick from '../../images/nick-ozonuma.jpg'
 import eriscyl from '../../images/ericsyl-john.jpg'
 import mimi from '../../images/mimi-gloria.jpg'
+import { Package } from "lucide-react";
 
 import {
   Carousel,
@@ -30,82 +26,20 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "../../components/ui/carousel"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter
+} from "@/components/ui/card";
 
 const BenfekHomepage: React.FC = () => {
-  const [showQuizModal, setShowQuizModal] = useState(false);
-  const [showCodeDialog, setShowCodeDialog] = useState(false);
-  const [code, setCode] = useState('');
-  const [showNutrientForm, setShowNutrientForm] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [nutrientStep, setNutrientStep] = useState(0); // 0: Basic, 1: Lifestyle, 2: Preference
-  const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
-  const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
-  const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
   const navigate = useNavigate();
-  const handleCodeSubmit = () => {
-    if (code === '12345') {
-      setShowCodeDialog(false);
-      setShowNutrientForm(true);
-      setNutrientStep(0);
-      toast.success('Code verified! Please fill out the nutrient form.');
-    } else {
-      toast.error('Invalid code. Please try again.');
-    }
-  };
-
-  const handleNutrientNext = () => {
-    // Validate current step
-    if (nutrientStep === 0) {
-      if (!basic.gender || !basic.age || !basic.weight || !basic.height) {
-        toast.error('Please fill all required basic fields.');
-        return;
-      }
-    }
-    if (nutrientStep === 1) {
-      if (!lifestyle.career) {
-        toast.error('Please fill all required lifestyle fields.');
-        return;
-      }
-    }
-    if (nutrientStep === 2) {
-      if (!preference.minBudget || !preference.maxBudget) {
-        toast.error('Please fill all required preference fields.');
-        return;
-      }
-    }
-    if (nutrientStep < 2) setNutrientStep(nutrientStep + 1);
-  };
-
-  const handleNutrientBack = () => {
-    if (nutrientStep > 0) setNutrientStep(nutrientStep - 1);
-  };
-
-  const handleNutrientSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Log output as requested
-    const output = {
-      basic,
-      lifestyle: {
-        ...lifestyle,
-        habit: lifestyle.habit.join(','),
-        fun: lifestyle.fun.join(','),
-        routine: lifestyle.routine.join(','),
-      },
-      preference: {
-        ...preference,
-        drugForm: preference.drugForm.join(','),
-      },
-    };
-    // eslint-disable-next-line no-console
-    console.log('Nutrient Assessment Output:', output);
-    setShowNutrientForm(false);
-    setShowSuccessModal(true);
-    // TODO: redirect to signup page after a delay or on button click
-  };
 
   const handleQuizStart = () => {
-    setShowQuizModal(true);
-    setShowCodeDialog(true);
+    navigate('/assessment');
   };
 
   const testimonials = [
@@ -307,7 +241,7 @@ const BenfekHomepage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Your Health Dashboard</h1>
             <p className="text-gray-600 mt-2">Welcome back! Here's your personalized health overview.</p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {dashboardStats.map((stat, index) => (
               <Card key={index}>
@@ -326,7 +260,7 @@ const BenfekHomepage: React.FC = () => {
               </Card>
             ))}
           </div>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader>
@@ -359,7 +293,7 @@ const BenfekHomepage: React.FC = () => {
                 </Button>
               </CardFooter>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Health Insights</CardTitle>
@@ -389,7 +323,7 @@ const BenfekHomepage: React.FC = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Hero Section */}
       <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Content Container */}
@@ -453,7 +387,7 @@ const BenfekHomepage: React.FC = () => {
           <div className="text-center mb-6 sm:mb-12">
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900">Why take the quiz?</h2>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {whyTakeQuiz.map((item, index) => (
@@ -480,7 +414,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Featured Products</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Premium supplements backed by science</p>
             <div className="mt-3 sm:mt-6">
-              <Link 
+              <Link
                 to="/marketplace"
                 className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors text-xs sm:text-base"
               >
@@ -488,7 +422,7 @@ const BenfekHomepage: React.FC = () => {
               </Link>
             </div>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {products.map((product) => (
@@ -530,7 +464,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">What Our Customers Say</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Real stories from real people</p>
           </div>
-          
+
           <Carousel className="w-full max-w-5xl mx-auto">
             <CarouselContent>
               {testimonials.map((testimonial, index) => (
@@ -571,7 +505,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Frequently Asked Questions</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Everything you need to know</p>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {faqs.map((faq, index) => (
@@ -598,7 +532,7 @@ const BenfekHomepage: React.FC = () => {
             <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Latest from Our Blog</h2>
             <p className="text-sm sm:text-lg lg:text-xl text-gray-600">Health insights and tips from our experts</p>
           </div>
-          
+
           <Carousel className="w-full">
             <CarouselContent>
               {blogs.map((blog) => (
@@ -615,7 +549,7 @@ const BenfekHomepage: React.FC = () => {
                       <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
                       <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
                       <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
-                      <Link 
+                      <Link
                         to={`/blog/${blog.id}`}
                         className="text-emerald-600 font-medium hover:opacity-80 inline-block text-xs sm:text-base"
                       >
@@ -677,150 +611,6 @@ const BenfekHomepage: React.FC = () => {
         </div>
       </footer>
 
-      {/* Quiz Modal */}
-      <Dialog open={showQuizModal} onOpenChange={setShowQuizModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Health Assessment Quiz</DialogTitle>
-            <DialogDescription>Enter your quiz code to begin the assessment</DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
-      {/* Code Dialog */}
-      <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Enter Quiz Code</DialogTitle>
-            <DialogDescription>Please enter your unique quiz code to proceed</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Enter quiz code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <Button onClick={handleCodeSubmit} className="w-full">
-              Verify Code
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* Nutrient Form Modal - Multi-step */}
-      <Dialog open={showNutrientForm} onOpenChange={setShowNutrientForm}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nutrient Assessment Form</DialogTitle>
-            <DialogDescription>Fill out each section. Click Next to continue.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleNutrientSubmit} className="space-y-4">
-            {/* Step 1: Basic */}
-            {nutrientStep === 0 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Gender</Label>
-                    <Select value={basic.gender} onValueChange={v => setBasic(b => ({ ...b, gender: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Nickname (optional)</Label>
-                    <Input value={basic.nickname} onChange={e => setBasic(b => ({ ...b, nickname: e.target.value }))} placeholder="Nickname" />
-                  </div>
-                  <div>
-                    <Label>Age</Label>
-                    <Input type="number" value={basic.age} onChange={e => setBasic(b => ({ ...b, age: e.target.value }))} placeholder="Enter your age" />
-                  </div>
-                  <div>
-                    <Label>Weight (kg)</Label>
-                    <Input type="number" value={basic.weight} onChange={e => setBasic(b => ({ ...b, weight: e.target.value }))} placeholder="Enter weight" />
-                  </div>
-                  <div>
-                    <Label>Height (cm)</Label>
-                    <Input type="number" value={basic.height} onChange={e => setBasic(b => ({ ...b, height: e.target.value }))} placeholder="Enter height" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
-                </div>
-              </div>
-            )}
-            {/* Step 2: Lifestyle */}
-            {nutrientStep === 1 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Habit (comma separated)</Label>
-                    <Input value={lifestyle.habit.join(',')} onChange={e => setLifestyle(l => ({ ...l, habit: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. running, yoga" />
-                  </div>
-                  <div>
-                    <Label>Fun (comma separated)</Label>
-                    <Input value={lifestyle.fun.join(',')} onChange={e => setLifestyle(l => ({ ...l, fun: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. reading, music" />
-                  </div>
-                  <div>
-                    <Label>Routine (comma separated)</Label>
-                    <Input value={lifestyle.routine.join(',')} onChange={e => setLifestyle(l => ({ ...l, routine: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. morning, night" />
-                  </div>
-                  <div>
-                    <Label>Career</Label>
-                    <Input value={lifestyle.career} onChange={e => setLifestyle(l => ({ ...l, career: e.target.value }))} placeholder="e.g. developer" />
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
-                </div>
-              </div>
-            )}
-            {/* Step 3: Preference */}
-            {nutrientStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Drug Form (comma separated)</Label>
-                    <Input value={preference.drugForm.join(',')} onChange={e => setPreference(p => ({ ...p, drugForm: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. tablet, capsule" />
-                  </div>
-                  <div>
-                    <Label>Min Budget</Label>
-                    <Input type="number" value={preference.minBudget} onChange={e => setPreference(p => ({ ...p, minBudget: e.target.value }))} placeholder="e.g. 1000" />
-                  </div>
-                  <div>
-                    <Label>Max Budget</Label>
-                    <Input type="number" value={preference.maxBudget} onChange={e => setPreference(p => ({ ...p, maxBudget: e.target.value }))} placeholder="e.g. 5000" />
-                  </div>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
-                  <Button type="submit">Submit</Button>
-                </div>
-              </div>
-            )}
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assessment Complete!</DialogTitle>
-            <DialogDescription>
-              Your health assessment has been completed successfully. You can now proceed to create your account.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => navigate("/auth/signup")} className="w-full">
-            Continue to Sign Up
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

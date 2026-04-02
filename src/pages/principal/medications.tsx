@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
@@ -98,6 +99,7 @@ const MedicationsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [newMedication, setNewMedication] = useState<Partial<Medication>>({
     name: '',
     category: '',
@@ -233,6 +235,7 @@ const MedicationsPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewMedication(prev => ({ ...prev, [name]: value }));
+    setIsDirty(true);
   };
 
   // Handle image selection (preview only, upload happens on submit)
@@ -240,6 +243,7 @@ const MedicationsPage: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
+      setIsDirty(true);
       
       // Create preview
       const reader = new FileReader();
@@ -395,6 +399,8 @@ const MedicationsPage: React.FC = () => {
         image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
       });
       setPreviewImage(null);
+      setIsDirty(false);
+      setIsDirty(false);
     } catch (error) {
       console.error('Failed to save medication:', error);
       toast.error('Failed to save medication. Please try again.');
@@ -407,6 +413,7 @@ const MedicationsPage: React.FC = () => {
   const viewMedication = (medication: Medication) => {
     setSelectedMedication(medication);
     setIsModalOpen(true);
+    setIsDirty(false);
   };
   const editMedication = (medication: Medication) => {
     setSelectedMedication(null);
@@ -423,6 +430,7 @@ const MedicationsPage: React.FC = () => {
     });
     setPreviewImage(medication.image);
     setIsModalOpen(true);
+    setIsDirty(false);
   };
   const deleteMedication = async (id: number) => {
     const confirmed = window.confirm("Are you sure you want to delete this medication?");
@@ -445,6 +453,7 @@ const MedicationsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-row items-center justify-between">
             <div>
+          <BackToDashboardButton isDirty={isDirty} className="mb-2" />
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
               <p className="hidden sm:block mt-1 text-sm text-gray-500">
                 Manage your medication inventory
@@ -468,6 +477,7 @@ const MedicationsPage: React.FC = () => {
                     image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                   });
                   setPreviewImage(null);
+                  setIsDirty(false);
                   setIsModalOpen(true);
                 }}
               >
@@ -526,6 +536,7 @@ const MedicationsPage: React.FC = () => {
                   image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                 });
                 setPreviewImage(null);
+                setIsDirty(false);
                 setIsModalOpen(true);
               }} />
             ) : (
@@ -830,7 +841,12 @@ const MedicationsPage: React.FC = () => {
       {/* Add/View Medication Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingMedicationId(null);
+          setSelectedMedication(null);
+          setIsDirty(false);
+        }}
         title={
           selectedMedication
             ? "Medication Details"
@@ -1028,6 +1044,7 @@ const MedicationsPage: React.FC = () => {
                     image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                   });
                   setPreviewImage(null);
+                  setIsDirty(false);
                 }}
               >
                 Cancel

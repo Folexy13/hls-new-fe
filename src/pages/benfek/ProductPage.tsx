@@ -1,70 +1,94 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Star, Shield, Truck, Heart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import vitamins from '../../images/vitamins.png';
-import vitamins2 from '../../images/vitamins2.png';
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
-import { useState } from 'react';
+import { apiClient } from '@/config/axios';
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  description: string;
+  vendor: string;
+  rating: number;
+  reviews: number;
+  inStock: boolean;
+  features: string[];
+  benefits: string[];
+};
 
 const ProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useStore();
   const [adding, setAdding] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const products = [
-    {
-      id: '1',
-      name: 'Vitamin D3 Complex',
-      price: 14999,
-      image: vitamins,
-      description: 'High-potency vitamin D3 for bone health and immune support',
-      category: 'vitamin' as const,
-      vendor: 'HLS',
-      rating: 4.8,
-      reviews: 156,
-      inStock: true,
-      features: [
-        '2000 IU of Vitamin D3 per serving',
-        'Enhanced with Vitamin K2',
-        'Third-party tested for purity',
-        'Non-GMO and gluten-free'
-      ],
-      benefits: [
-        'Supports bone health and calcium absorption',
-        'Boosts immune system function',
-        'Promotes muscle strength',
-        'May improve mood and energy levels'
-      ]
-    },
-    {
-      id: '2',
-      name: 'Omega-3 Fish Oil',
-      price: 17499,
-      image: vitamins2,
-      description: 'Pure omega-3 fatty acids for heart and brain health',
-      category: 'supplement' as const,
-      vendor: 'HLS',
-      rating: 4.9,
-      reviews: 203,
-      inStock: true,
-      features: [
-        '1200mg EPA/DHA per serving',
-        'Molecularly distilled for purity',
-        'Sustainably sourced fish oil',
-        'Enteric coated to reduce fishy aftertaste'
-      ],
-      benefits: [
-        'Supports cardiovascular health',
-        'Promotes brain function and memory',
-        'Reduces inflammation',
-        'Supports eye health'
-      ]
-    }
-  ];
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const response = await apiClient.get(`/api/v2/supplements/${id}`);
+        const data = response.data?.data?.supplement;
+        if (!data) {
+          setError('Product not found.');
+          return;
+        }
+        const mapped: Product = {
+          id: String(data.id),
+          name: data.name,
+          price: data.price,
+          image: data.image || '/placeholder.svg',
+          description: data.description,
+          vendor: 'HLS',
+          rating: 4.8,
+          reviews: 120,
+          inStock: data.stock > 0,
+          features: [
+            'Quality tested for purity',
+            'Carefully sourced ingredients',
+            'Stored under optimal conditions',
+            'Backed by HLS quality standards',
+          ],
+          benefits: [
+            'Supports daily wellness goals',
+            'Formulated for consistent results',
+            'Trusted by HLS customers',
+            'Easy to integrate into routine',
+          ],
+        };
+        setProduct(mapped);
+      } catch (err) {
+        console.error(err);
+        setError('Failed to load product.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const product = products.find(p => p.id === id) || products[0];
+    fetchProduct();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 text-center text-gray-600">
+        Loading product...
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 text-center text-gray-600">
+        {error || 'Product not found.'}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-4 sm:py-8">

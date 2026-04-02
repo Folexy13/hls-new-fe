@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -12,16 +13,15 @@ import {
 } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Search, UserPlus, Filter, Download,
   ChevronDown, Eye, ArrowUpDown,
-  Copy, CheckCircle, Package, Plus, Save, Loader2, X
+  Copy, CheckCircle, Plus
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
 
@@ -99,18 +99,9 @@ const BenfeksPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedBenfek, setSelectedBenfek] = useState<BenfekRecord | null>(null);
-  
-  const [newBenfek, setNewBenfek] = useState({
-    benfekName: '',
-    benfekPhone: '',
-    allergies: '',
-    scares: '',
-    familyCondition: '',
-    medications: '',
-    hasCurrentCondition: false,
-  });
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const itemsPerPage = 10;
 
@@ -118,13 +109,16 @@ const BenfeksPage: React.FC = () => {
   useEffect(() => {
     const fetchBenfeks = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const response = await apiClient.get('/api/v2/quiz-code/benfeks');
         const data = response.data?.data?.benfeks || [];
         setBenfeks(data);
       } catch (error) {
         console.error('Failed to fetch benfeks:', error);
-        toast.error('Failed to load benfeks');
+        const message = 'Failed to load benfeks';
+        setLoadError(message);
+        toast.error(message);
       } finally {
         setIsLoading(false);
       }
@@ -132,6 +126,8 @@ const BenfeksPage: React.FC = () => {
 
     fetchBenfeks();
   }, []);
+
+  console.log(benfeks)
 
   // Handle sorting
   const handleSort = (field: string) => {
@@ -174,47 +170,8 @@ const BenfeksPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
-    setNewBenfek(prev => ({ ...prev, [name]: val }));
-  };
-
-  const handleSubmit = async () => {
-    if (!newBenfek.benfekName || !newBenfek.benfekPhone) {
-      toast.error('Please fill in required fields');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const response = await apiClient.post('/api/v2/quiz-code/create', newBenfek);
-      
-      if (response.data?.success) {
-        const created = response.data.data;
-        const transformed = {
-          ...created,
-          registrationStatus: created.isUsed ? 'registered' : 'not_registered'
-        };
-        setBenfeks(prev => [transformed, ...prev]);
-        toast.success('Benfek record created and code generated!');
-        setIsModalOpen(false);
-        setNewBenfek({
-          benfekName: '',
-          benfekPhone: '',
-          allergies: '',
-          scares: '',
-          familyCondition: '',
-          medications: '',
-          hasCurrentCondition: false,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to create benfek:', error);
-      toast.error('Failed to create benfek record');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleNavigateToAdd = () => {
+    navigate('/principal/add-benfek');
   };
 
   // Render status badge
@@ -230,29 +187,30 @@ const BenfeksPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-gray-50 pb-20 sm:pb-8">
-      {/* Page Header */}
-      <div className="bg-white border-b sticky top-0 z-20 sm:relative sm:top-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-row items-center justify-between">
+    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white sticky top-0 z-20 sm:relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Benfeks</h1>
-              <p className="hidden sm:block mt-1 text-sm text-gray-500">
-                Manage your Benfeks and quiz codes
+              <BackToDashboardButton className="mb-3 text-white/80 hover:text-white" />
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-300 font-semibold">Directory</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mt-2">Benfeks</h1>
+              <p className="mt-2 text-sm text-slate-300">
+                Manage your benfeks and quiz codes in one place.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-white/10 px-4 py-3 border border-white/10">
+                <p className="text-xs text-slate-300">Total</p>
+                <p className="text-lg font-semibold">{isLoading ? '...' : benfeks.length}</p>
+              </div>
               <Button
                 size="sm"
-                className="flex items-center gap-2 h-9 rounded-full px-4 shadow-sm bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  setSelectedBenfek(null);
-                  setIsModalOpen(true);
-                }}
+                className="flex items-center gap-2 h-10 rounded-full px-5 shadow-sm bg-emerald-500 hover:bg-emerald-600 text-slate-900"
+                onClick={handleNavigateToAdd}
               >
                 <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add New Benfek</span>
-                <span className="sm:hidden">Add</span>
+                Add Benfek
               </Button>
             </div>
           </div>
@@ -260,7 +218,7 @@ const BenfeksPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -268,7 +226,7 @@ const BenfeksPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search benfeks..."
-                className="pl-10 h-11 sm:h-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                className="pl-10 h-11 sm:h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -285,13 +243,18 @@ const BenfeksPage: React.FC = () => {
               </Button>
             </div>
           </div>
+          {loadError && (
+            <div className="bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-700">
+              {loadError}
+            </div>
+          )}
 
           {/* Desktop Table View - Hidden on mobile */}
           <div className="hidden md:block overflow-x-auto bg-white">
             {isLoading ? (
               <TableSkeleton />
             ) : benfeks.length === 0 ? (
-              <EmptyState onAddClick={() => setIsModalOpen(true)} />
+              <EmptyState onAddClick={handleNavigateToAdd} />
             ) : (
               <Table>
                 <TableCaption>A list of your registered and pending benfeks.</TableCaption>
@@ -325,19 +288,28 @@ const BenfeksPage: React.FC = () => {
                 <TableBody>
                   {paginatedData.map((benfek) => (
                     <TableRow key={benfek.id}>
-                      <TableCell className="font-medium">{benfek.id}</TableCell>
+                      <TableCell className="font-medium text-slate-500">{benfek.id}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-blue-600 font-bold">{benfek.code}</code>
+                          <code className="bg-slate-100 px-2 py-1 rounded text-blue-600 font-bold">{benfek.code}</code>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => copyCode(benfek.code)}>
                             {copiedCode === benfek.code ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-gray-400" />}
                           </Button>
                         </div>
                       </TableCell>
-                      <TableCell className="font-bold">{benfek.benfekName}</TableCell>
-                      <TableCell>{benfek.benfekPhone}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center">
+                            {benfek.benfekName.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">{benfek.benfekName}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">{benfek.benfekPhone}</TableCell>
                       <TableCell>{renderStatusBadge(benfek.registrationStatus)}</TableCell>
-                      <TableCell>{new Date(benfek.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{new Date(benfek.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => { setSelectedBenfek(benfek); setIsModalOpen(true); }}>
                           <Eye className="h-4 w-4" />
@@ -356,7 +328,7 @@ const BenfeksPage: React.FC = () => {
               <AccordionSkeleton />
             ) : benfeks.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm">
-                <EmptyState onAddClick={() => setIsModalOpen(true)} />
+                <EmptyState onAddClick={handleNavigateToAdd} />
               </div>
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-2">
@@ -435,7 +407,7 @@ const BenfeksPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={selectedBenfek ? "Benfek Details" : "Create New Benfek"}
+        title="Benfek Details"
         size="lg"
       >
         {selectedBenfek ? (
@@ -503,54 +475,7 @@ const BenfeksPage: React.FC = () => {
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="benfekName">Benfek Name <span className="text-red-500">*</span></Label>
-                <Input id="benfekName" name="benfekName" value={newBenfek.benfekName} onChange={handleInputChange} placeholder="Full Name" className="rounded-xl h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="benfekPhone">Phone Number <span className="text-red-500">*</span></Label>
-                <Input id="benfekPhone" name="benfekPhone" value={newBenfek.benfekPhone} onChange={handleInputChange} placeholder="+234..." className="rounded-xl h-11" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
-              <input type="checkbox" id="hasCurrentCondition" name="hasCurrentCondition" checked={newBenfek.hasCurrentCondition} onChange={(e) => setNewBenfek(prev => ({ ...prev, hasCurrentCondition: e.target.checked }))} className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <Label htmlFor="hasCurrentCondition" className="font-bold text-gray-700 cursor-pointer">Benfek has a chronic/current health condition</Label>
-            </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="allergies">Known Allergies</Label>
-                <Textarea id="allergies" name="allergies" value={newBenfek.allergies} onChange={handleInputChange} placeholder="e.g. Peanuts, Penicillin..." className="min-h-24 rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="scares">Health Scares/Concerns</Label>
-                <Textarea id="scares" name="scares" value={newBenfek.scares} onChange={handleInputChange} placeholder="What issues scare them?" className="min-h-24 rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="familyCondition">Family's notable health condition</Label>
-                <Textarea id="familyCondition" name="familyCondition" value={newBenfek.familyCondition} onChange={handleInputChange} placeholder="e.g. Diabetes, Hypertension..." className="min-h-24 rounded-xl" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="medications">Current Medications</Label>
-                <Textarea id="medications" name="medications" value={newBenfek.medications} onChange={handleInputChange} placeholder="What are they currently taking?" className="min-h-24 rounded-xl" />
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end gap-2 z-10">
-              <Button variant="outline" className="flex-1 sm:flex-none rounded-full" onClick={() => setIsModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit} className="flex-[2] sm:flex-none items-center gap-2 rounded-full font-bold shadow-lg shadow-blue-100 bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {isSubmitting ? "Generating Code..." : "Create & Generate Code"}
-              </Button>
-            </div>
-          </div>
-        )}
+        ) : null}
       </Modal>
     </div>
   );

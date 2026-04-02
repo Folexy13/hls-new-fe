@@ -15,8 +15,8 @@ const AuthSignupPage = () => {
 
         <div className="grid md:grid-cols-3 gap-6">
 
-          {/* Benfek */}
-          <Link to="/assessment">
+          {/* Researcher */}
+          <Link to="/auth/signup/researcher">
             <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:shadow-lg hover:bg-green-50">
 
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center text-2xl">
@@ -24,15 +24,11 @@ const AuthSignupPage = () => {
               </div>
 
               <h2 className="text-lg font-semibold text-green-600 mb-2">
-                Benfek
+                Researcher
               </h2>
 
               <p className="text-sm text-gray-600">
-                Customer account – requires quiz code from your principal
-              </p>
-
-              <p className="text-sm text-yellow-600 mt-2">
-                ⚠ You will need a quiz code
+                Researcher account to join studies and access research-related features
               </p>
 
             </div>

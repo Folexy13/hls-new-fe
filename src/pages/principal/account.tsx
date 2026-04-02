@@ -9,13 +9,23 @@ import {
 } from '@/components/ui/pagination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { 
   Search, Download, ArrowUpDown, CreditCard, 
   DollarSign, ArrowUp, ArrowDown, Calendar, 
-  Copy, CheckCircle, User, Lock, Bell, Shield
+  Copy, CheckCircle, User, Lock, Bell, Shield,
+  MessageCircle,
+  AlertTriangle
 } from 'lucide-react';
 
 // Define the Transaction type
@@ -163,10 +173,11 @@ const AccountPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Page Header */}
-      <div className="bg-white border-b">
+      {/* <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
+              
               <h1 className="text-2xl font-bold text-gray-900">Account</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Manage your wallet and transactions
@@ -180,10 +191,11 @@ const AccountPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
+      <BackToDashboardButton className="ml-3 mt-3 " />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -568,99 +580,170 @@ const AccountPage: React.FC = () => {
           
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1">
-                <Card>
-                  <div className="p-6 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Account Settings</h3>
-                  </div>
-                  <div className="p-4">
-                    <nav className="space-y-1">
-                      {[
-                        { icon: <User className="h-5 w-5" />, label: 'Personal Information' },
-                        { icon: <CreditCard className="h-5 w-5" />, label: 'Payment Methods' },
-                        { icon: <Lock className="h-5 w-5" />, label: 'Security' },
-                        { icon: <Bell className="h-5 w-5" />, label: 'Notifications' },
-                        { icon: <Shield className="h-5 w-5" />, label: 'Privacy' },
-                      ].map((item, index) => (
-                        <div 
-                          key={index}
-                          className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                            index === 0 ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <span className="mr-3">{item.icon}</span>
-                          {item.label}
-                        </div>
-                      ))}
-                    </nav>
-                  </div>
-                </Card>
+            <Card>
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Account Settings</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage your profile, security, notifications, and support.
+                </p>
               </div>
-              
-              <div className="md:col-span-2">
-                <Card>
-                  <div className="p-6 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
-                    <p className="mt-1 text-sm text-gray-500">Update your account details and personal information.</p>
-                  </div>
-                  <div className="p-6">
-                    {isLoading ? (
-                      <div className="space-y-6">
-                        <div className="space-y-2">
-                          <Skeleton className="h-5 w-24" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                        <div className="space-y-2">
-                          <Skeleton className="h-5 w-24" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                        <div className="space-y-2">
-                          <Skeleton className="h-5 w-24" />
-                          <Skeleton className="h-10 w-full" />
-                        </div>
-                        <Skeleton className="h-10 w-32" />
+              <div className="p-6">
+                <Accordion type="single" collapsible className="space-y-2">
+                  <AccordionItem value="personal" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <User className="h-5 w-5" />
+                        <span>Personal Information</span>
                       </div>
-                    ) : (
-                      <form className="space-y-6">
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                          <div>
-                            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                              First Name
-                            </label>
-                            <Input id="firstName" defaultValue="NEJJE" />
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      {isLoading ? (
+                        <div className="space-y-4">
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                        </div>
+                      ) : (
+                        <form className="space-y-4">
+                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                                First Name
+                              </label>
+                              <Input id="firstName" defaultValue="NEJJE" />
+                            </div>
+                            <div>
+                              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                                Last Name
+                              </label>
+                              <Input id="lastName" defaultValue="Health Solutions" />
+                            </div>
                           </div>
                           <div>
-                            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                              Last Name
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                              Email Address
                             </label>
-                            <Input id="lastName" defaultValue="Health Solutions" />
+                            <Input id="email" type="email" defaultValue="contact@nejje.com" />
                           </div>
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                            Email Address
-                          </label>
-                          <Input id="email" type="email" defaultValue="contact@nejje.com" />
-                        </div>
-                        
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                            Phone Number
-                          </label>
-                          <Input id="phone" defaultValue="+234 123 456 7890" />
-                        </div>
-                        
-                        <div>
+                          <div>
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                              Phone Number
+                            </label>
+                            <Input id="phone" defaultValue="+234 123 456 7890" />
+                          </div>
                           <Button>Save Changes</Button>
+                        </form>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="payments" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <CreditCard className="h-5 w-5" />
+                        <span>Payment Methods</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between rounded-md border p-3 bg-gray-50">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">First Bank •••• 7890</p>
+                            <p className="text-xs text-gray-500">Primary payout account</p>
+                          </div>
+                          <Button variant="outline" size="sm">Change</Button>
                         </div>
+                        <Button variant="outline">Add new bank account</Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="security" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <Lock className="h-5 w-5" />
+                        <span>Security</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <form className="space-y-4">
+                        <div>
+                          <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            Current Password
+                          </label>
+                          <Input id="currentPassword" type="password" placeholder="Enter current password" />
+                        </div>
+                        <div>
+                          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            New Password
+                          </label>
+                          <Input id="newPassword" type="password" placeholder="Enter new password" />
+                        </div>
+                        <div>
+                          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                            Confirm New Password
+                          </label>
+                          <Input id="confirmPassword" type="password" placeholder="Confirm new password" />
+                        </div>
+                        <Button>Update Password</Button>
                       </form>
-                    )}
-                  </div>
-                </Card>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="notifications" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <Bell className="h-5 w-5" />
+                        <span>Notifications</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-3 text-sm text-gray-700">
+                          <input type="checkbox" defaultChecked className="h-4 w-4" />
+                          Email updates and reports
+                        </label>
+                        <label className="flex items-center gap-3 text-sm text-gray-700">
+                          <input type="checkbox" defaultChecked className="h-4 w-4" />
+                          Benfek registration alerts
+                        </label>
+                        <label className="flex items-center gap-3 text-sm text-gray-700">
+                          <input type="checkbox" className="h-4 w-4" />
+                          Product and order notifications
+                        </label>
+                        <Button>Save Notification Preferences</Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="complaints" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span>Make Complaints</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <form className="space-y-4">
+                        <div>
+                          <label htmlFor="complaintSubject" className="block text-sm font-medium text-gray-700 mb-1">
+                            Subject
+                          </label>
+                          <Input id="complaintSubject" placeholder="Short summary" />
+                        </div>
+                        <div>
+                          <label htmlFor="complaintMessage" className="block text-sm font-medium text-gray-700 mb-1">
+                            Message
+                          </label>
+                          <Textarea id="complaintMessage" placeholder="Describe the issue..." />
+                        </div>
+                        <Button variant="outline">Submit Complaint</Button>
+                      </form>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
-            </div>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

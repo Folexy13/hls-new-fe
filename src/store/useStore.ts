@@ -13,6 +13,21 @@ export interface User {
   isAuthenticated: boolean;
 }
 
+export interface BenfekProfile {
+  rewardPoints: number;
+  hasPassword: boolean;
+  pharmacistRegistered: boolean;
+}
+
+export type BenfekUser = User & {
+  role: 'benfek';
+  profile?: BenfekProfile;
+};
+
+export const isBenfekUser = (user: User | null): user is BenfekUser => {
+  return user?.role === 'benfek';
+};
+
 export interface Product {
   id: string;
   name: string;
@@ -39,6 +54,7 @@ interface StoreState {
   // Auth
   user: User | null;
   isAuthenticated: boolean;
+  benfekProfile: BenfekProfile | null;
   
   // Quiz
   quizData: QuizData | null;
@@ -56,6 +72,7 @@ interface StoreState {
   setUser: (user: User) => void;
   login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
+  setBenfekProfile: (profile: BenfekProfile) => void;
   setQuizData: (data: QuizData) => void;
   addToCart: (product: Product) => void;
   removeFromCart: (productId: string) => void;
@@ -72,6 +89,7 @@ export const useStore = create<StoreState>()(
       // Initial state
       user: null,
       isAuthenticated: false,
+      benfekProfile: null,
       quizData: null,
       quizCompleted: false,
       cartItems: [],
@@ -101,11 +119,13 @@ export const useStore = create<StoreState>()(
         tokenManager.clearTokens();
         set({ 
           user: null, 
-          isAuthenticated: false, 
+          isAuthenticated: false,
+          benfekProfile: null,
           cartItems: [], 
           cartTotal: 0 
         });
       },
+      setBenfekProfile: (profile) => set({ benfekProfile: profile }),
 
       setQuizData: (data) =>
         set({ quizData: data, quizCompleted: true }),
@@ -191,6 +211,7 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        benfekProfile: state.benfekProfile,
         quizData: state.quizData,
         quizCompleted: state.quizCompleted,
         cartItems: state.cartItems,
