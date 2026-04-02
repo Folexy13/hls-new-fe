@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-toastify';
+import { apiClient } from '@/config/axios';
 
 const QuizPage = () => {
   const navigate = useNavigate();
@@ -21,31 +22,24 @@ const QuizPage = () => {
     setIsValidating(true);
 
     try {
-      // TEMP FRONTEND MOCK
-      // Replace this later with backend response
-      const mockResponse = {
-        valid: true,
-        code: quizCode,
-        benfekName: 'John Doe',
-        benfekPhone: '+234 801 234 5678',
-      };
+      const response = await apiClient.post('/api/v2/quiz-code/verify-benfek', {
+        code: quizCode.trim(),
+      });
 
-      if (!mockResponse.valid) {
-        toast.error('Invalid quiz code');
-        return;
-      }
+      const data = response.data?.data;
 
       sessionStorage.setItem(
         'validatedQuizData',
         JSON.stringify({
-          code: mockResponse.code,
-          benfekName: mockResponse.benfekName,
-          benfekPhone: mockResponse.benfekPhone,
+          code: data?.code || quizCode.trim(),
+          benfekName: data?.benfekName || '',
+          benfekPhone: data?.benfekPhone || '',
+          registrationStatus: data?.registrationStatus || '',
         })
       );
 
       toast.success('Code validated successfully');
-      navigate('/quiz-form');
+      navigate('/benfek/quiz-form');
     } catch (error) {
       toast.error('Unable to validate code. Please try again.');
     } finally {

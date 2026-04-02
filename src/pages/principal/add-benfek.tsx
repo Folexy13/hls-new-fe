@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -28,6 +35,9 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { apiClient } from '@/config/axios';
+import { toast } from 'sonner';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 
 // Define form validation schema
 const formSchema = z.object({
@@ -37,13 +47,18 @@ const formSchema = z.object({
   phone: z.string().min(10, { message: 'Phone number must be at least 10 characters.' }),
   age: z.string().min(1, { message: 'Age is required.' }),
   gender: z.string().min(1, { message: 'Please select a gender.' }),
-  specialty: z.string().min(1, { message: 'Please select a specialty.' }),
-  licenseNumber: z.string().min(5, { message: 'License number must be at least 5 characters.' }),
-  address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
-  city: z.string().min(2, { message: 'City must be at least 2 characters.' }),
-  state: z.string().min(2, { message: 'State must be at least 2 characters.' }),
-  bio: z.string().optional(),
-  commissionRate: z.string().min(1, { message: 'Please select a commission rate.' }),
+  allergies: z.string().optional(),
+  scares: z.string().optional(),
+  familyCondition: z.string().optional(),
+  medications: z.string().optional(),
+  hasCurrentCondition: z.string().optional(),
+  // specialty: z.string().min(1, { message: 'Please select a specialty.' }),
+  // licenseNumber: z.string().min(5, { message: 'License number must be at least 5 characters.' }),
+  // address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
+  // city: z.string().min(2, { message: 'City must be at least 2 characters.' }),
+  // state: z.string().min(2, { message: 'State must be at least 2 characters.' }),
+  // bio: z.string().optional(),
+  // commissionRate: z.string().min(1, { message: 'Please select a commission rate.' }),
   termsAccepted: z.boolean().refine(val => val === true, {
     message: 'You must accept the terms and conditions.',
   }),
@@ -55,44 +70,56 @@ const AddBenfekPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [showSentModal, setShowSentModal] = useState(false);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      age: '',
-      gender: '',
-      specialty: '',
-      licenseNumber: '',
-      address: '',
-      city: '',
-      state: '',
-      bio: '',
-      commissionRate: '',
+      firstName: 'Test',
+      lastName: 'Benfek',
+      email: 'test.benfek@example.com',
+      phone: '+234 801 234 5678',
+      age: '32',
+      gender: 'female',
+      allergies: 'Peanuts',
+      scares: 'Hypertensive episode (2021)',
+      familyCondition: 'Diabetes',
+      medications: 'Vitamin D, Omega-3',
+      hasCurrentCondition: 'Yes - mild asthma',
+      // specialty: '',
+      // licenseNumber: '',
+      // address: '',
+      // city: '',
+      // state: '',
+      // bio: '',
+      // commissionRate: '',
       termsAccepted: false,
     },
   });
+  const isDirty = form.formState.isDirty || !!uploadedFile;
 
   // Handle form submission
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log(values);
-      setIsSubmitting(false);
+    setFormError(null);
+    try {
       setIsSuccess(true);
+      setShowSentModal(true);
 
       // Reset form after 3 seconds
       setTimeout(() => {
         setIsSuccess(false);
         form.reset();
       }, 3000);
-    }, 1500);
+    } catch (error) {
+      console.error('Failed to create benfek:', error);
+      setFormError('Failed to add benfek.');
+      toast.error('Failed to add benfek.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle file upload
@@ -150,23 +177,45 @@ const AddBenfekPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-slate-50 pb-16">
+      <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quiz code sent</DialogTitle>
+            <DialogDescription>
+              Quiz code has been sent to the WhatsApp and email of the added benfek.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
       {/* Page Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      {/* <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <BackToDashboardButton isDirty={isDirty} className="mb-4 text-white/80 hover:text-white" />
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Add Benfek</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Add a new benfek to your network
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-300 font-semibold">Create Quiz</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mt-2">Add a Benfek</h1>
+              <p className="mt-2 text-sm sm:text-base text-slate-300 max-w-xl">
+                Generate a unique quiz code and invite a benfek to complete their health assessment.
               </p>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 border border-white/10">
+              <div className="h-10 w-10 rounded-full bg-emerald-400/20 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-emerald-300" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Ready to create</p>
+                <p className="text-xs text-slate-300">Takes less than 2 minutes</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
+<BackToDashboardButton isDirty={isDirty} className="mt-2 ml-4 text-black" />
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isSuccess ? (
           <Card className="max-w-3xl mx-auto">
             <div className="p-6 flex flex-col items-center text-center">
@@ -194,516 +243,362 @@ const AddBenfekPage: React.FC = () => {
             </div>
           </Card>
         ) : (
-          <Tabs
-            defaultValue="manual"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="max-w-3xl mx-auto"
-          >
-            <TabsList className="grid grid-cols-2 w-full mb-8">
-              <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-              <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
-            </TabsList>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-6">
+            <div>
+              <Tabs
+                defaultValue="manual"
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="max-w-3xl mx-auto"
+              >
+                <TabsList className="grid grid-cols-2 w-full mb-6 bg-white shadow-sm border border-slate-200">
+                  <TabsTrigger value="manual">Manual Entry</TabsTrigger>
+                  <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
+                </TabsList>
 
-            {/* Manual Entry Tab */}
-            <TabsContent value="manual">
-              <Card>
-                <div className="p-6 border-b">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <UserPlus className="h-5 w-5 mr-2 text-emerald-500" />
-                    Benfek Information
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Enter the details of the benfek you want to add to your network.
-                  </p>
-                </div>
+                {/* Manual Entry Tab */}
+                <TabsContent value="manual">
+                  <Card className="border border-slate-200 shadow-sm">
+                    <div className="p-6 border-b bg-white">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <UserPlus className="h-5 w-5 mr-2 text-emerald-500" />
+                        Benfek Information
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Enter the details of the benfek you want to add to your network.
+                      </p>
+                    </div>
 
-                <div className="p-4 sm:p-6">
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                      {/* Personal Information */}
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">
-                          Personal Information
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                          <FormField
-                            control={form.control}
-                            name="firstName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>First Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="John" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="lastName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Last Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Doe" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email Address</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="john.doe@example.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Phone Number</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="+234 123 456 7890" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="age"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Age</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="e.g. 32" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="gender"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Gender</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select gender" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="male">Male</SelectItem>
-                                    <SelectItem value="female">Female</SelectItem>
-                                    <SelectItem value="other">Other</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                    <div className="p-4 sm:p-6 bg-white">
+                      {formError && (
+                        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                          {formError}
                         </div>
-                      </div>
+                      )}
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                          {/* Personal Information */}
+                          <div>
+                            <h4 className="text-md font-medium text-gray-900 mb-4">
+                              Personal Information
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                              <FormField
+                                control={form.control}
+                                name="firstName"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>First Name</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="John" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                      {/* Professional Information */}
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">
-                          Professional Information
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                          <FormField
-                            control={form.control}
-                            name="specialty"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Specialty</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select specialty" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="general">General Practitioner</SelectItem>
-                                    <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                                    <SelectItem value="dermatology">Dermatology</SelectItem>
-                                    <SelectItem value="neurology">Neurology</SelectItem>
-                                    <SelectItem value="orthopedics">Orthopedics</SelectItem>
-                                    <SelectItem value="gynecology">Gynecology</SelectItem>
-                                    <SelectItem value="psychiatry">Psychiatry</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                              <FormField
+                                control={form.control}
+                                name="lastName"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Last Name</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="Doe" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                          <FormField
-                            control={form.control}
-                            name="licenseNumber"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>License Number</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="LIC-12345" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
+                              <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Email Address</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="john.doe@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                      {/* Address Information */}
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">
-                          Address Information
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4 sm:gap-5">
-                          <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Address</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="123 Main Street" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                              <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="+234 123 456 7890" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-                            <FormField
-                              control={form.control}
-                              name="city"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>City</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Lagos" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                              <FormField
+                                control={form.control}
+                                name="age"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Age</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="e.g. 32" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
 
-                            <FormField
-                              control={form.control}
-                              name="state"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>State</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Lagos State" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                              <FormField
+                                control={form.control}
+                                name="gender"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Gender</FormLabel>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      defaultValue={field.value}
+                                    >
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
-                      {/* Additional Information */}
-                      <div>
-                        <h4 className="text-md font-medium text-gray-900 mb-4">
-                          Additional Information
-                        </h4>
-                        <div className="grid grid-cols-1 gap-4 sm:gap-5">
+                          <div>
+                            <h4 className="text-md font-medium text-gray-900 mb-4">
+                              Health Information
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                              <FormField
+                                control={form.control}
+                                name="allergies"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Allergies</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="List any known allergies" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="scares"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Scares</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Any major health scares" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="familyCondition"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Family Condition</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Family health conditions" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="medications"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Medications</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Current medications" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="mt-4">
+                              <FormField
+                                control={form.control}
+                                name="hasCurrentCondition"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Current Health condition</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="e.g. Yes - asthma" {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Enter any ongoing condition if applicable.
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Terms and Conditions */}
                           <FormField
                             control={form.control}
-                            name="bio"
+                            name="termsAccepted"
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Bio</FormLabel>
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                                 <FormControl>
-                                  <Textarea
-                                    placeholder="Brief description of the benfek's background and expertise..."
-                                    className="min-h-32"
-                                    {...field}
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
                                   />
                                 </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel>
+                                    I confirm that I have permission to add this benfek to the network
+                                  </FormLabel>
+                                  <FormDescription>
+                                    By checking this box, you confirm that you have obtained consent from the benfek to add them to your network.
+                                  </FormDescription>
+                                </div>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
 
-                          <FormField
-                            control={form.control}
-                            name="commissionRate"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Commission Rate</FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select commission rate" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="5">5%</SelectItem>
-                                    <SelectItem value="10">10%</SelectItem>
-                                    <SelectItem value="15">15%</SelectItem>
-                                    <SelectItem value="20">20%</SelectItem>
-                                    <SelectItem value="25">25%</SelectItem>
-                                    <SelectItem value="30">30%</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormDescription>
-                                  This is the percentage of sales that will be paid to you as commission.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Terms and Conditions */}
-                      <FormField
-                        control={form.control}
-                        name="termsAccepted"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>
-                                I confirm that I have permission to add this benfek to the network
-                              </FormLabel>
-                              <FormDescription>
-                                By checking this box, you confirm that you have obtained consent from the benfek to add them to your network.
-                              </FormDescription>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Submit Button */}
-                      <Button
-                        type="submit"
-                        className="w-full"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <div className="flex items-center">
-                            <svg
-                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Processing...
-                          </div>
-                        ) : (
-                          'Add Benfek'
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </div>
-              </Card>
-            </TabsContent>
-
-            {/* Bulk Upload Tab */}
-            <TabsContent value="bulk">
-              <Card>
-                <div className="p-6 border-b">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <Upload className="h-5 w-5 mr-2 text-emerald-500" />
-                    Bulk Upload Benfeks
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Upload a CSV file containing multiple benfeks to add them all at once.
-                  </p>
-                </div>
-
-                <div className="p-4 sm:p-6">
-                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4 flex items-start">
-                    <Info className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
-                    <div>
-                      <h4 className="text-blue-800 font-medium">CSV Format Instructions</h4>
-                      <p className="text-blue-700 text-sm mt-1">
-                        Your CSV file should include the following columns:
-                        firstName, lastName, email, phone, age, gender, specialty,
-                        licenseNumber, address, city, state, commissionRate.
-                      </p>
-                      <Button
-                        variant="link"
-                        className="text-blue-700 p-0 h-auto text-sm mt-1"
-                      >
-                        Download Template
-                      </Button>
-                    </div>
-                  </div>
-
-                  {uploadedFile ? (
-                    <div className="border rounded-md p-4 mb-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <div className="bg-gray-100 p-2 rounded-md mr-3">
-                            <Upload className="h-5 w-5 text-gray-500" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{uploadedFile.name}</p>
-                            <p className="text-sm text-gray-500">
-                              {(uploadedFile.size / 1024).toFixed(2)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={handleRemoveFile}
-                          className="h-8 w-8 text-gray-500 hover:text-red-500"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      className={`border-2 border-dashed rounded-md p-8 mb-6 text-center ${
-                        dragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300'
-                      }`}
-                      onDragEnter={handleDrag}
-                      onDragOver={handleDrag}
-                      onDragLeave={handleDrag}
-                      onDrop={handleDrop}
-                    >
-                      <div className="flex flex-col items-center">
-                        <Upload className="h-10 w-10 text-gray-400 mb-3" />
-                        <p className="text-gray-700 font-medium mb-1">
-                          Drag and drop your CSV file here
-                        </p>
-                        <p className="text-gray-500 text-sm mb-4">
-                          or click to browse files
-                        </p>
-                        <input
-                          type="file"
-                          id="file-upload"
-                          accept=".csv"
-                          className="hidden"
-                          onChange={handleFileChange}
-                          title="Upload CSV file"
-                        />
-                        <Button
-                          variant="outline"
-                          onClick={() => document.getElementById('file-upload')?.click()}
-                        >
-                          Browse Files
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {uploadedFile && (
-                    <div className="mb-6 bg-amber-50 border border-amber-200 rounded-md p-4 flex items-start">
-                      <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-3" />
-                      <div>
-                        <h4 className="text-amber-800 font-medium">Important Note</h4>
-                        <p className="text-amber-700 text-sm mt-1">
-                          All benfeks will receive an email invitation to join your network.
-                          Make sure all email addresses are correct.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Mail className="h-4 w-4 mr-1" />
-                      Invitations will be sent automatically
-                    </div>
-                    <Button
-                      onClick={handleBulkUpload}
-                      disabled={!uploadedFile || isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <div className="flex items-center">
-                          <svg
-                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
+                          {/* Submit Button */}
+                          <Button
+                            type="submit"
+                            className="w-full bg-slate-900 hover:bg-slate-800"
+                            disabled={isSubmitting}
                           >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Processing...
+                            {isSubmitting ? "Processing..." : "Add Benfek"}
+                          </Button>
+                        </form>
+                      </Form>
+                    </div>
+                  </Card>
+                </TabsContent>
+
+                {/* Bulk Upload Tab */}
+                <TabsContent value="bulk">
+                  <Card className="border border-slate-200 shadow-sm">
+                    <div className="p-6 border-b bg-white">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                        <Upload className="h-5 w-5 mr-2 text-emerald-500" />
+                        Bulk Upload Benfeks
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Upload a CSV file containing multiple benfeks to add them all at once.
+                      </p>
+                    </div>
+
+                    <div className="p-4 sm:p-6 bg-white">
+                      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4 flex items-start">
+                        <Info className="h-5 w-5 text-blue-500 mt-0.5 mr-3" />
+                        <div>
+                          <h4 className="text-blue-800 font-medium">CSV Format Instructions</h4>
+                          <p className="text-blue-700 text-sm mt-1">
+                            Your CSV file should include the following columns:
+                            firstName, lastName, email, phone, age, gender, specialty,
+                            licenseNumber, address, city, state, commissionRate.
+                          </p>
+                        </div>
+                      </div>
+
+                      {!uploadedFile ? (
+                        <div
+                          className={`border-2 border-dashed rounded-md p-8 mb-6 text-center ${
+                            dragActive ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300'
+                          }`}
+                          onDragEnter={handleDrag}
+                          onDragOver={handleDrag}
+                          onDragLeave={handleDrag}
+                          onDrop={handleDrop}
+                        >
+                          <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-700 font-medium">Drag and drop CSV here</p>
+                          <input
+                            type="file"
+                            id="file-upload"
+                            accept=".csv"
+                            className="hidden"
+                            onChange={handleFileChange}
+                          />
+                          <Button
+                            variant="outline"
+                            className="mt-4"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                          >
+                            Browse Files
+                          </Button>
                         </div>
                       ) : (
-                        'Upload and Process'
+                        <div className="border rounded-md p-4 mb-6 flex items-center justify-between">
+                          <div className="flex items-center">
+                             <Upload className="h-5 w-5 text-gray-500 mr-3" />
+                             <span>{uploadedFile.name}</span>
+                          </div>
+                          <Button variant="ghost" size="icon" onClick={handleRemoveFile}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
-                    </Button>
+
+                      <Button
+                        className="w-full"
+                        onClick={handleBulkUpload}
+                        disabled={!uploadedFile || isSubmitting}
+                      >
+                        {isSubmitting ? "Processing..." : "Upload and Process"}
+                      </Button>
+                    </div>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* Sidebar Card */}
+            {/* <Card className="h-fit border border-slate-200 shadow-sm bg-white">
+              <div className="p-6 border-b">
+                <h3 className="text-base font-semibold text-gray-900">What happens next</h3>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Quiz code generated</p>
+                    <p className="text-xs text-gray-500">Share immediately with the benfek.</p>
                   </div>
                 </div>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </div>
+            </Card> */}
+          </div>
         )}
       </div>
     </div>
   );
-};
+}
 
 export default AddBenfekPage;

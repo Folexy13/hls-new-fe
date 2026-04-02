@@ -1,15 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import vitamins from '../../images/vitamins.png';
-import vitamins2 from '../../images/vitamins2.png';
-import vitamins3 from '../../images/vitamins3.png';
-import vitamins4 from '../../images/vitamins4.png';
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
+import { apiClient } from '@/config/axios';
 
 type Product = {
   id: string;
@@ -19,76 +16,44 @@ type Product = {
   description: string;
   category: 'vitamin' | 'supplement' | 'mineral' | 'protein';
   vendor: string;
-  expiryDate: string;
+  expiryDate?: string;
 };
 
 const MarketplacePage: React.FC = () => {
-  const rawProducts: Product[] = [
-    {
-      id: '1',
-      name: 'Vitamin D3 Complex',
-      price: 14999,
-      image: vitamins,
-      description: 'High-potency vitamin D3 for bone health and immune support',
-      category: 'vitamin',
-      vendor: 'HLS',
-      expiryDate: '2026-12-31',
-    },
-    {
-      id: '2',
-      name: 'Omega-3 Fish Oil',
-      price: 17499,
-      image: vitamins2,
-      description: 'Pure omega-3 fatty acids for heart and brain health',
-      category: 'supplement',
-      vendor: 'HLS',
-      expiryDate: '2027-03-15',
-    },
-    {
-      id: '3',
-      name: 'Magnesium Glycinate',
-      price: 12499,
-      image: vitamins3,
-      description: 'Highly absorbable magnesium for muscle and nerve function',
-      category: 'mineral',
-      vendor: 'VendorCorp',
-      expiryDate: '2026-08-20',
-    },
-    {
-      id: '4',
-      name: 'Whey Protein Isolate',
-      price: 24999,
-      image: vitamins4,
-      description: 'Premium protein for muscle building and recovery',
-      category: 'protein',
-      vendor: 'VendorCorp',
-      expiryDate: '2026-10-10',
-    },
-    {
-      id: '5',
-      name: 'Multivitamin Complete',
-      price: 19999,
-      image: vitamins,
-      description: 'Comprehensive daily multivitamin formula',
-      category: 'vitamin',
-      vendor: 'HLS',
-      expiryDate: '2027-01-30',
-    },
-    {
-      id: '6',
-      name: 'Probiotics Advanced',
-      price: 22499,
-      image: vitamins2,
-      description: 'Advanced probiotic blend for digestive health',
-      category: 'supplement',
-      vendor: 'VendorCorp',
-      expiryDate: '2026-11-25',
-    },
-  ];
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const { addToCart } = useStore();
   const [addingId, setAddingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchSupplements = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get('/api/v2/supplements/all');
+        console.log(response)
+        const supplements = response.data?.data?.supplements || [];
+        const mapped: Product[] = supplements.map((s: any) => ({
+          id: String(s.id),
+          name: s.name,
+          price: Number(s.price),
+          image: s.image || s.imageUrl || '/placeholder.svg',
+          description: s.description,
+          category: 'supplement',
+          vendor: 'HLS',
+        }));
+        setRawProducts(mapped);
+      } catch (error) {
+        console.error(error);
+        toast.error('Failed to load products.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSupplements();
+  }, []);
 
   // Remove duplicate products by name
   const allProducts = useMemo(() => {
@@ -99,10 +64,10 @@ const MarketplacePage: React.FC = () => {
       seen.add(key);
       return true;
     });
-  }, []);
+  }, [rawProducts]);
 
-  const vendorProducts = allProducts.filter(product => product.vendor === 'VendorCorp');
-  const hlsProducts = allProducts.filter(product => product.vendor === 'HLS');
+  const vendorProducts = allProducts;
+  const hlsProducts = allProducts;
 
   const filterProducts = (products: Product[]) => {
     return products.filter((product) =>
@@ -131,7 +96,11 @@ const MarketplacePage: React.FC = () => {
           </div>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center text-gray-500">
+            Loading products...
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center text-gray-500">
             No products found.
           </div>
@@ -163,9 +132,11 @@ const MarketplacePage: React.FC = () => {
                       <p className="text-lg font-bold text-emerald-600">
                         ₦{product.price.toLocaleString()}
                       </p>
-                      <p className="text-sm text-gray-500">
-                        Expiry: {formatDate(product.expiryDate)}
-                      </p>
+                      {product.expiryDate && (
+                        <p className="text-sm text-gray-500">
+                          Expiry: {formatDate(product.expiryDate)}
+                        </p>
+                      )}
                     </div>
 
                     <button

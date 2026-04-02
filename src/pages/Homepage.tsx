@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-toastify';
 import { quizService } from '@/services/quizService';
+import { apiClient } from '@/config/axios';
 import doctor from '../images/bannerdoctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
@@ -44,6 +45,7 @@ const Homepage: React.FC = () => {
   const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
+  const [validatedCode, setValidatedCode] = useState('');
   const navigate = useNavigate();
   const handleQuizStart = () => {
     navigate("/assessment");
@@ -70,14 +72,26 @@ const Homepage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleCodeSubmit = () => {
-    if (code === '12345') {
+  const handleCodeSubmit = async () => {
+    if (!code.trim()) {
+      toast.error('Please enter a quiz code.');
+      return;
+    }
+
+    try {
+      const response = await apiClient.post('/api/v2/quiz-code/validate', {
+        code: code.trim(),
+      });
+      const quizCodeData = response.data?.data?.quizCode;
+
+      setValidatedCode(quizCodeData?.code || code.trim());
       setShowCodeDialog(false);
       setShowNutrientForm(true);
       setNutrientStep(0);
       toast.success('Code verified! Please fill out the nutrient form.');
-    } else {
+    } catch (error: unknown) {
       toast.error('Invalid code. Please try again.');
+      console.error(error);
     }
   };
 
@@ -110,21 +124,32 @@ const Homepage: React.FC = () => {
 
   const handleNutrientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validatedCode && !code.trim()) {
+      toast.error('Please validate your quiz code first.');
+      return;
+    }
     // Map data to API structure
     const payload = {
-      code: '12345',
-      basic,
-      lifestyle: {
-        ...lifestyle,
-        habit: lifestyle.habit.join(','),
-        fun: lifestyle.fun.join(','),
-        routine: lifestyle.routine.join(','),
+      code: validatedCode || code.trim(),
+      basics: {
+        nickname: basic.nickname || undefined,
+        weight: String(basic.weight),
+        height: String(basic.height),
       },
-      preference: {
-        ...preference,
+      lifestyle: {
+        habits: [...lifestyle.habit, ...lifestyle.routine].join(','),
+        funActivities: lifestyle.fun.join(','),
+        priority: lifestyle.career || 'general',
+      },
+      preferences: {
         drugForm: preference.drugForm.join(','),
+        budget: Number(preference.maxBudget || preference.minBudget || 0),
       },
     };
+    if (!payload.preferences.budget || payload.preferences.budget <= 0) {
+      toast.error('Please enter a valid budget.');
+      return;
+    }
 
     try {
       await quizService.submitQuizData(payload);
