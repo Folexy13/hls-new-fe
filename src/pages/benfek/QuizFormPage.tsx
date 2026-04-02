@@ -24,6 +24,8 @@ import {
   Sun,
   Pill,
   FlaskConical,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import logo from '../../images/logo.jpg';
 
@@ -84,6 +86,29 @@ const lifestyleIcons: Record<string, { label: string; icon: React.ReactNode; val
   fitness: { label: 'Fitness', icon: <Dumbbell className="h-5 w-5" />, value: 4 },
   wellness: { label: 'Wellness', icon: <Heart className="h-5 w-5" />, value: 3 },
 };
+const habitOptions = [
+  'Smoking',
+  'Drinking',
+  'Ice Cream',
+  'Fast Food',
+  'Sugary Drinks',
+  'Late Nights',
+  'Meditation',
+  'Exercise',
+  'Reading',
+  'Yoga',
+];
+const funOptions = ['Reading', 'Music', 'Movies', 'Gaming', 'Travel', 'Dancing', 'Cooking', 'Sports', 'Art'];
+const routineOptions = ['Morning', 'Afternoon', 'Evening', 'Night', 'Weekdays', 'Weekends', 'Shift Work'];
+const careerOptions = ['Student', 'Developer', 'Teacher', 'Healthcare', 'Business', 'Freelancer', 'Entrepreneur'];
+const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
+const budgetRangeOptions = [
+  '1000 - 5000',
+  '5001 - 20000',
+  '20001 - 50000',
+  '50001 - 100000',
+  '100001 - 500000',
+];
 
 const QuizFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -92,7 +117,19 @@ const QuizFormPage: React.FC = () => {
   // const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
   const [basic, setBasic] = useState({ weight: '', height: '' });
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
-  const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
+  const [preference, setPreference] = useState({ drugForm: [], budgetRange: '' });
+  const [showCustomHabit, setShowCustomHabit] = useState(false);
+  const [customHabit, setCustomHabit] = useState('');
+  const [showCustomFun, setShowCustomFun] = useState(false);
+  const [customFun, setCustomFun] = useState('');
+  const [showCustomRoutine, setShowCustomRoutine] = useState(false);
+  const [customRoutine, setCustomRoutine] = useState('');
+  const [showCustomCareer, setShowCustomCareer] = useState(false);
+  const [customCareer, setCustomCareer] = useState('');
+  const [openLifestyleSection, setOpenLifestyleSection] = useState<'habit' | 'fun' | 'routine' | 'career' | null>('habit');
+  const [openPreferenceSection, setOpenPreferenceSection] = useState<'drugForm' | null>('drugForm');
+  const [showCustomDrugForm, setShowCustomDrugForm] = useState(false);
+  const [customDrugForm, setCustomDrugForm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showGame, setShowGame] = useState(false);
   const [gameScore, setGameScore] = useState(0);
@@ -177,6 +214,12 @@ const QuizFormPage: React.FC = () => {
       return;
     }
 
+    const budgetRangeMax = (() => {
+      const matches = preference.budgetRange.match(/\d+/g);
+      if (!matches || matches.length === 0) return 0;
+      return Number(matches[matches.length - 1]);
+    })();
+
     const payload = {
       code: validatedQuizCode,
       basics: {
@@ -191,7 +234,7 @@ const QuizFormPage: React.FC = () => {
       },
       preferences: {
         drugForm: preference.drugForm.join(','),
-        budget: Number(preference.maxBudget || preference.minBudget || 0),
+        budget: budgetRangeMax,
       },
     };
 
@@ -266,6 +309,13 @@ const QuizFormPage: React.FC = () => {
     ].map((item) => ({ id: item.label.toLowerCase(), ...item }));
   }, [nutrientStep, lifestyle, preference]);
 
+  const minDistanceForValue = (value: number) => {
+    if (value >= 5) return 20;
+    if (value >= 4) return 18;
+    if (value >= 3) return 16;
+    return 14;
+  };
+
   const startGame = () => {
     if (gameIntervalRef.current) {
       clearInterval(gameIntervalRef.current);
@@ -321,31 +371,58 @@ const QuizFormPage: React.FC = () => {
                   ? 1.6
                   : 2.2;
         const spawnGrid = [
-          { x: 12, y: 20 },
-          { x: 32, y: 20 },
-          { x: 52, y: 20 },
-          { x: 72, y: 20 },
-          { x: 12, y: 40 },
-          { x: 32, y: 40 },
-          { x: 52, y: 40 },
-          { x: 72, y: 40 },
-          { x: 12, y: 60 },
-          { x: 32, y: 60 },
-          { x: 52, y: 60 },
-          { x: 72, y: 60 },
+          { x: 12, y: 28 },
+          { x: 32, y: 28 },
+          { x: 52, y: 28 },
+          { x: 72, y: 28 },
+          { x: 12, y: 48 },
+          { x: 32, y: 48 },
+          { x: 52, y: 48 },
+          { x: 72, y: 48 },
+          { x: 12, y: 68 },
+          { x: 32, y: 68 },
+          { x: 52, y: 68 },
+          { x: 72, y: 68 },
         ];
-        const position = spawnGrid[spawnIndexRef.current % spawnGrid.length];
-        spawnIndexRef.current += 1;
-        const jitterX = (Math.random() - 0.5) * 6;
-        const jitterY = (Math.random() - 0.5) * 6;
-        const randomX = Math.random() * 85 + 5;
-        const randomY = Math.random() * 70 + 15;
-        const baseX = value >= 4 ? randomX : position.x + jitterX;
-        const baseY = value >= 4 ? randomY : position.y + jitterY;
+        const nextPosition = () => {
+          const position = spawnGrid[spawnIndexRef.current % spawnGrid.length];
+          spawnIndexRef.current += 1;
+          const jitterX = (Math.random() - 0.5) * 6;
+          const jitterY = (Math.random() - 0.5) * 6;
+          const randomX = Math.random() * 85 + 5;
+          const randomY = Math.random() * 60 + 25;
+          const baseX = value >= 4 ? randomX : position.x + jitterX;
+          const baseY = value >= 4 ? randomY : position.y + jitterY;
+          return {
+            x: Math.min(92, Math.max(8, baseX)),
+            y: Math.min(82, Math.max(24, baseY)),
+          };
+        };
+
+        const minDistance = minDistanceForValue(value);
+        let chosenPosition = nextPosition();
+        let attempts = 0;
+        while (attempts < 12) {
+          const hasOverlap = prev.some((coin) => {
+            if (coin.collected) return false;
+            const dx = coin.x - chosenPosition.x;
+            const dy = coin.y - chosenPosition.y;
+            const distance = Math.hypot(dx, dy);
+            return distance < Math.max(minDistance, minDistanceForValue(coin.value));
+          });
+          if (!hasOverlap) break;
+          chosenPosition = nextPosition();
+          attempts += 1;
+        }
+
+        if (attempts >= 12) {
+          return prev;
+        }
+
         const newCoin: Coin = {
           id: `${Date.now()}-${Math.random()}`,
-          x: Math.min(92, Math.max(8, baseX)),
-          y: Math.min(80, Math.max(12, baseY)),
+          x: chosenPosition.x,
+          y: chosenPosition.y,
           value,
           label: chosen.label,
           icon: chosen.icon,
@@ -543,21 +620,294 @@ const QuizFormPage: React.FC = () => {
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Lifestyle</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Habit (comma separated)</Label>
-                    <Input value={lifestyle.habit.join(',')} onChange={e => setLifestyle(l => ({ ...l, habit: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. running, yoga" />
+                  <div className="md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenLifestyleSection((prev) => (prev === 'habit' ? null : 'habit'))
+                      }
+                      className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
+                    >
+                      Habit (select all that apply)
+                      {openLifestyleSection === 'habit' ? (
+                        <ChevronUp className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+                    {openLifestyleSection === 'habit' && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {habitOptions.map((option) => {
+                          const selected = lifestyle.habit.includes(option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setLifestyle((prev) => ({
+                                  ...prev,
+                                  habit: selected
+                                    ? prev.habit.filter((item) => item !== option)
+                                    : [...prev.habit, option],
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                selected
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomHabit(true)}
+                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                        >
+                          Add more
+                        </button>
+                      </div>
+                    )}
+                    {openLifestyleSection === 'habit' && showCustomHabit && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={customHabit}
+                          onChange={(e) => setCustomHabit(e.target.value)}
+                          placeholder="Enter habit"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const value = customHabit.trim();
+                            if (!value) return;
+                            setLifestyle((prev) => ({
+                              ...prev,
+                              habit: prev.habit.includes(value) ? prev.habit : [...prev.habit, value],
+                            }));
+                            setCustomHabit('');
+                            setShowCustomHabit(false);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Label>Fun (comma separated)</Label>
-                    <Input value={lifestyle.fun.join(',')} onChange={e => setLifestyle(l => ({ ...l, fun: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. reading, music" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenLifestyleSection((prev) => (prev === 'fun' ? null : 'fun'))
+                      }
+                      className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
+                    >
+                      Fun (select all that apply)
+                      {openLifestyleSection === 'fun' ? (
+                        <ChevronUp className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+                    {openLifestyleSection === 'fun' && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {funOptions.map((option) => {
+                          const selected = lifestyle.fun.includes(option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setLifestyle((prev) => ({
+                                  ...prev,
+                                  fun: selected
+                                    ? prev.fun.filter((item) => item !== option)
+                                    : [...prev.fun, option],
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                selected
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomFun(true)}
+                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                        >
+                          Add more
+                        </button>
+                      </div>
+                    )}
+                    {openLifestyleSection === 'fun' && showCustomFun && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={customFun}
+                          onChange={(e) => setCustomFun(e.target.value)}
+                          placeholder="Enter fun activity"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const value = customFun.trim();
+                            if (!value) return;
+                            setLifestyle((prev) => ({
+                              ...prev,
+                              fun: prev.fun.includes(value) ? prev.fun : [...prev.fun, value],
+                            }));
+                            setCustomFun('');
+                            setShowCustomFun(false);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Label>Routine (comma separated)</Label>
-                    <Input value={lifestyle.routine.join(',')} onChange={e => setLifestyle(l => ({ ...l, routine: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. morning, night" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenLifestyleSection((prev) => (prev === 'routine' ? null : 'routine'))
+                      }
+                      className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
+                    >
+                      Routine (select all that apply)
+                      {openLifestyleSection === 'routine' ? (
+                        <ChevronUp className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+                    {openLifestyleSection === 'routine' && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {routineOptions.map((option) => {
+                          const selected = lifestyle.routine.includes(option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setLifestyle((prev) => ({
+                                  ...prev,
+                                  routine: selected
+                                    ? prev.routine.filter((item) => item !== option)
+                                    : [...prev.routine, option],
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                selected
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomRoutine(true)}
+                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                        >
+                          Add more
+                        </button>
+                      </div>
+                    )}
+                    {openLifestyleSection === 'routine' && showCustomRoutine && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={customRoutine}
+                          onChange={(e) => setCustomRoutine(e.target.value)}
+                          placeholder="Enter routine"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const value = customRoutine.trim();
+                            if (!value) return;
+                            setLifestyle((prev) => ({
+                              ...prev,
+                              routine: prev.routine.includes(value)
+                                ? prev.routine
+                                : [...prev.routine, value],
+                            }));
+                            setCustomRoutine('');
+                            setShowCustomRoutine(false);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div>
-                    <Label>Career</Label>
-                    <Input value={lifestyle.career} onChange={e => setLifestyle(l => ({ ...l, career: e.target.value }))} placeholder="e.g. developer" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenLifestyleSection((prev) => (prev === 'career' ? null : 'career'))
+                      }
+                      className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
+                    >
+                      Career
+                      {openLifestyleSection === 'career' ? (
+                        <ChevronUp className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+                    {openLifestyleSection === 'career' && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {careerOptions.map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setLifestyle((prev) => ({ ...prev, career: option }))}
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                              lifestyle.career === option
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomCareer(true)}
+                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                        >
+                          Add more
+                        </button>
+                      </div>
+                    )}
+                    {openLifestyleSection === 'career' && showCustomCareer && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={customCareer}
+                          onChange={(e) => setCustomCareer(e.target.value)}
+                          placeholder="Enter career"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const value = customCareer.trim();
+                            if (!value) return;
+                            setLifestyle((prev) => ({ ...prev, career: value }));
+                            setCustomCareer('');
+                            setShowCustomCareer(false);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -571,17 +921,99 @@ const QuizFormPage: React.FC = () => {
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-gray-900">Preferences</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Drug Form (comma separated)</Label>
-                    <Input value={preference.drugForm.join(',')} onChange={e => setPreference(p => ({ ...p, drugForm: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }))} placeholder="e.g. tablet, capsule" />
+                  <div className="md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenPreferenceSection((prev) => (prev === 'drugForm' ? null : 'drugForm'))
+                      }
+                      className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
+                    >
+                      Drug Form (select all that apply)
+                      {openPreferenceSection === 'drugForm' ? (
+                        <ChevronUp className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-500" />
+                      )}
+                    </button>
+                    {openPreferenceSection === 'drugForm' && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {drugFormOptions.map((option) => {
+                          const selected = preference.drugForm.includes(option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                setPreference((prev) => ({
+                                  ...prev,
+                                  drugForm: selected
+                                    ? prev.drugForm.filter((item) => item !== option)
+                                    : [...prev.drugForm, option],
+                                }))
+                              }
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                selected
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                              }`}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setShowCustomDrugForm(true)}
+                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                        >
+                          Add more
+                        </button>
+                      </div>
+                    )}
+                    {openPreferenceSection === 'drugForm' && showCustomDrugForm && (
+                      <div className="mt-2 flex gap-2">
+                        <Input
+                          value={customDrugForm}
+                          onChange={(e) => setCustomDrugForm(e.target.value)}
+                          placeholder="Enter drug form"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const value = customDrugForm.trim();
+                            if (!value) return;
+                            setPreference((prev) => ({
+                              ...prev,
+                              drugForm: prev.drugForm.includes(value)
+                                ? prev.drugForm
+                                : [...prev.drugForm, value],
+                            }));
+                            setCustomDrugForm('');
+                            setShowCustomDrugForm(false);
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <Label>Min Budget</Label>
-                    <Input type="number" value={preference.minBudget} onChange={e => setPreference(p => ({ ...p, minBudget: e.target.value }))} placeholder="e.g. 1000" />
-                  </div>
-                  <div>
-                    <Label>Max Budget</Label>
-                    <Input type="number" value={preference.maxBudget} onChange={e => setPreference(p => ({ ...p, maxBudget: e.target.value }))} placeholder="e.g. 5000" />
+                  <div className="md:col-span-2 mt-2">
+                    <Select
+                      value={preference.budgetRange}
+                      onValueChange={(value) => setPreference((prev) => ({ ...prev, budgetRange: value }))}
+                    >
+                      <SelectTrigger className="font-bold">
+                        <SelectValue placeholder="Select budget range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {budgetRangeOptions.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -613,7 +1045,7 @@ const QuizFormPage: React.FC = () => {
               Score: {gameScore} gz
             </div>
             {collectedCoins.length > 0 && (
-              <div className="absolute top-20 right-6 flex max-w-[60vw] flex-wrap items-center justify-end gap-2">
+              <div className="absolute top-20 left-6 right-6 z-30 flex flex-wrap items-center justify-start gap-2">
                 {collectedCoins.map((coin, index) => (
                   <div
                     key={`${coin.id}-${index}`}
@@ -627,11 +1059,13 @@ const QuizFormPage: React.FC = () => {
           </div>
 
           {!gameRunning && !gameDone && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 z-40 flex items-end justify-center pb-16 pointer-events-none">
               <div className="flex flex-col items-center gap-5 pointer-events-auto">
-                <div className="rounded-full border border-emerald-100 bg-white/90 px-6 py-2 text-sm font-semibold text-emerald-800 shadow-sm">
-                  Game starts in {preGameCountdown} seconds
-                </div>
+                {preGameCountdown > 0 && (
+                  <div className="rounded-full border border-emerald-100 bg-white/90 px-6 py-2 text-sm font-semibold text-emerald-800 shadow-sm">
+                    Game starts in {preGameCountdown} seconds
+                  </div>
+                )}
                 <Button
                   type="button"
                   onClick={startGame}
@@ -645,35 +1079,26 @@ const QuizFormPage: React.FC = () => {
           )}
 
           <div className="relative w-full h-full overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 z-20 h-28 pointer-events-none bg-gradient-to-b from-emerald-900/90 via-slate-900/70 to-transparent" />
             {!gameRunning && !gameDone && preGameCountdown > 0 && (
-              <div className="absolute inset-0 pointer-events-none">
-                {[...currentGameOptions, ...(unrelatedOptionsByStep[nutrientStep] || [])]
-                  .slice(0, 8)
-                  .map((opt, index) => {
-                    const positions = [
-                      { left: '40%', top: '16%' },
-                      { left: '60%', top: '16%' },
-                      { left: '22%', top: '32%' },
-                      { left: '78%', top: '32%' },
-                      { left: '14%', top: '54%' },
-                      { left: '86%', top: '54%' },
-                      { left: '30%', top: '74%' },
-                      { left: '66%', top: '74%' },
-                    ];
-                    const pos = positions[index] || positions[0];
-                    return (
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div className="grid w-[90%] max-w-2xl grid-cols-3 gap-6 sm:grid-cols-4">
+                  {[...currentGameOptions, ...(unrelatedOptionsByStep[nutrientStep] || [])]
+                    .slice(0, 8)
+                    .map((opt) => (
                       <div
                         key={opt.id}
-                        className="absolute flex h-24 w-24 items-center justify-center rounded-full border border-emerald-100 bg-white/90 shadow-md"
-                        style={{ left: pos.left, top: pos.top }}
+                        className="flex items-center justify-center"
                       >
-                        <div className="flex flex-col items-center text-emerald-600 [&>svg]:h-8 [&>svg]:w-8 [&>img]:h-10 [&>img]:w-10">
-                          {opt.icon}
-                          <span className="text-[10px] font-semibold">{opt.value} gz</span>
+                        <div className="flex h-24 w-24 items-center justify-center rounded-full border border-emerald-100 bg-white/90 shadow-md">
+                          <div className="flex flex-col items-center text-emerald-600 [&>svg]:h-8 [&>svg]:w-8 [&>img]:h-10 [&>img]:w-10">
+                            {opt.icon}
+                            <span className="text-[10px] font-semibold">{opt.value} gz</span>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                </div>
               </div>
             )}
             {coins.map((coin) => {

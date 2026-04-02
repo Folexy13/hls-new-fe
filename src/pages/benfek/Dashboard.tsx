@@ -11,6 +11,10 @@ const Dashboard = () => {
   const [searchValue, setSearchValue] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'pharmacy' | 'nutrient'>('pharmacy');
+  const [pharmacySearch, setPharmacySearch] = useState('');
+  const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
+  const [showPharmacyModal, setShowPharmacyModal] = useState(false);
+  const [pharmacyModalDismissed, setPharmacyModalDismissed] = useState(false);
 
   const adminMessages = [
     { id: 'msg-1', title: 'Welcome to HLS', body: 'Your assessment is complete. Start exploring your personalized recommendations.' },
@@ -28,85 +32,85 @@ const Dashboard = () => {
       {
         id: 'supp-1',
         title: 'Feroglobin Liquid',
-        price: '$24.99',
+        price: '₦24.99',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.34.jpeg',
       },
       {
         id: 'supp-2',
         title: 'Lung Defense',
-        price: '$31.50',
+        price: '₦31.50',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35.jpeg',
       },
       {
         id: 'supp-3',
         title: 'Wellwoman 50+',
-        price: '$18.99',
+        price: '₦18.99',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35 (1).jpeg',
       },
       {
         id: 'supp-4',
         title: 'Wellwoman 70+',
-        price: '$22.00',
+        price: '₦22.00',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36.jpeg',
       },
       {
         id: 'supp-5',
         title: 'Osteocare Chewable',
-        price: '$29.75',
+        price: '₦29.75',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (1).jpeg',
       },
       {
         id: 'supp-6',
         title: 'Jointace Max',
-        price: '$16.40',
+        price: '₦16.40',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (2).jpeg',
       },
       {
         id: 'supp-7',
         title: 'Wellman 50+',
-        price: '$27.90',
+        price: '₦27.90',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37.jpeg',
       },
       {
         id: 'supp-8',
-        title: 'Seven Seas Cod Liver Oil',
-        price: '$19.60',
+        title: 'Cod Liver Oil',
+        price: '₦19.60',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (1).jpeg',
       },
       {
         id: 'supp-9',
         title: 'Nectamin Liquid',
-        price: '$21.20',
+        price: '₦21.20',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (2).jpeg',
       },
       {
         id: 'supp-10',
         title: 'Cardioace Max',
-        price: '$26.50',
+        price: '₦26.50',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (3).jpeg',
       },
       {
         id: 'supp-11',
         title: 'Prenatal Gummies',
-        price: '$23.40',
+        price: '₦23.40',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30.jpeg',
       },
       {
         id: 'supp-12',
         title: 'Tocovid SupraBio',
-        price: '$28.15',
+        price: '₦28.15',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (1).jpeg',
       },
       {
         id: 'supp-13',
         title: 'Move Free Joint',
-        price: '$19.75',
+        price: '₦19.75',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (2).jpeg',
       },
       {
         id: 'supp-14',
         title: 'Vitamin E 1000IU',
-        price: '$17.90',
+        price: '₦17.90',
         image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (3).jpeg',
       },
     ],
@@ -117,6 +121,28 @@ const Dashboard = () => {
     if (!query) return pharmacyItems;
     return pharmacyItems.filter((item) => item.title.toLowerCase().includes(query));
   }, [pharmacyItems, searchValue]);
+  const pharmacyDirectory = useMemo(
+    () => [
+      'Greenleaf Pharmacy',
+      'Sunrise Health Pharmacy',
+      'Harmony Pharmacy',
+      'Zenith Care Pharmacy',
+      'Bluecrest Pharmacy',
+      'PrimeCare Pharmacy',
+      'LifePlus Pharmacy',
+      'WellSpring Pharmacy',
+      'Metro Health Pharmacy',
+      'NovaCare Pharmacy',
+      'CityCare Pharmacy',
+      'Unity Pharmacy',
+    ],
+    []
+  );
+  const filteredPharmacyDirectory = useMemo(() => {
+    const query = pharmacySearch.trim().toLowerCase();
+    if (!query) return [];
+    return pharmacyDirectory.filter((name) => name.toLowerCase().includes(query));
+  }, [pharmacyDirectory, pharmacySearch]);
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredPharmacyItems.length / itemsPerPage));
   const [currentPage, setCurrentPage] = useState(1);
@@ -128,6 +154,16 @@ const Dashboard = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchValue]);
+  useEffect(() => {
+    if (!selectedPharmacy && !pharmacyModalDismissed) {
+      setShowPharmacyModal(true);
+    }
+  }, [selectedPharmacy, pharmacyModalDismissed]);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
   const promoCards = useMemo(
     () => [
       {
@@ -199,8 +235,9 @@ const Dashboard = () => {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col items-center px-4">
-            <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
+          <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md py-3">
+            <div className="flex flex-col items-center px-4">
+              <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
               <button
                 type="button"
                 onClick={() => setActiveTab('pharmacy')}
@@ -226,6 +263,7 @@ const Dashboard = () => {
                 My Nutrient Pack
               </button>
             </div>
+            </div>
           </div>
 
           <div className="mt-6">
@@ -242,41 +280,91 @@ const Dashboard = () => {
                     />
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-4 justify-center">
-                  {pagedPharmacyItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="w-[40vw] h-[200px] rounded-3xl border border-slate-200 bg-white p-0 shadow-sm transition hover:shadow-md relative"
-                    >
-                      <div className="h-24 w-24 rounded-2xl bg-emerald-50 flex items-center justify-center justify-self-center shadow-inner mt-4">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="mt-5 flex flex-col gap-2">
-                        <div className="flex items-center justify-center">
-                          <p className="text-sm font-semibold text-slate-900 leading-tigh">{item.title}</p>
-                          <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
+                {!selectedPharmacy ? (
+                  <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
+                    Select a pharmacy to view available drugs.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-4 justify-center">
+                      {pagedPharmacyItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="w-[40vw] h-[200px] rounded-3xl border border-slate-200 bg-white p-0 shadow-sm transition hover:shadow-md relative"
+                        >
+                          <div className="h-24 w-24 rounded-2xl bg-emerald-500 flex items-center justify-center justify-self-center shadow-inner mt-6">
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="mt-5 flex flex-col gap-2">
+                            <div className="flex items-center justify-center">
+                              <p className="text-sm font-semibold text-slate-900 leading-tigh">{item.title}</p>
+                              <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
+                            </div>
+                            <div className="flex justify-around w-full gap-2">
+                              <p className="text-xs h-fit p-1 text-emerald-600 bg-gray-200 hover:text-emerald-700">
+                                Buy
+                              </p>
+                              <p className="text-xs h-fit p-1 text-orange-500 bg-gray-200 hover:text-orange-600">
+                                Later
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-around w-full gap-2">
-                          <p className="text-xs h-fit text-emerald-600 bg-gray-200 hover:text-emerald-700">
-                            Buy
-                          </p>
-                          <p className="text-xs h-fit text-orange-500 bg-gray-200 hover:text-orange-600">
-                            Later
-                          </p>
+                      ))}
+                      {filteredPharmacyItems.length === 0 && (
+                        <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
+                          No supplements match your search.
                         </div>
+                      )}
+                    </div>
+                    {/* {filteredPharmacyItems.length > 0 && totalPages > 1 && (
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                        <button
+                          type="button"
+                          className="h-8 px-3 rounded-full border border-emerald-200 text-xs font-semibold text-emerald-700 bg-white disabled:opacity-50"
+                          onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Prev
+                        </button>
+                        <span className="text-xs font-medium text-emerald-700">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, index) => {
+                            const page = index + 1;
+                            return (
+                              <button
+                                key={`page-${page}`}
+                                type="button"
+                                onClick={() => setCurrentPage(page)}
+                                className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+                                  currentPage === page
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          className="h-8 px-3 rounded-full border border-emerald-200 text-xs font-semibold text-emerald-700 bg-white disabled:opacity-50"
+                          onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                        </button>
                       </div>
-                    </div>
-                  ))}
-                  {filteredPharmacyItems.length === 0 && (
-                    <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
-                      No supplements match your search.
-                    </div>
-                  )}
-                </div>
+                    )} */}
+                  </>
+                )}
                 {filteredPharmacyItems.length > 0 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <button
@@ -358,6 +446,68 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {showPharmacyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-900">Select your pharmacy</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Start typing to find and select one or more pharmacies.
+            </p>
+            <div className="mt-4">
+              <Input
+                value={pharmacySearch}
+                onChange={(e) => setPharmacySearch(e.target.value)}
+                placeholder="Enter pharmacy name"
+                className="bg-white"
+              />
+            </div>
+            <div className="mt-4 max-h-56 overflow-y-auto space-y-2">
+              {filteredPharmacyDirectory.length === 0 ? (
+               <></>
+              ) : (
+                filteredPharmacyDirectory.map((name) => {
+                  const selected = selectedPharmacy === name;
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPharmacy((prev) => (prev === name ? null : name));
+                      }}
+                      className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
+                        selected
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowPharmacyModal(false);
+                  setPharmacyModalDismissed(true);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => setShowPharmacyModal(false)}
+                disabled={!selectedPharmacy}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
         <div className="max-w-6xl mx-auto px-4 py-3">

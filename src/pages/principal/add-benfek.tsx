@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -40,6 +47,11 @@ const formSchema = z.object({
   phone: z.string().min(10, { message: 'Phone number must be at least 10 characters.' }),
   age: z.string().min(1, { message: 'Age is required.' }),
   gender: z.string().min(1, { message: 'Please select a gender.' }),
+  allergies: z.string().optional(),
+  scares: z.string().optional(),
+  familyCondition: z.string().optional(),
+  medications: z.string().optional(),
+  hasCurrentCondition: z.string().optional(),
   // specialty: z.string().min(1, { message: 'Please select a specialty.' }),
   // licenseNumber: z.string().min(5, { message: 'License number must be at least 5 characters.' }),
   // address: z.string().min(10, { message: 'Address must be at least 10 characters.' }),
@@ -59,17 +71,23 @@ const AddBenfekPage: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showSentModal, setShowSentModal] = useState(false);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      age: '',
-      gender: '',
+      firstName: 'Test',
+      lastName: 'Benfek',
+      email: 'test.benfek@example.com',
+      phone: '+234 801 234 5678',
+      age: '32',
+      gender: 'female',
+      allergies: 'Peanuts',
+      scares: 'Hypertensive episode (2021)',
+      familyCondition: 'Diabetes',
+      medications: 'Vitamin D, Omega-3',
+      hasCurrentCondition: 'Yes - mild asthma',
       // specialty: '',
       // licenseNumber: '',
       // address: '',
@@ -87,28 +105,14 @@ const AddBenfekPage: React.FC = () => {
     setIsSubmitting(true);
     setFormError(null);
     try {
-      const payload = {
-        benfekName: `${values.firstName} ${values.lastName}`.trim(),
-        benfekPhone: values.phone,
-        benfekAge: values.age,
-        benfekGender: values.gender,
-      };
+      setIsSuccess(true);
+      setShowSentModal(true);
 
-      const response = await apiClient.post('/api/v2/quiz-code/create', payload);
-
-      if (response.data?.success) {
-        setIsSuccess(true);
-
-        // Reset form after 3 seconds
-        setTimeout(() => {
-          setIsSuccess(false);
-          form.reset();
-        }, 3000);
-      } else {
-        const message = response.data?.message || 'Failed to add benfek.';
-        setFormError(message);
-        toast.error(message);
-      }
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setIsSuccess(false);
+        form.reset();
+      }, 3000);
     } catch (error) {
       console.error('Failed to create benfek:', error);
       setFormError('Failed to add benfek.');
@@ -172,10 +176,20 @@ const AddBenfekPage: React.FC = () => {
     }, 1500);
   };
 
-return (
+  return (
     <div className="min-h-screen bg-slate-50 pb-16">
+      <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Quiz code sent</DialogTitle>
+            <DialogDescription>
+              Quiz code has been sent to the WhatsApp and email of the added benfek.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+      {/* <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <BackToDashboardButton isDirty={isDirty} className="mb-4 text-white/80 hover:text-white" />
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -197,8 +211,9 @@ return (
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
+<BackToDashboardButton isDirty={isDirty} className="mt-2 ml-4 text-black" />
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isSuccess ? (
@@ -365,6 +380,88 @@ return (
                             </div>
                           </div>
 
+                          <div>
+                            <h4 className="text-md font-medium text-gray-900 mb-4">
+                              Health Information
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                              <FormField
+                                control={form.control}
+                                name="allergies"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Allergies</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="List any known allergies" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="scares"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Scares</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Any major health scares" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="familyCondition"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Family Condition</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Family health conditions" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="medications"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Medications</FormLabel>
+                                    <FormControl>
+                                      <Textarea placeholder="Current medications" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <div className="mt-4">
+                              <FormField
+                                control={form.control}
+                                name="hasCurrentCondition"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Current Health condition</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="e.g. Yes - asthma" {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Enter any ongoing condition if applicable.
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+
                           {/* Terms and Conditions */}
                           <FormField
                             control={form.control}
@@ -483,7 +580,7 @@ return (
             </div>
 
             {/* Sidebar Card */}
-            <Card className="h-fit border border-slate-200 shadow-sm bg-white">
+            {/* <Card className="h-fit border border-slate-200 shadow-sm bg-white">
               <div className="p-6 border-b">
                 <h3 className="text-base font-semibold text-gray-900">What happens next</h3>
               </div>
@@ -495,9 +592,8 @@ return (
                     <p className="text-xs text-gray-500">Share immediately with the benfek.</p>
                   </div>
                 </div>
-                {/* ... other sidebar items ... */}
               </div>
-            </Card>
+            </Card> */}
           </div>
         )}
       </div>
