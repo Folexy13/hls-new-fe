@@ -14,9 +14,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Search, ArrowUpDown, DollarSign, CreditCard,
+  Search, DollarSign, CreditCard,
   Calendar, AlertCircle, CheckCircle, Clock,
-  ArrowDown, Building, Wallet, Plus
+  ArrowDown, Building, Wallet, Plus,
+  Filter
 } from 'lucide-react';
 
 // Define the Withdrawal type
@@ -53,12 +54,14 @@ const WithdrawPage: React.FC = () => {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState('id');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [activeTab, setActiveTab] = useState('withdraw');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(1);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'Completed' | 'Processing' | 'Pending' | 'Failed'>('all');
+  const [filterMethod, setFilterMethod] = useState<'all' | 'Bank Transfer' | 'Mobile Money' | 'Paystack' | 'Flutterwave'>('all');
+  const [openWithdrawalId, setOpenWithdrawalId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockWithdrawals.length / itemsPerPage);
@@ -73,16 +76,6 @@ const WithdrawPage: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, []);
-
-  // Handle sorting
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
 
   // Handle withdrawal submission
   const handleWithdrawal = (e: React.FormEvent) => {
@@ -103,20 +96,18 @@ const WithdrawPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = withdrawals.filter(withdrawal => 
-    withdrawal.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    withdrawal.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    withdrawal.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const sortedData = [...filteredData].sort((a, b) => {
-    if (a[sortField as keyof Withdrawal] < b[sortField as keyof Withdrawal]) return sortDirection === 'asc' ? -1 : 1;
-    if (a[sortField as keyof Withdrawal] > b[sortField as keyof Withdrawal]) return sortDirection === 'asc' ? 1 : -1;
-    return 0;
+  const filteredData = withdrawals.filter(withdrawal => {
+    const matchesSearch =
+      withdrawal.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      withdrawal.method.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      withdrawal.status.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || withdrawal.status === filterStatus;
+    const matchesMethod = filterMethod === 'all' || withdrawal.method === filterMethod;
+    return matchesSearch && matchesStatus && matchesMethod;
   });
 
   // Paginate data
-  const paginatedData = sortedData.slice(
+  const paginatedData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -410,133 +401,144 @@ const WithdrawPage: React.FC = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline">Filter by Date</span>
-                </Button>
+                <div className="relative flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden sm:inline">Filter by Date</span>
+                  </Button>
+                  {showFilters && (
+                    <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                      <div className="space-y-3 text-sm text-slate-700">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase">Method</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(['all', 'Bank Transfer', 'Mobile Money', 'Paystack', 'Flutterwave'] as const).map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFilterMethod(value)}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                  filterMethod === value
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {value === 'all' ? 'All' : value}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(['all', 'Completed', 'Processing', 'Pending', 'Failed'] as const).map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFilterStatus(value)}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                  filterStatus === value
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {value === 'all' ? 'All' : value}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFilterMethod('all');
+                              setFilterStatus('all');
+                            }}
+                          >
+                            Reset
+                          </Button>
+                          <Button type="button" size="sm" onClick={() => setShowFilters(false)}>
+                            Done
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Table */}
               <div className="overflow-x-auto">
                 <Table>
-                  <TableCaption>A list of your withdrawal history.</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('id')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          ID
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('reference')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Reference
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('method')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Method
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('date')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Date
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('status')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Status
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('processingTime')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Processing Time
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('amount')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium ml-auto"
-                        >
-                          Amount
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       // Skeleton loading state
                       Array(itemsPerPage).fill(0).map((_, index) => (
                         <TableRow key={index}>
-                          <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                          <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
+                          <TableCell><Skeleton className="h-5 w-28" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                         </TableRow>
                       ))
                     ) : paginatedData.length > 0 ? (
                       // Actual data
                       paginatedData.map((withdrawal) => (
-                        <TableRow key={withdrawal.id}>
-                          <TableCell className="font-medium">{withdrawal.id}</TableCell>
-                          <TableCell className="font-mono text-xs">{withdrawal.reference}</TableCell>
-                          <TableCell className="hidden md:table-cell">{withdrawal.method}</TableCell>
-                          <TableCell className="hidden lg:table-cell">{withdrawal.date}</TableCell>
-                          <TableCell>{renderStatusBadge(withdrawal.status)}</TableCell>
-                          <TableCell className="hidden md:table-cell text-sm">{withdrawal.processingTime}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            <div className="flex items-center justify-end">
-                              <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
-                              {withdrawal.amount}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={withdrawal.id}>
+                          <TableRow
+                            onClick={() =>
+                              setOpenWithdrawalId((prev) => (prev === withdrawal.id ? null : withdrawal.id))
+                            }
+                            className="cursor-pointer"
+                          >
+                            <TableCell className="font-medium text-slate-900">{withdrawal.method}</TableCell>
+                            <TableCell className="text-sm text-slate-600">{withdrawal.reference}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              <div className="flex items-center justify-end">
+                                <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
+                                {withdrawal.amount}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {openWithdrawalId === withdrawal.id && (
+                            <TableRow className="bg-slate-50/70">
+                              <TableCell colSpan={3}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Withdrawal ID</p>
+                                    <p className="font-medium text-slate-900">{withdrawal.id}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
+                                    <div className="mt-1">{renderStatusBadge(withdrawal.status)}</div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
+                                    <p className="text-slate-700">{withdrawal.date}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Processing Time</p>
+                                    <p className="text-slate-700">{withdrawal.processingTime}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))
                     ) : (
                       // No results
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                           No withdrawals found. Try adjusting your search.
                         </TableCell>
                       </TableRow>
