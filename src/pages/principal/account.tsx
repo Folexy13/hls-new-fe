@@ -21,10 +21,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { 
-  Search, Download, ArrowUpDown, CreditCard, 
+  Search, Download, CreditCard, 
   DollarSign, ArrowUp, ArrowDown, Calendar, 
   Copy, CheckCircle, User, Lock, Bell, Shield,
   MessageCircle,
+  Filter,
   AlertTriangle
 } from 'lucide-react';
 
@@ -67,6 +68,10 @@ const AccountPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [activeTab, setActiveTab] = useState('overview');
   const [copied, setCopied] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'credit' | 'debit'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'Completed' | 'Pending' | 'Failed'>('all');
+  const [openTransactionId, setOpenTransactionId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockTransactions.length / itemsPerPage);
@@ -82,16 +87,6 @@ const AccountPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle sorting
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
   // Copy account number
   const copyAccountNumber = () => {
     navigator.clipboard.writeText('1234567890');
@@ -100,11 +95,15 @@ const AccountPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = transactions.filter(transaction => 
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transaction.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = transactions.filter(transaction => {
+    const matchesSearch =
+      transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.status.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = filterType === 'all' || transaction.type === filterType;
+    const matchesStatus = filterStatus === 'all' || transaction.status === filterStatus;
+    return matchesSearch && matchesType && matchesStatus;
+  });
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Transaction] < b[sortField as keyof Transaction]) return sortDirection === 'asc' ? -1 : 1;
@@ -200,7 +199,7 @@ const AccountPage: React.FC = () => {
           <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            {/* <TabsTrigger value="settings">Settings</TabsTrigger> */}
           </TabsList>
           
           {/* Overview Tab */}
@@ -407,139 +406,150 @@ const AccountPage: React.FC = () => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
+                <div className="relative flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Export</span>
+                  </Button>
+                  {showFilters && (
+                    <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                      <div className="space-y-3 text-sm text-slate-700">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase">Type</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(['all', 'credit', 'debit'] as const).map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFilterType(value)}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                  filterType === value
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {value === 'all' ? 'All' : value === 'credit' ? 'Credit' : 'Debit'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(['all', 'Completed', 'Pending', 'Failed'] as const).map((value) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFilterStatus(value)}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                  filterStatus === value
+                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                }`}
+                              >
+                                {value === 'all' ? 'All' : value}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex justify-between pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFilterType('all');
+                              setFilterStatus('all');
+                            }}
+                          >
+                            Reset
+                          </Button>
+                          <Button type="button" size="sm" onClick={() => setShowFilters(false)}>
+                            Done
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Table */}
               <div className="overflow-x-auto">
                 <Table>
-                  <TableCaption>A list of your transactions.</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('id')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          ID
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('type')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Type
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('description')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Description
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('reference')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Reference
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('date')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Date
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('status')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium"
-                        >
-                          Status
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleSort('amount')}
-                          className="flex items-center gap-1 p-0 h-auto font-medium ml-auto"
-                        >
-                          Amount
-                          <ArrowUpDown className="h-3 w-3" />
-                        </Button>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       // Skeleton loading state
                       Array(itemsPerPage).fill(0).map((_, index) => (
                         <TableRow key={index}>
-                          <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                           <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                           <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                          <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                         </TableRow>
                       ))
                     ) : paginatedData.length > 0 ? (
                       // Actual data
                       paginatedData.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell className="font-medium">{transaction.id}</TableCell>
-                          <TableCell>
-                            <span className={`flex items-center ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {transaction.type === 'credit' ? (
-                                <ArrowDown className="h-4 w-4 mr-1" />
-                              ) : (
-                                <ArrowUp className="h-4 w-4 mr-1" />
-                              )}
-                              {transaction.type === 'credit' ? 'Credit' : 'Debit'}
-                            </span>
-                          </TableCell>
-                          <TableCell>{transaction.description}</TableCell>
-                          <TableCell className="hidden md:table-cell font-mono text-xs">{transaction.reference}</TableCell>
-                          <TableCell className="hidden lg:table-cell">{transaction.date}</TableCell>
-                          <TableCell>{renderStatusBadge(transaction.status)}</TableCell>
-                          <TableCell className={`text-right font-medium ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={transaction.id}>
+                          <TableRow
+                            onClick={() =>
+                              setOpenTransactionId((prev) => (prev === transaction.id ? null : transaction.id))
+                            }
+                            className="cursor-pointer"
+                          >
+                            <TableCell>
+                              <span className={`flex items-center ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {transaction.type === 'credit' ? (
+                                  <ArrowDown className="h-4 w-4 mr-1" />
+                                ) : (
+                                  <ArrowUp className="h-4 w-4 mr-1" />
+                                )}
+                                {transaction.type === 'credit' ? 'Credit' : 'Debit'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-medium text-slate-900">{transaction.description}</TableCell>
+                            <TableCell className={`text-right font-medium ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
+                              {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
+                            </TableCell>
+                          </TableRow>
+                          {openTransactionId === transaction.id && (
+                            <TableRow className="bg-slate-50/70">
+                              <TableCell colSpan={3}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Transaction ID</p>
+                                    <p className="font-medium text-slate-900">{transaction.id}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
+                                    <div className="mt-1">{renderStatusBadge(transaction.status)}</div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Reference</p>
+                                    <p className="font-mono text-xs text-slate-700">{transaction.reference}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
+                                    <p className="text-slate-700">{transaction.date}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       ))
                     ) : (
                       // No results
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                           No transactions found. Try adjusting your search.
                         </TableCell>
                       </TableRow>
