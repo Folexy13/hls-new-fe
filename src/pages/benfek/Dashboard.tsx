@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu, Search, Newspaper, Tv, ShoppingCart, Pill, Layers, ArrowRight } from 'lucide-react';
+import { Bell, Menu, Search, Newspaper, Tv, ShoppingCart, Pill, Layers, ArrowRight, MessageCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import logo from '../../images/logo.jpg';
@@ -15,6 +15,10 @@ const Dashboard = () => {
   const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
   const [pharmacyModalDismissed, setPharmacyModalDismissed] = useState(false);
+  const [hasShownPharmacyModal, setHasShownPharmacyModal] = useState(false);
+  const [showNutrientNotice, setShowNutrientNotice] = useState(false);
+  const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
+  const [nutrientReady, setNutrientReady] = useState(false);
 
   const adminMessages = [
     { id: 'msg-1', title: 'Welcome to HLS', body: 'Your assessment is complete. Start exploring your personalized recommendations.' },
@@ -155,10 +159,14 @@ const Dashboard = () => {
     setCurrentPage(1);
   }, [searchValue]);
   useEffect(() => {
-    if (!selectedPharmacy && !pharmacyModalDismissed) {
+    if (activeTab !== 'pharmacy') return;
+    if (selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
+    const timer = window.setTimeout(() => {
       setShowPharmacyModal(true);
-    }
-  }, [selectedPharmacy, pharmacyModalDismissed]);
+      setHasShownPharmacyModal(true);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -198,11 +206,21 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
+    if (showPharmacyModal) return;
     const timer = window.setInterval(() => {
       setBannerIndex((prev) => (prev + 1) % bannerImages.length);
     }, 4500);
     return () => window.clearInterval(timer);
-  }, [bannerImages.length]);
+  }, [bannerImages.length, showPharmacyModal]);
+
+  useEffect(() => {
+    if (!showPharmacyModal) return;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [showPharmacyModal]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -247,43 +265,74 @@ const Dashboard = () => {
                     : 'bg-transparent text-emerald-800'
                 }`}
               >
-                <Pill className="h-4 w-4 text-white" />
+                <Pill className={`h-4 w-4  activeTab === 'pharmacy'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-transparent text-emerald-800'`} />
                 My Pharmacy
               </button>
               <button
                 type="button"
                 onClick={() => setActiveTab('nutrient')}
-                className={`flex-1 rounded-r-full rounded-l-none px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
+                className={`relative flex-1 rounded-r-full rounded-l-none px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'nutrient'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-transparent text-emerald-800'
                 }`}
               >
-                <Layers className="h-4 w-4 text-white" />
+                <Layers className={`h-4 w-4  activeTab === 'pharmacy'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-transparent text-emerald-800'`} />
                 My Nutrient Pack
+                {hasNutrientNotice && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowNutrientNotice(true);
+                      setHasNutrientNotice(false);
+                    }}
+                    className="absolute right-0 top-0 h-6 w-6 rounded-full bg-white text-emerald-700 shadow-sm flex items-center justify-center"
+                    aria-label="Nutrient pack update"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </button>
             </div>
             </div>
           </div>
 
-          <div className="mt-6">
+          <div >
             {activeTab === 'pharmacy' ? (
               <div className="space-y-4">
-                <div className="w-full max-w-xl px-4">
-                  <div className="relative">
-                    <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      value={searchValue}
-                      onChange={(e) => setSearchValue(e.target.value)}
-                      placeholder="Search any medication"
-                      className="pl-9 bg-white"
-                    />
+                <div className="w-full px-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="relative flex-1 max-w-xl">
+                      <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Input
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                        placeholder="Search any medication"
+                        className="pl-9 bg-white"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="h-10 w-12 border rounded-sm border-emerald-100 bg-gray-500/90 text-white shadow-sm flex items-center justify-center"
+                      aria-label="Open menu"
+                    >
+                      <Menu className="h-7 w-7" />
+                    </button>
                   </div>
                 </div>
                 {!selectedPharmacy ? (
-                  <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
+                  <button
+                    type="button"
+                    onClick={() => setShowPharmacyModal(true)}
+                    className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-50/80 transition"
+                  >
                     Select a pharmacy to view available drugs.
-                  </div>
+                  </button>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -299,16 +348,16 @@ const Dashboard = () => {
                               className="h-full w-full object-cover"
                             />
                           </div>
-                          <div className="mt-5 flex flex-col gap-2">
+                          <div className="mt-4 flex flex-col gap-2">
                             <div className="flex items-center justify-center">
                               <p className="text-sm font-semibold text-slate-900 leading-tigh">{item.title}</p>
                               <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
                             </div>
                             <div className="flex justify-around w-full gap-2">
-                              <p className="text-xs h-fit p-1 text-emerald-600 bg-gray-200 hover:text-emerald-700">
+                              <p className="text-xs h-4 px-3 rounded-md- flex items-center justify-center text-emerald-600 bg-gray-200 hover:text-emerald-700">
                                 Buy
                               </p>
-                              <p className="text-xs h-fit p-1 text-orange-500 bg-gray-200 hover:text-orange-600">
+                              <p className="text-xs h-4 px-3 rounded-md- flex items-center justify-center text-orange-500 bg-gray-200 hover:text-orange-600">
                                 Later
                               </p>
                             </div>
@@ -365,7 +414,7 @@ const Dashboard = () => {
                     )} */}
                   </>
                 )}
-                {filteredPharmacyItems.length > 0 && (
+                {selectedPharmacy && filteredPharmacyItems.length > 0 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <button
                       type="button"
@@ -407,40 +456,56 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {promoCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="relative w-[90vw] mx-auto overflow-hidden rounded-bl-[28px] rounded-tr-[28px] shadow-lg"
-                    style={{ height: 'calc(90vw / 2)' }}
-                  >
-                    <img
-                      src={card.image}
-                      alt={card.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-white/15" />
+                {!nutrientReady ? (
+                  <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-6 text-center text-sm text-emerald-800">
+                    <p>Our researchers are working. An alert with a link will be sent to your number.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHasNutrientNotice(false);
+                        setNutrientReady(true);
+                      }}
+                      className="mt-4 inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                    >
+                      View highest demand nutrient packs
+                    </button>
+                  </div>
+                ) : (
+                  promoCards.map((card) => (
                     <div
-                      className={`absolute inset-0 ${card.overlay} backdrop-blur-lg border border-white/20`}
-                    />
-                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${card.glow} blur-2xl`} />
-                    <div className="relative h-full w-full p-5 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">{card.title}</h3>
-                        <p className="mt-1 text-xs text-white/90">{card.subtitle}</p>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <span className="text-[11px] text-white/80">Explore packs</span>
-                        <button
-                          type="button"
-                          className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center"
-                          aria-label={`Open ${card.title}`}
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
+                      key={card.id}
+                      className="relative w-[90vw] mx-auto overflow-hidden rounded-bl-[28px] rounded-tr-[28px] shadow-lg"
+                      style={{ height: 'calc(90vw / 2)' }}
+                    >
+                      <img
+                        src={card.image}
+                        alt={card.title}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-white/15" />
+                      <div
+                        className={`absolute inset-0 ${card.overlay} backdrop-blur-lg border border-white/20`}
+                      />
+                      <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${card.glow} blur-2xl`} />
+                      <div className="relative h-full w-full p-5 flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{card.title}</h3>
+                          <p className="mt-1 text-xs text-white/90">{card.subtitle}</p>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <span className="text-[11px] text-white/80">Explore packs</span>
+                          <button
+                            type="button"
+                            className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center"
+                            aria-label={`Open ${card.title}`}
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -448,7 +513,7 @@ const Dashboard = () => {
       </div>
 
       {showPharmacyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <h2 className="text-lg font-semibold text-slate-900">Select your pharmacy</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -508,6 +573,17 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      <Dialog open={showNutrientNotice} onOpenChange={setShowNutrientNotice}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update</DialogTitle>
+            <DialogDescription>
+              Our researchers are working. An alert with a link will be sent you to view your nutrient type pack
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
 
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
         <div className="max-w-6xl mx-auto px-4 py-3">

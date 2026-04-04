@@ -61,7 +61,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 )}
               </Link>
             )}
-            {/* {isAuthenticated && ( */}
+            {isAuthenticated && (
               <button className="relative p-2 text-gray-600 hover:text-gray-900">
                 <Bell className="h-6 w-6" />
                 {unreadNotifications > 0 && (
@@ -70,7 +70,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </span>
                 )}
               </button>
-            {/* )} */}
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600"
@@ -223,7 +223,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </nav>
 
             <div className="flex items-center space-x-4">
-              {/* {isAuthenticated && ( */}
+              {isAuthenticated && (
                 <button className="relative p-2 text-gray-600 hover:text-gray-900">
                   <Bell className="h-5 w-5" />
                   {unreadNotifications > 0 && (
@@ -232,7 +232,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </span>
                   )}
                 </button>
-              {/* )} */}
+              )}
               {!isAuthenticated ? (
                 <Link
                   to="/auth/signin"

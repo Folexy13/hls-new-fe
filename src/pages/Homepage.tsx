@@ -38,6 +38,7 @@ const Homepage: React.FC = () => {
   const { user, isAuthenticated } = useStore();
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
+  const [showReferralDialog, setShowReferralDialog] = useState(false);
   const [code, setCode] = useState('');
   const [showNutrientForm, setShowNutrientForm] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -48,7 +49,7 @@ const Homepage: React.FC = () => {
   const [validatedCode, setValidatedCode] = useState('');
   const navigate = useNavigate();
   const handleQuizStart = () => {
-    navigate("/assessment");
+    setShowReferralDialog(true);
   };
 
   // Check if user is logged in and redirect to their role-specific homepage
@@ -681,6 +682,36 @@ const Homepage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showReferralDialog} onOpenChange={setShowReferralDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Were you referred by a medical personnel?</DialogTitle>
+            <DialogDescription>
+              If you have a quiz code from a doctor, choose Yes to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 flex items-center justify-center gap-5">
+            <Button
+              onClick={() => {
+                setShowReferralDialog(false);
+                navigate('/benfek/Quiz-form', { state: { includeGenderAge: true } });
+              }}
+            >
+              No
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowReferralDialog(false);
+                navigate('/assessment');
+              }}
+            >
+              Yes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Code Dialog */}
       <Dialog open={showCodeDialog} onOpenChange={setShowCodeDialog}>
         <DialogContent className="max-w-md">
@@ -721,7 +752,6 @@ const Homepage: React.FC = () => {
                       <SelectContent>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
