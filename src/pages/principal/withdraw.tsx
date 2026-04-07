@@ -13,11 +13,12 @@ import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { 
   Search, DollarSign, CreditCard,
   Calendar, AlertCircle, CheckCircle, Clock,
   ArrowDown, Building, Wallet, Plus,
-  Filter
+  Filter, PhoneCall
 } from 'lucide-react';
 
 // Define the Withdrawal type
@@ -58,6 +59,28 @@ const WithdrawPage: React.FC = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(1);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
+  const [walletBalance] = useState(1250000);
+  const [withdrawableBalance, setWithdrawableBalance] = useState(540000);
+  const [unresolvedCredits, setUnresolvedCredits] = useState([
+    {
+      id: 1,
+      supplement: 'Economic Pack',
+      amount: 120000,
+      date: '12/03/2025',
+    },
+    {
+      id: 2,
+      supplement: "Doctor's Choice",
+      amount: 85000,
+      date: '10/03/2025',
+    },
+    {
+      id: 3,
+      supplement: 'Premium Offer Pack',
+      amount: 210000,
+      date: '08/03/2025',
+    },
+  ]);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'Completed' | 'Processing' | 'Pending' | 'Failed'>('all');
   const [filterMethod, setFilterMethod] = useState<'all' | 'Bank Transfer' | 'Mobile Money' | 'Paystack' | 'Flutterwave'>('all');
@@ -65,6 +88,8 @@ const WithdrawPage: React.FC = () => {
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockWithdrawals.length / itemsPerPage);
+  const primaryMethod = paymentMethods.find((method) => method.default) ?? paymentMethods[0];
+  const displayedMethods = primaryMethod ? [primaryMethod] : [];
 
   // Simulate loading data
   useEffect(() => {
@@ -140,6 +165,21 @@ const WithdrawPage: React.FC = () => {
     return items;
   };
 
+  const handleResolveCredit = (id: number) => {
+    setUnresolvedCredits((prev) => {
+      const credit = prev.find((item) => item.id === id);
+      if (credit) {
+        const tax = credit.amount * 0.075;
+        const serviceCharge = credit.amount * 0.05;
+        const amountAfterTax = credit.amount - tax;
+        const hlsCommission = amountAfterTax * 0.3;
+        const principalShare = credit.amount - tax - serviceCharge - hlsCommission;
+        setWithdrawableBalance((balance) => balance + principalShare);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
   // Render status badge
   const renderStatusBadge = (status: string) => {
     let bgColor = '';
@@ -176,39 +216,15 @@ const WithdrawPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
-      {/* Page Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <BackToDashboardButton className="mb-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Withdraw Funds</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Withdraw your earnings to your preferred payment method
-              </p>
-            </div>
-          </div>
+      <div className="fixed inset-x-0 top-16 z-40 flex items-center justify-between bg-white/95 px-4 py-2 shadow-sm backdrop-blur">
+        <BackToDashboardButton />
+        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600">
+          <PhoneCall className="h-4 w-4" />
         </div>
       </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="withdraw" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto mb-8">
-            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-            <TabsTrigger value="history">Withdrawal History</TabsTrigger>
-          </TabsList>
-          
-          {/* Withdraw Tab */}
-          <TabsContent value="withdraw" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Withdrawal Form */}
-              <div className="md:col-span-2">
+      <div className="md:col-span-2 mt-8">
                 <Card>
-                  <div className="p-6 border-b">
-                    <h3 className="text-lg font-semibold text-gray-900">Withdraw Funds</h3>
-                  </div>
-                  <div className="p-6">
+                  <div className="p-6 flex flex-col gap-1">
                     {withdrawalSuccess ? (
                       <div className="bg-emerald-50 border border-emerald-200 rounded-md p-4 flex items-start">
                         <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 mr-3" />
@@ -220,130 +236,58 @@ const WithdrawPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <form onSubmit={handleWithdrawal}>
-                        {/* Available Balance */}
-                        <div className="mb-6 bg-gray-50 p-4 rounded-md border">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm text-gray-500">Available Balance</p>
-                              <p className="text-2xl font-bold text-gray-900">₦1,250,000.00</p>
+                      <form onSubmit={handleWithdrawal} className="flex flex-col gap-6">
+                        {/* Balance Banner */}
+                        <div>
+                          <div className="w-full rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white">
+                            <div className="text-xs uppercase tracking-[0.2em] text-white/70">
+                              Wallet Summary
                             </div>
-                            <DollarSign className="h-8 w-8 text-emerald-500" />
-                          </div>
-                        </div>
-                        
-                        {/* Amount */}
-                        <div className="mb-6">
-                          <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                            Withdrawal Amount
-                          </label>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <span className="text-gray-500 sm:text-sm">₦</span>
-                            </div>
-                            <Input
-                              id="amount"
-                              type="text"
-                              placeholder="0.00"
-                              className="pl-8"
-                              value={withdrawAmount}
-                              onChange={(e) => setWithdrawAmount(e.target.value)}
-                              required
-                            />
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500">
-                            Minimum withdrawal amount: ₦10,000.00
-                          </p>
-                        </div>
-                        
-                        {/* Payment Method */}
-                        <div className="mb-6">
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Select Payment Method
-                          </label>
-                          <div className="space-y-3">
-                            {paymentMethods.map((method) => (
-                              <div 
-                                key={method.id}
-                                className={`border rounded-md p-4 cursor-pointer transition-colors ${
-                                  selectedMethod === method.id 
-                                    ? 'border-emerald-500 bg-emerald-50' 
-                                    : 'border-gray-200 hover:border-gray-300'
-                                }`}
-                                onClick={() => setSelectedMethod(method.id)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center">
-                                    {method.type === 'bank' ? (
-                                      <Building className="h-5 w-5 text-gray-400 mr-3" />
-                                    ) : (
-                                      <Wallet className="h-5 w-5 text-gray-400 mr-3" />
-                                    )}
-                                    <div>
-                                      <p className="font-medium text-gray-900">{method.name}</p>
-                                      <p className="text-sm text-gray-500">
-                                        {method.type === 'bank' 
-                                          ? `Account: ${method.accountNumber}` 
-                                          : `Phone: ${method.phoneNumber}`
-                                        }
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center">
-                                    {method.default && (
-                                      <span className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full mr-2">
-                                        Default
-                                      </span>
-                                    )}
-                                    <div className={`h-5 w-5 rounded-full border flex items-center justify-center ${
-                                      selectedMethod === method.id 
-                                        ? 'border-emerald-500' 
-                                        : 'border-gray-300'
-                                    }`}>
-                                      {selectedMethod === method.id && (
-                                        <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
+                            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="rounded-xl bg-white/10 border border-white/10 p-4">
+                                <p className="text-xs font-semibold text-white/70">Total Wallet Balance</p>
+                                <p className="mt-1 flex items-center gap-2 text-2xl font-bold text-white">
+                                  ₦{walletBalance.toLocaleString()}
+                                  <span className="text-2xl font-extrabold text-yellow-400">!</span>
+                                </p>
                               </div>
-                            ))}
-                            
-                            <div className="border border-dashed rounded-md p-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-center">
-                              <Plus className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-sm text-gray-600">Add New Payment Method</span>
+                              <div className="rounded-xl bg-white/10 border border-white/10 p-4">
+                                <p className="text-xs font-semibold text-white/70">Amount Withdrawable</p>
+                                <p className="mt-1 flex items-center gap-2 text-2xl font-bold text-white">
+                                  ₦{withdrawableBalance.toLocaleString()}
+                                  <CheckCircle className="h-5 w-5 text-emerald-300" />
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Submit Button */}
-                        <div className="mt-8">
-                          <Button 
-                            type="submit" 
-                            className="w-full"
-                            disabled={isLoading || !withdrawAmount}
-                          >
-                            {isLoading ? (
-                              <div className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Processing...
-                              </div>
-                            ) : (
-                              'Withdraw Funds'
-                            )}
-                          </Button>
-                        </div>
-                      </form>
-                    )}
-                  </div>
-                </Card>
-              </div>
+
+                        {/* {unresolvedCredits.length > 0 && (
+                          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                            New credits received. Resolve them to add your share to withdrawable balance.
+                          </div>
+                        )} */}
+                        <div className="max-w-7xl sm:px-6 lg:px-8">
+        <Tabs defaultValue="withdraw" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl mx-auto">
+            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+            {/* <TabsTrigger value="history">Withdrawal History</TabsTrigger> */}
+            <TabsTrigger value="unresolved" className="inline-flex items-center">
+              Unresolved Credits
+              {unresolvedCredits.length > 0 && (
+                <span className="ml-2 h-2.5 w-2.5 rounded-full bg-red-500" />
+              )}
+            </TabsTrigger>
+            {/* <TabsTrigger value="support">Support</TabsTrigger> */}
+          </TabsList>
+          
+          {/* Withdraw Tab */}
+          <TabsContent value="withdraw" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Withdrawal Form */}
               
               {/* Information Card */}
-              <div className="md:col-span-1">
+              {/* <div className="md:col-span-1">
                 <Card>
                   <div className="p-6 border-b">
                     <h3 className="text-lg font-semibold text-gray-900">Withdrawal Information</h3>
@@ -383,7 +327,7 @@ const WithdrawPage: React.FC = () => {
                     </div>
                   </div>
                 </Card>
-              </div>
+              </div> */}
             </div>
           </TabsContent>
           
@@ -415,7 +359,7 @@ const WithdrawPage: React.FC = () => {
                     <span className="hidden sm:inline">Filter by Date</span>
                   </Button>
                   {showFilters && (
-                    <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                    <div className="absolute right-0 left-0 sm:left-auto sm:right-0 top-11 z-10 w-[calc(100vw-2rem)] sm:w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
                       <div className="space-y-3 text-sm text-slate-700">
                         <div>
                           <p className="text-xs font-semibold text-slate-500 uppercase">Method</p>
@@ -468,7 +412,7 @@ const WithdrawPage: React.FC = () => {
                             Reset
                           </Button>
                           <Button type="button" size="sm" onClick={() => setShowFilters(false)}>
-                            Done
+                            Apply
                           </Button>
                         </div>
                       </div>
@@ -510,22 +454,22 @@ const WithdrawPage: React.FC = () => {
                             </TableCell>
                           </TableRow>
                           {openWithdrawalId === withdrawal.id && (
-                            <TableRow className="bg-slate-50/70">
+                            <TableRow className="bg-slate-100/80">
                               <TableCell colSpan={3}>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
-                                  <div>
+                                <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+                                  <div className="min-w-[140px]">
                                     <p className="text-xs font-semibold text-slate-500 uppercase">Withdrawal ID</p>
                                     <p className="font-medium text-slate-900">{withdrawal.id}</p>
                                   </div>
-                                  <div>
+                                  <div className="min-w-[140px]">
                                     <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
                                     <div className="mt-1">{renderStatusBadge(withdrawal.status)}</div>
                                   </div>
-                                  <div>
+                                  <div className="min-w-[140px]">
                                     <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
                                     <p className="text-slate-700">{withdrawal.date}</p>
                                   </div>
-                                  <div>
+                                  <div className="min-w-[160px]">
                                     <p className="text-xs font-semibold text-slate-500 uppercase">Processing Time</p>
                                     <p className="text-slate-700">{withdrawal.processingTime}</p>
                                   </div>
@@ -576,8 +520,222 @@ const WithdrawPage: React.FC = () => {
               </div>
             </Card>
           </TabsContent>
+
+          {/* Unresolved Credits Tab */}
+          <TabsContent value="unresolved">
+            {unresolvedCredits.length === 0 ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-6 text-center text-sm font-medium text-emerald-700">
+                You do not have any unresolved conflict
+              </div>
+            ) : (
+              <Accordion type="single" collapsible className="space-y-4">
+                {unresolvedCredits.map((credit) => {
+                  const tax = credit.amount * 0.075;
+                  const serviceCharge = credit.amount * 0.05;
+                  const amountAfterTax = credit.amount - tax;
+                  const hlsCommission = amountAfterTax * 0.3;
+                  const principalShare =
+                    credit.amount - tax - serviceCharge - hlsCommission;
+
+                  return (
+                    <AccordionItem
+                      key={credit.id}
+                      value={`credit-${credit.id}`}
+                      className="rounded-xl border border-red-200 bg-red-50/40"
+                    >
+                      <AccordionTrigger className="rounded-xl bg-white px-4 py-4 hover:no-underline">
+                        <div className="flex w-full items-center justify-between gap-3 text-left">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 truncate">
+                              {credit.supplement}
+                            </p>
+                            <p className="text-xs text-slate-500">{credit.date}</p>
+                          </div>
+                          <div className="text-sm font-semibold text-red-600">
+                            ₦{credit.amount.toLocaleString()}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4 pt-2">
+                        <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-700">
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Total Amount Purchased
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{credit.amount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Principal Share
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(principalShare).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Tax Deducted (7.5%)
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(tax).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Service Charge (5%)
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(serviceCharge).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              HLS Commission (30% after tax)
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(hlsCommission).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-start">
+                            <Button onClick={() => handleResolveCredit(credit.id)}>
+                              Resolve
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
+          </TabsContent>
+
+          {/* Support Tab */}
+          <TabsContent value="support">
+            <Card className="overflow-hidden">
+              <div className="p-6 border-b bg-white">
+                <h3 className="text-lg font-semibold text-gray-900">Support</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Reach out if you need help with withdrawals.
+                </p>
+              </div>
+              <div className="p-6 bg-white space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                  For urgent assistance, contact our support team and include your withdrawal reference.
+                </div>
+                <Button variant="outline">Contact Support</Button>
+              </div>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+                        {activeTab === 'withdraw' && (
+                          <>
+                            {/* Payment Method */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Core Account
+                              </label>
+                              <div className="space-y-3">
+                                {displayedMethods.map((method) => (
+                                  <div
+                                    key={method.id}
+                                    className="border rounded-md p-4 bg-emerald-50 border-emerald-400"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center">
+                                        {method.type === 'bank' ? (
+                                          <Building className="h-5 w-5 text-gray-400 mr-3" />
+                                        ) : (
+                                          <Wallet className="h-5 w-5 text-gray-400 mr-3" />
+                                        )}
+                                        <div>
+                                          <p className="font-medium text-gray-900">{method.name}</p>
+                                          <p className="text-sm text-gray-500">
+                                            {method.type === 'bank'
+                                              ? `Account: ${method.accountNumber}`
+                                              : `Phone: ${method.phoneNumber}`}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                                        Change account
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Amount */}
+                            <div>
+                              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                                Withdrawal Amount
+                              </label>
+                              <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                  <span className="text-gray-500 sm:text-sm">₦</span>
+                                </div>
+                                <Input
+                                  id="amount"
+                                  type="text"
+                                  placeholder="0.00"
+                                  className="pl-8"
+                                  value={withdrawAmount}
+                                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                                  required
+                                />
+                              </div>
+                              <p className="mt-1 text-xs text-gray-500">
+                                Minimum withdrawal amount: ₦10,000.00
+                              </p>
+                            </div>
+                            
+                            {/* Submit Button */}
+                            <div>
+                              <Button 
+                                type="submit" 
+                                className="w-full"
+                                disabled={isLoading || !withdrawAmount}
+                              >
+                                {isLoading ? (
+                                  <div className="flex items-center">
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing...
+                                  </div>
+                                ) : (
+                                  'Withdraw Funds'
+                                )}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </form>
+                    )}
+                  </div>
+                </Card>
+              </div>
+      {/* Page Header */}
+      {/* <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <BackToDashboardButton className="mb-3" />
+              <h1 className="text-2xl font-bold text-gray-900">Withdraw Funds</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Withdraw your earnings to your preferred payment method
+              </p>
+            </div>
+          </div>
+        </div>
+      </div> */}
+
+      {/* Main Content */}
     </div>
   );
 };

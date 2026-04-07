@@ -72,6 +72,7 @@ const AddBenfekPage: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showSentModal, setShowSentModal] = useState(false);
+  const [manualStep, setManualStep] = useState(0);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -119,6 +120,13 @@ const AddBenfekPage: React.FC = () => {
       toast.error('Failed to add benfek.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleManualNext = async () => {
+    const isValid = await form.trigger(['firstName', 'lastName', 'email', 'phone', 'age', 'gender']);
+    if (isValid) {
+      setManualStep(1);
     }
   };
 
@@ -277,12 +285,12 @@ const AddBenfekPage: React.FC = () => {
                       )}
                       <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                          {/* Personal Information */}
-                          <div>
-                            <h4 className="text-md font-medium text-gray-900 mb-4">
-                              Personal Information
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          {manualStep === 0 && (
+                            <div>
+                              <h4 className="text-md font-medium text-gray-900 mb-4">
+                                Basic Details
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                               <FormField
                                 control={form.control}
                                 name="firstName"
@@ -377,14 +385,21 @@ const AddBenfekPage: React.FC = () => {
                                   </FormItem>
                                 )}
                               />
+                              </div>
+                              <div className="mt-6 flex justify-end">
+                                <Button type="button" onClick={handleManualNext}>
+                                  Next
+                                </Button>
+                              </div>
                             </div>
-                          </div>
+                          )}
 
-                          <div>
-                            <h4 className="text-md font-medium text-gray-900 mb-4">
-                              Health Information
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                          {manualStep === 1 && (
+                            <div>
+                              <h4 className="text-md font-medium text-gray-900 mb-4">
+                                Health Factors
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                               <FormField
                                 control={form.control}
                                 name="allergies"
@@ -392,7 +407,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Allergies</FormLabel>
                                     <FormControl>
-                                      <Textarea placeholder="List any known allergies" {...field} />
+                                      <Input placeholder="e.g. Peanuts, dust" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -404,9 +419,9 @@ const AddBenfekPage: React.FC = () => {
                                 name="scares"
                                 render={({ field }) => (
                                   <FormItem>
-                                    <FormLabel>Scares</FormLabel>
+                                    <FormLabel>Health Scares</FormLabel>
                                     <FormControl>
-                                      <Textarea placeholder="Any major health scares" {...field} />
+                                      <Input placeholder="e.g. Hypertension episode" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -420,7 +435,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Family Condition</FormLabel>
                                     <FormControl>
-                                      <Textarea placeholder="Family health conditions" {...field} />
+                                      <Input placeholder="e.g. Diabetes" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -434,67 +449,76 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Medications</FormLabel>
                                     <FormControl>
-                                      <Textarea placeholder="Current medications" {...field} />
+                                      <Input placeholder="e.g. Vitamin D, Omega-3" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                            </div>
+                              </div>
 
-                            <div className="mt-4">
+                              <div className="mt-4">
+                                <FormField
+                                  control={form.control}
+                                  name="hasCurrentCondition"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Current Health Condition</FormLabel>
+                                      <FormControl>
+                                        <Input placeholder="e.g. Mild asthma" {...field} />
+                                      </FormControl>
+                                      <FormDescription>
+                                        Enter any ongoing condition if applicable.
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {manualStep === 1 && (
+                            <>
+                              {/* Terms and Conditions */}
                               <FormField
                                 control={form.control}
-                                name="hasCurrentCondition"
+                                name="termsAccepted"
                                 render={({ field }) => (
-                                  <FormItem>
-                                    <FormLabel>Current Health condition</FormLabel>
+                                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                                     <FormControl>
-                                      <Input placeholder="e.g. Yes - asthma" {...field} />
+                                      <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
                                     </FormControl>
-                                    <FormDescription>
-                                      Enter any ongoing condition if applicable.
-                                    </FormDescription>
+                                    <div className="space-y-1 leading-none">
+                                      <FormLabel>
+                                        I confirm that I have permission to add this benfek to the network
+                                      </FormLabel>
+                                      <FormDescription>
+                                        By checking this box, you confirm that you have obtained consent from the benfek to add them to your network.
+                                      </FormDescription>
+                                    </div>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                            </div>
-                          </div>
 
-                          {/* Terms and Conditions */}
-                          <FormField
-                            control={form.control}
-                            name="termsAccepted"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                  <FormLabel>
-                                    I confirm that I have permission to add this benfek to the network
-                                  </FormLabel>
-                                  <FormDescription>
-                                    By checking this box, you confirm that you have obtained consent from the benfek to add them to your network.
-                                  </FormDescription>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          {/* Submit Button */}
-                          <Button
-                            type="submit"
-                            className="w-full bg-slate-900 hover:bg-slate-800"
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? "Processing..." : "Add Benfek"}
-                          </Button>
+                              <div className="flex items-center justify-between gap-3">
+                                <Button type="button" variant="outline" onClick={() => setManualStep(0)}>
+                                  Back
+                                </Button>
+                                <Button
+                                  type="submit"
+                                  className="flex-1 bg-slate-900 hover:bg-slate-800"
+                                  disabled={isSubmitting}
+                                >
+                                  {isSubmitting ? "Processing..." : "Add Benfek"}
+                                </Button>
+                              </div>
+                            </>
+                          )}
                         </form>
                       </Form>
                     </div>
