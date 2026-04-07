@@ -82,8 +82,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white shadow-lg border-t z-40">
-            <nav className="px-4 py-2 space-y-1">
+          <div className="absolute top-full right-0 w-1/2 max-w-[320px] bg-white shadow-lg border-l border-t z-40 rounded-bl-2xl">
+            <nav className="px-4 py-3 space-y-1">
               {/* Always show Home link */}
               <Link
                 to="/"
@@ -157,7 +157,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50"
                   >
-                    Sign In
+                    Login
+                  </Link>
+                  <Link
+                    to="/auth/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+                  >
+                    Join Us
                   </Link>
                 </>
               )}
@@ -238,7 +245,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   to="/auth/signin"
                   className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-emerald-700 transition-colors"
                 >
-                  Sign In
+                  Login
                 </Link>
               ) : (
                 <div className="flex items-center space-x-4">
@@ -270,12 +277,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {isAuthenticated && userRole === UserRole.PRINCIPAL && (
         <footer className={`fixed bottom-0 left-0 right-0 z-40 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 transition-transform ${hidePrincipalFooter ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 gap-2 flex items-center justify-center">
-            <Settings color='white' />
+            <User className="text-white" />
             <Link
               to="/principal/settings"
               className="text-md font-medium text-white tracking-widest"
             >
-              Settings
+              User Profile
             </Link>
           </div>
         </footer>

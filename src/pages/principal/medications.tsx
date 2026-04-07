@@ -451,9 +451,10 @@ const MedicationsPage: React.FC = () => {
       {/* Page Header */}
       <div className="bg-white border-b sticky top-0 z-20 sm:relative sm:top-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          
+            <BackToDashboardButton isDirty={isDirty} className="mb-2" />
           <div className="flex flex-row items-center justify-between">
-            <div>
-          <BackToDashboardButton isDirty={isDirty} className="mb-2" />
+            <div className='flex'>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
               <p className="hidden sm:block mt-1 text-sm text-gray-500">
                 Manage your medication inventory
@@ -462,7 +463,7 @@ const MedicationsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
-                className="flex items-center gap-2 h-9 rounded-full px-4 shadow-sm"
+                className="flex items-center gap-2 h-6 px-4 shadow-sm"
                 onClick={() => {
                   setSelectedMedication(null);
                   setEditingMedicationId(null);

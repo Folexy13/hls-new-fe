@@ -80,7 +80,7 @@ const Users = () => {
     return (
         <div className="p-6">
             <BackToDashboardButton isDirty={isDirty} className="mb-3" />
-            <h1 className="text-2xl font-bold mb-2">Principal Users</h1>
+            {/* <h1 className="text-2xl font-bold mb-2">Principal Users</h1>
             <p className="text-gray-500 mb-6">Manage principal account users</p>
 
             <div className="flex justify-between mb-4">
@@ -216,7 +216,7 @@ const Users = () => {
                         </tr>
                     )}
                 </tbody>
-            </table>
+            </table> */}
         </div>
     );
 };

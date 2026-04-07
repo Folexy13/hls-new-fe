@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -148,7 +148,17 @@ const BenfeksPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = benfeks.filter(benfek =>
+  const uniqueBenfeks = useMemo(() => {
+    const seen = new Set<string>();
+    return benfeks.filter((benfek) => {
+      const key = benfek.code ?? String(benfek.id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [benfeks]);
+
+  const filteredData = uniqueBenfeks.filter(benfek =>
     benfek.benfekName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     benfek.benfekPhone.includes(searchTerm) ||
     benfek.code.toLowerCase().includes(searchTerm.toLowerCase())
@@ -181,7 +191,7 @@ const BenfeksPage: React.FC = () => {
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
         isRegistered ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
       }`}>
-        {isRegistered ? 'Registered' : 'Not Registered'}
+        {isRegistered ? 'Registered' : 'Pending'}
       </span>
     );
   };
@@ -257,7 +267,6 @@ const BenfeksPage: React.FC = () => {
               <EmptyState onAddClick={handleNavigateToAdd} />
             ) : (
               <Table>
-                <TableCaption>A list of your registered and pending benfeks.</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">ID</TableHead>
@@ -335,11 +344,11 @@ const BenfeksPage: React.FC = () => {
                 {paginatedData.map((benfek) => (
                   <AccordionItem key={benfek.id} value={`benfek-${benfek.id}`} className="border-0 bg-white rounded-xl shadow-sm overflow-hidden">
                     <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-gray-50 transition-colors text-left">
-                      <div className="flex items-center gap-4 w-full text-left">
+                      <div className="flex items-center gap-4 w-full text-left justify-between">
                         <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
                           {benfek.benfekName.charAt(0)}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-2">
                           <p className="font-bold text-gray-900 truncate text-base text-left">{benfek.benfekName}</p>
                           <p className="text-sm text-gray-500 mt-0.5 text-left">{benfek.benfekPhone}</p>
                           <div className="mt-2 flex items-center gap-2">
@@ -348,9 +357,9 @@ const BenfeksPage: React.FC = () => {
                         </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4 bg-white">
+                    <AccordionContent className="px-4 pb-4 bg-slate-50/80">
                       <div className="space-y-4 pt-2">
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <div className="bg-white p-4 rounded-xl border border-slate-200">
                           <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Quiz Access Code</p>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-2xl font-black text-blue-600 tracking-widest font-mono">{benfek.code}</span>
@@ -359,7 +368,7 @@ const BenfeksPage: React.FC = () => {
                             </Button>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex flex-wrap gap-4 text-sm">
                           <div>
                             <p className="text-gray-500 text-xs font-semibold">CREATED</p>
                             <p className="font-bold text-gray-900">{new Date(benfek.createdAt).toLocaleDateString()}</p>
