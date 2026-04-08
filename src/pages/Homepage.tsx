@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -286,21 +287,21 @@ const Homepage: React.FC = () => {
       title: "The Science Behind Personalized Nutrition",
       excerpt: "Discover how your unique genetic makeup influences your nutritional needs and how personalized supplementation can optimize your health.",
       date: "March 15, 2024",
-      image: "/placeholder.svg"
+      image: patient
     },
     {
       id: 2,
       title: "5 Signs You Might Need Vitamin D",
       excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
       date: "March 10, 2024",
-      image: "/placeholder.svg"
+      image: vitamins2
     },
     {
       id: 3,
       title: "Optimizing Recovery with Magnesium",
       excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
       date: "March 5, 2024",
-      image: "/placeholder.svg"
+      image: vitamins3
     }
   ];
 
@@ -336,12 +337,12 @@ const Homepage: React.FC = () => {
           {/* Text Content */}
           <div className="pt-6 sm:pt-12 lg:pt-16 pb-4 sm:pb-6">
             <div className="inline-flex items-center justify-center rounded-full bg-white/80 px-5 py-2 shadow-sm mb-4">
-              <p className="text-xs sm:text-sm lg:text-base text-blue-900 font-semibold">
+              <p className="text-sm sm:text-base lg:text-lg text-blue-900 font-normal tracking-[0.08em]">
                 Food Extracts • Nutrients • Supplements
               </p>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-blue-900 leading-tight mb-4 sm:mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-blue-900 leading-[1.08] tracking-[-0.03em] mb-5 sm:mb-7">
               Personalized Just
               <br />
               For YOU.
@@ -350,7 +351,7 @@ const Homepage: React.FC = () => {
             <div className="flex justify-center mb-6 sm:mb-8">
               <button
                 onClick={handleQuizStart}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 sm:px-6 sm:py-2.5 rounded-full text-sm sm:text-base font-semibold transition-colors shadow-sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 sm:px-6 sm:py-2.5 rounded-none text-sm sm:text-base font-semibold transition-colors shadow-sm"
               >
                 Take Quiz
               </button>
@@ -368,76 +369,63 @@ const Homepage: React.FC = () => {
         </div>
 
         {/* Curved bottom background */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-20 sm:h-28 lg:h-36 z-10 overflow-hidden">
-          <svg
-            viewBox="0 0 900 200"
-            preserveAspectRatio="none"
-            className="w-full h-full"
-          >
-            <path
-              d="M0,200 C100,0 800,0 900,200 L900,200 L0,200 Z"
-              fill="#00657e"
-            />
-          </svg>
+        <div className="absolute inset-x-0 bottom-0 h-20 sm:h-28 lg:h-44 xl:h-52 z-10 overflow-hidden">
+          <div className="h-full w-full rounded-tl-[50%] rounded-tr-[50%] bg-[#00657e]" />
         </div>
 
         {/* Pills Images */}
         <img
-          src={leftPill}
+          src={rightPill}
           alt="Green pill"
           className="absolute bottom-4 left-2 sm:left-6 lg:left-10 w-10 sm:w-14 lg:w-20 h-auto z-20"
         />
         <img
-          src={rightPill}
+          src={leftPill}
           alt="Green pill"
           className="absolute bottom-4 right-2 sm:right-6 lg:right-10 w-10 sm:w-14 lg:w-20 h-auto z-20"
         />
       </section>
 
       {/* Why Take Quiz Section */}
-      <section className="py-6 sm:py-10 bg-white">
+      <section className="py-8 sm:py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-4 sm:mb-8">
+          <div className="text-center mb-6 sm:mb-10">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
               Why take the quiz?
             </h2>
+            <p className="mx-auto mt-2 max-w-2xl text-sm sm:text-base text-gray-600">
+              A quick assessment that helps us personalize your wellness experience.
+            </p>
           </div>
 
-          <div className="relative px-10 sm:px-10">
-            <Carousel className="w-full overflow-hidden">
-              <CarouselContent className="ml-0">
-                {whyTakeQuiz.map((item, index) => (
-                  <CarouselItem
-                    key={index}
-                    className="pl-0 basis-[85%] sm:basis-1/2 lg:basis-1/5"
-                  >
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-4 flex flex-col items-center text-center h-full">
-                      <item.icon className="h-8 sm:h-10 lg:h-12 w-8 sm:w-10 lg:w-12 text-[#005073] mb-3" />
-                      <p className="text-sm sm:text-base font-medium text-gray-900 leading-snug">
-                        {item.text}
-                      </p>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-
-              <CarouselPrevious className="left-0 h-10 w-10 bg-white border shadow-md opacity-100" />
-              <CarouselNext className="right-0 h-10 w-10 bg-white border shadow-md opacity-100" />
-            </Carousel>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {whyTakeQuiz.map((item, index) => (
+              <div
+                key={index}
+                className="group h-full rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/40 p-5 text-center shadow-[0_18px_40px_-30px_rgba(15,23,42,0.45)] transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_24px_46px_-30px_rgba(15,23,42,0.55)]"
+              >
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#005073] ring-1 ring-emerald-100 transition group-hover:bg-[#005073] group-hover:text-white">
+                  <item.icon className="h-7 w-7" />
+                </div>
+                <p className="text-sm sm:text-base font-semibold text-gray-900 leading-snug">
+                  {item.text}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Products Section */}
-      <section className="py-8 sm:py-16 bg-gray-50">
+      <section className="py-10 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-6 sm:mb-12">
-            <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-4">Featured Products</h2>
-            <p className="text-sm sm:text-lg lg:text-xl text-gray-700">Premium supplements backed by science</p>
-            <div className="mt-3 sm:mt-6">
+          <div className="text-center mb-8 sm:mb-10">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">Featured Products</h2>
+            <p className="text-sm sm:text-base lg:text-lg text-gray-700">Premium supplements backed by science</p>
+            <div className="mt-4 sm:mt-5">
               <Link
                 to="/marketplace"
-                className="inline-flex items-center px-4 py-2 border border-orange-500 text-orange-500 font-medium rounded-full hover:bg-orange-50 transition-all text-sm"
+                className="inline-flex items-center px-5 py-2.5 border border-orange-500 text-orange-500 font-medium rounded-full hover:bg-orange-50 transition-all text-sm"
               >
                 View All Products →
               </Link>
@@ -445,12 +433,12 @@ const Homepage: React.FC = () => {
           </div>
 
           <Carousel className="w-full">
-            <CarouselContent>
+            <CarouselContent className="-ml-3 sm:-ml-4">
               {products.map((product) => (
-                <CarouselItem key={product.id} className="basis-full sm:basis-1/2 lg:basis-1/4">
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full">
+                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[86%] sm:basis-1/2 lg:basis-1/4">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                     <Link to={`/product/${product.id}`}>
-                      <div className="w-full h-40 flex items-center justify-center bg-white p-4">
+                      <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-white p-5 border-b border-gray-100">
                         <img
                           src={product.image}
                           alt={product.name}
@@ -458,12 +446,12 @@ const Homepage: React.FC = () => {
                         />
                       </div>
                     </Link>
-                    <div className="p-4">
-                      <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                      <p className="text-gray-700 text-xs sm:text-sm mb-3 sm:mb-4 hidden sm:block">{product.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm sm:text-xl lg:text-2xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
-                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors text-xs sm:text-sm">
+                    <div className="p-4 sm:p-5 flex flex-1 flex-col">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 leading-snug">{product.name}</h3>
+                      <p className="text-gray-700 text-sm leading-6 mb-5 hidden sm:block flex-1">{product.description}</p>
+                      <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-lg sm:text-xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold">
                           Add to Cart
                         </button>
                       </div>
@@ -500,43 +488,46 @@ const Homepage: React.FC = () => {
                     key={index}
                     className="pl-0 basis-[90%] sm:basis-1/2 lg:basis-1/3"
                   >
-                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200 shadow-sm h-full">
-                      <div className="flex items-center mb-3">
-                        <img
-                          src={testimonial.image}
-                          alt={testimonial.name}
-                          className="w-10 h-10 rounded-full mr-3 object-cover"
-                        />
-                        <div>
-                          <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
-                            {testimonial.name}
-                          </h4>
+                    <article className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-shadow hover:shadow-[0_24px_48px_-28px_rgba(15,23,42,0.45)]">
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="flex items-center">
+                          <img
+                            src={testimonial.image}
+                            alt={testimonial.name}
+                            className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+                          />
+                          <div className="ml-3">
+                            <h4 className="text-sm font-semibold text-slate-900 sm:text-base">
+                              {testimonial.name}
+                            </h4>
+                            <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                              Verified review
+                            </p>
+                          </div>
                         </div>
+                        <span className="text-4xl leading-none text-emerald-100">"</span>
                       </div>
 
-                      <div className="flex mb-2">
+                      <div className="mb-3 flex gap-1">
                         {[...Array(testimonial.rating)].map((_, i) => (
                           <Star
                             key={i}
-                            className="h-4 w-4 text-yellow-400 fill-current"
+                            className="h-4 w-4 fill-amber-400 text-amber-400"
                           />
                         ))}
                       </div>
 
-                      <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                      <p className="text-sm leading-7 text-slate-600 sm:text-base">
                         {testimonial.content}
                       </p>
-                    </div>
+                    </article>
                   </CarouselItem>
                 ))}
               </CarouselContent>
-
-              <CarouselPrevious className="left-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-white/70 backdrop-blur border shadow-sm opacity-60 hover:opacity-100 transition-all" />
-              <CarouselNext className="right-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-white/70 backdrop-blur border shadow-sm opacity-60 hover:opacity-100 transition-all" />
             </Carousel>
 
             <p className="text-center text-xs sm:text-sm text-gray-500 mt-3">
-              Swipe or use arrows to see more
+              
             </p>
           </div>
         </div>
@@ -554,30 +545,28 @@ const Homepage: React.FC = () => {
             </p>
           </div>
 
-          <div className="relative px-8 sm:px-10">
-            <Carousel className="w-full overflow-hidden">
-              <CarouselContent className="ml-0">
-                {faqs.map((faq, index) => (
-                  <CarouselItem key={index} className="pl-0 basis-[95%] sm:basis-1/2">
-                    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-200 h-full">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 leading-snug">
-                        {faq.question}
-                      </h3>
-                      <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-
-              <CarouselPrevious className="left-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-white/70 backdrop-blur border shadow-sm opacity-60 hover:opacity-100 transition-all" />
-              <CarouselNext className="right-1 top-1/2 -translate-y-1/2 h-8 w-8 bg-white/70 backdrop-blur border shadow-sm opacity-60 hover:opacity-100 transition-all" />
-            </Carousel>
-
-            <p className="text-center text-xs sm:text-sm text-gray-500 mt-3">
-              Swipe or use arrows to see more
-            </p>
+          <div className="mx-auto max-w-3xl">
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue="faq-0"
+              className="rounded-2xl border border-gray-200 bg-white px-4 sm:px-6"
+            >
+              {faqs.map((faq, index) => (
+                <AccordionItem
+                  key={faq.question}
+                  value={`faq-${index}`}
+                  className="border-gray-200"
+                >
+                  <AccordionTrigger className="text-left text-base sm:text-lg font-semibold text-gray-900 hover:no-underline">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm sm:text-base leading-relaxed text-gray-700">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </div>
       </section>
@@ -602,7 +591,7 @@ const Homepage: React.FC = () => {
                         <img
                           src={blog.image}
                           alt={blog.title}
-                          className="w-full h-24 sm:h-40 lg:h-48 object-cover"
+                          className="w-full h-24 sm:h-40 lg:h-48 object-contain bg-white p-1"
                         />
                       </Link>
                       <div className="p-3 sm:p-6 flex-1 flex flex-col">

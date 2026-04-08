@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Bell, Settings } from 'lucide-react';
@@ -14,6 +14,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hidePrincipalFooter, setHidePrincipalFooter] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
 
   // Get navigation items based on authentication and role
   // Only show common navigation items to unauthenticated users or if they match current role permission
@@ -41,6 +43,31 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isIOS]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+
+      if (
+        mobileMenuRef.current?.contains(target) ||
+        mobileMenuButtonRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -72,6 +99,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </button>
             )}
             <button
+              ref={mobileMenuButtonRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600"
             >
@@ -82,7 +110,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 bg-white shadow-lg border-t z-40">
+          <div
+            ref={mobileMenuRef}
+            className="absolute top-full left-0 right-0 bg-white shadow-lg border-t z-40"
+          >
             <nav className="px-4 py-2 space-y-1">
               {/* Always show Home link */}
               <Link
@@ -157,7 +188,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50"
                   >
-                    Sign In
+                    Join Us
                   </Link>
                 </>
               )}
