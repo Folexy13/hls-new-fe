@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -46,13 +46,13 @@ const mockTransactions: Transaction[] = Array(50).fill(0).map((_, i) => ({
   type: Math.random() > 0.5 ? 'credit' : 'debit',
   amount: `₦${(Math.random() * 10000).toFixed(2)}`,
   description: [
-    'Payment from Benfek',
+    'Payment',
     'Commission',
     'Withdrawal',
     'Refund',
-    'Subscription fee',
-    'Service charge',
-    'Bonus payment'
+    'Subscription',
+    'Service fee',
+    'Bonus'
   ][Math.floor(Math.random() * 7)],
   date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toLocaleDateString(),
   status: ['Completed', 'Pending', 'Failed'][Math.floor(Math.random() * 3)],
@@ -66,7 +66,7 @@ const AccountPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('edit-profile');
   const [copied, setCopied] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'credit' | 'debit'>('all');
@@ -116,6 +116,25 @@ const AccountPage: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const weeklyStats = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 7);
+    let totalCredit = 0;
+    let totalDebit = 0;
+    transactions.forEach((transaction) => {
+      const date = new Date(transaction.date);
+      if (Number.isNaN(date.getTime()) || date < weekAgo) return;
+      const amount = Number(transaction.amount.replace(/[^\d.-]/g, '')) || 0;
+      if (transaction.type === 'credit') {
+        totalCredit += amount;
+      } else {
+        totalDebit += amount;
+      }
+    });
+    return { totalCredit, totalDebit };
+  }, [transactions]);
 
   // Generate pagination items
   const getPaginationItems = () => {
@@ -195,83 +214,53 @@ const AccountPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto mb-8">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            {/* <TabsTrigger value="settings">Settings</TabsTrigger> */}
+        <Tabs defaultValue="edit-profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto mb-8">
+            <TabsTrigger value="edit-profile">Edit Profile</TabsTrigger>
+            <TabsTrigger value="update-account">Update Account</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
-          
+
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Account Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Balance Card */}
-              <Card className="p-6">
+            {/* Weekly Summary */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Card className="flex-1 p-6">
                 {isLoading ? (
                   <div className="space-y-3">
                     <Skeleton className="h-5 w-24" />
                     <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-4 w-20" />
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-500">Available Balance</h3>
-                      <DollarSign className="h-5 w-5 text-emerald-500" />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-gray-500">Total Credit (7 days)</h3>
+                      <ArrowUp className="h-5 w-5 text-emerald-500" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">₦1,250,000.00</div>
-                    <div className="text-xs text-emerald-600 flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      +12.5% from last month
-                    </div>
+                    <div className="text-3xl font-bold text-gray-900">?{weeklyStats.totalCredit.toLocaleString()}</div>
                   </>
                 )}
               </Card>
-              
-              {/* Total Earnings Card */}
-              <Card className="p-6">
+              <Card className="flex-1 p-6">
                 {isLoading ? (
                   <div className="space-y-3">
                     <Skeleton className="h-5 w-24" />
                     <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-4 w-20" />
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-500">Total Earnings</h3>
-                      <ArrowUp className="h-5 w-5 text-blue-500" />
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-medium text-gray-500">Total Debit (7 days)</h3>
+                      <ArrowDown className="h-5 w-5 text-red-500" />
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">₦5,750,000.00</div>
-                    <div className="text-xs text-gray-500">Lifetime earnings</div>
-                  </>
-                )}
-              </Card>
-              
-              {/* Pending Payouts Card */}
-              <Card className="p-6">
-                {isLoading ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-5 w-24" />
-                    <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-medium text-gray-500">Pending Payouts</h3>
-                      <Calendar className="h-5 w-5 text-amber-500" />
-                    </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">₦250,000.00</div>
-                    <div className="text-xs text-amber-600">Processing (2-3 business days)</div>
+                    <div className="text-3xl font-bold text-gray-900">?{weeklyStats.totalDebit.toLocaleString()}</div>
                   </>
                 )}
               </Card>
             </div>
-            
-            {/* Account Details */}
-            <Card>
+
+            {/* Update Account Details */}
+            {/* <Card>
               <div className="p-6 border-b">
                 <h3 className="text-lg font-semibold text-gray-900">Account Details</h3>
               </div>
@@ -334,7 +323,7 @@ const AccountPage: React.FC = () => {
                   </div>
                 )}
               </div>
-            </Card>
+            </Card> */}
             
             {/* Recent Transactions */}
             <Card>
@@ -378,7 +367,7 @@ const AccountPage: React.FC = () => {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">{transaction.description}</p>
-                            <p className="text-xs text-gray-500 mt-1">{transaction.date} • {transaction.reference}</p>
+                            {/* <p className="text-xs text-gray-500 mt-1">{transaction.date} • {transaction.reference}</p> */}
                           </div>
                         </div>
                         <div className={`font-medium ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
@@ -420,7 +409,7 @@ const AccountPage: React.FC = () => {
                     <span className="hidden sm:inline">Export</span>
                   </Button>
                   {showFilters && (
-                    <div className="absolute right-0 top-11 z-10 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                    <div className="absolute right-0 left-0 sm:left-auto sm:right-0 top-11 z-10 w-[calc(100vw-2rem)] sm:w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
                       <div className="space-y-3 text-sm text-slate-700">
                         <div>
                           <p className="text-xs font-semibold text-slate-500 uppercase">Type</p>
@@ -473,7 +462,7 @@ const AccountPage: React.FC = () => {
                             Reset
                           </Button>
                           <Button type="button" size="sm" onClick={() => setShowFilters(false)}>
-                            Done
+                            Apply
                           </Button>
                         </div>
                       </div>
@@ -482,31 +471,40 @@ const AccountPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Table */}
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableBody>
-                    {isLoading ? (
-                      // Skeleton loading state
-                      Array(itemsPerPage).fill(0).map((_, index) => (
-                        <TableRow key={index}>
-                          <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                          <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                        </TableRow>
-                      ))
-                    ) : paginatedData.length > 0 ? (
-                      // Actual data
-                      paginatedData.map((transaction) => (
-                        <React.Fragment key={transaction.id}>
-                          <TableRow
-                            onClick={() =>
-                              setOpenTransactionId((prev) => (prev === transaction.id ? null : transaction.id))
-                            }
-                            className="cursor-pointer"
-                          >
-                            <TableCell>
-                              <span className={`flex items-center ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
+              {/* Transactions List (Accordion) */}
+              <div className="p-4 space-y-2">
+                {isLoading ? (
+                  Array(itemsPerPage).fill(0).map((_, index) => (
+                    <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <Skeleton className="h-5 w-28" />
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-5 w-20" />
+                      </div>
+                    </div>
+                  ))
+                ) : paginatedData.length > 0 ? (
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={openTransactionId ? `transaction-${openTransactionId}` : undefined}
+                    onValueChange={(value) =>
+                      setOpenTransactionId(
+                        value ? Number(value.replace('transaction-', '')) : null
+                      )
+                    }
+                    className="space-y-2"
+                  >
+                    {paginatedData.map((transaction) => (
+                      <AccordionItem
+                        key={transaction.id}
+                        value={`transaction-${transaction.id}`}
+                        className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
+                      >
+                        <AccordionTrigger className="rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
+                          <div className="flex w-full flex-row items-start gap-2 text-left sm:items-center">
+                            <div className="flex w-1/3 items-center gap-3 justify-start">
+                              <span className={`flex items-center text-sm font-semibold ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
                                 {transaction.type === 'credit' ? (
                                   <ArrowDown className="h-4 w-4 mr-1" />
                                 ) : (
@@ -514,48 +512,54 @@ const AccountPage: React.FC = () => {
                                 )}
                                 {transaction.type === 'credit' ? 'Credit' : 'Debit'}
                               </span>
-                            </TableCell>
-                            <TableCell className="font-medium text-slate-900">{transaction.description}</TableCell>
-                            <TableCell className={`text-right font-medium ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
+                            </div>
+                            <div className="min-w-0 w-1/3 text-center">
+                              <p className="text-sm font-semibold text-slate-900 break-words">{transaction.description}</p>
+                            </div>
+                            <div className={`w-1/3 text-right text-sm font-semibold ${transaction.type === 'credit' ? 'text-emerald-600' : 'text-red-600'}`}>
                               {transaction.type === 'credit' ? '+' : '-'}{transaction.amount}
-                            </TableCell>
-                          </TableRow>
-                          {openTransactionId === transaction.id && (
-                            <TableRow className="bg-slate-50/70">
-                              <TableCell colSpan={3}>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600">
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-500 uppercase">Transaction ID</p>
-                                    <p className="font-medium text-slate-900">{transaction.id}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-500 uppercase">Status</p>
-                                    <div className="mt-1">{renderStatusBadge(transaction.status)}</div>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-500 uppercase">Reference</p>
-                                    <p className="font-mono text-xs text-slate-700">{transaction.reference}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-500 uppercase">Date</p>
-                                    <p className="text-slate-700">{transaction.date}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
-                      ))
-                    ) : (
-                      // No results
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                          No transactions found. Try adjusting your search.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-4 pt-2">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
+                            
+                            {/* Transaction ID - Pinned Start */}
+                            <div className="flex flex-col min-w-0">
+                              <p className="font-bold text-slate-500 uppercase">Transaction ID</p>
+                              <p className="mt-1 text-slate-900">{transaction.id}</p>
+                            </div>
+                        
+                            {/* Status - Middle (Centered on Desktop) */}
+                            <div className="flex flex-col min-w-0 md:items-center items-end">
+                              <p className="font-bold text-slate-500 uppercase">Status</p>
+                              <div className="mt-1">{renderStatusBadge(transaction.status)}</div>
+                            </div>
+                        
+                            {/* Reference - Middle (Centered on Desktop) */}
+                            <div className="flex flex-col min-w-0 md:items-center">
+                              <p className="font-bold text-slate-500 uppercase">Reference</p>
+                              <p className="mt-1 font-mono text-xs text-slate-700 break-all">
+                                {transaction.reference}
+                              </p>
+                            </div>
+                        
+                            {/* Date - Pinned End (Right-aligned on Desktop) */}
+                            <div className="flex flex-col min-w-0 items-end">
+                              <p className="font-bold text-slate-500 uppercase">Date</p>
+                              <p className="mt-1 text-slate-700 whitespace-nowrap">{transaction.date}</p>
+                            </div>
+                        
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                    No transactions found. Try adjusting your search.
+                  </div>
+                )}
               </div>
 
               {/* Pagination */}
@@ -572,9 +576,7 @@ const AccountPage: React.FC = () => {
                           className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                         />
                       </PaginationItem>
-                      
                       {getPaginationItems()}
-                      
                       <PaginationItem>
                         <PaginationNext 
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
@@ -587,7 +589,127 @@ const AccountPage: React.FC = () => {
               </div>
             </Card>
           </TabsContent>
-          
+          <TabsContent value="edit-profile">
+            <Card>
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Update your personal and professional details.
+                </p>
+              </div>
+              <div className="p-6">
+                {isLoading ? (
+                  <div className="space-y-6">
+                    <Skeleton className="h-24 w-24 rounded-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : (
+                  <form className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-20 w-20 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold">
+                        DN
+                      </div>
+                      <div>
+                        <Button variant="outline" size="sm">Change Image</Button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Principal Name</label>
+                      <Input defaultValue="" placeholder="Enter principal name" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Profession</label>
+                      <Input defaultValue="" placeholder="Enter profession" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Current Place of Work</label>
+                      <Input defaultValue="" placeholder="Enter current place of work" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
+                      <Input defaultValue="" placeholder="Enter license number" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                      <Input defaultValue="" placeholder="Enter years of experience" />
+                    </div>
+                    <Button>Save Profile</Button>
+                  </form>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="update-account">
+            <Card>
+              <div className="p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">Update Account Details</h3>
+              </div>
+              <div className="p-6">
+                {isLoading ? (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+                        <span className="font-medium">NEJJE HEALTH SOLUTIONS</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+                        <span className="font-medium">1234567890</span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={copyAccountNumber}
+                          className="flex items-center gap-1"
+                        >
+                          {copied ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 text-emerald-500" />
+                              <span className="text-xs text-emerald-500">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              <span className="text-xs">Copy</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
+                        <span className="font-medium">First Bank of Nigeria</span>
+                        <Button variant="outline" size="sm">Change Account</Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
           {/* Settings Tab */}
           <TabsContent value="settings">
             <Card>

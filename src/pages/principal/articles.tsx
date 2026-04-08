@@ -16,6 +16,7 @@ import {
   Search, Filter, Download, Eye, ArrowUpDown,
   ChevronDown, Plus, Edit, Trash2, FileText
 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
 
 // Define the Article type
 type Article = {
@@ -59,6 +60,7 @@ const ArticlesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [openArticleId, setOpenArticleId] = useState()
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockArticles.length / itemsPerPage);
@@ -158,6 +160,20 @@ const ArticlesPage: React.FC = () => {
     );
   };
 
+  const statusIconColor = (status: string) => {
+    switch (status) {
+      case 'Published':
+        return 'text-emerald-500';
+      case 'Archived':
+        return 'text-blue-500';
+      case 'Under Review':
+        return 'text-amber-500';
+      case 'Draft':
+      default:
+        return 'text-slate-400';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* Page Header */}
@@ -208,148 +224,87 @@ const ArticlesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableCaption>A list of all articles.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('id')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      ID
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('title')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Title
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('category')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Category
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('author')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Author
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Status
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('views')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Views
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('publishDate')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Published
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array(itemsPerPage).fill(0).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : paginatedData.length > 0 ? (
-                  // Actual data
-                  paginatedData.map((article) => (
-                    <TableRow key={article.id}>
-                      <TableCell className="font-medium">{article.id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium truncate max-w-[200px]">{article.title}</span>
+          {/* Articles List (Accordion) */}
+          <div className="p-4 space-y-2">
+            {isLoading ? (
+              Array(itemsPerPage).fill(0).map((_, index) => (
+                <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : paginatedData.length > 0 ? (
+              <Accordion
+                type="single"
+                collapsible
+                value={openArticleId ? `article-${openArticleId}` : undefined}
+                onValueChange={(value) =>
+                  setOpenArticleId(value ? Number(value.replace('article-', '')) : null)
+                }
+                className="space-y-2"
+              >
+                {paginatedData.map((article, index) => (
+                  <AccordionItem
+                    key={article.id}
+                    value={`article-${index}`}
+                    className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
+                  >
+                    <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
+                      <div className="flex w-full justify-between flex-row items-center gap-2 text-left sm:items-center">
+                        <div className="flex w-full items-center gap-2 justify-start min-w-0">
+                          <FileText className={`h-5 w-5 ${statusIconColor(article.status)}`} />
+                          <span className="text-sm font-semibold text-slate-900 truncate w-[90%]">
+                            {article.title}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{article.category}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{article.author}</TableCell>
-                      <TableCell>{renderStatusBadge(article.status)}</TableCell>
-                      <TableCell className="hidden md:table-cell">{article.views.toLocaleString()}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{article.publishDate}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="h-4 w-4" />
+                        <div className="ml-auto flex w-1/3 justify-end text-right">
+                          <Eye className="h-4 w-4 text-slate-500" />
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
+                        <div className="flex flex-col min-w-0 items-start text-left">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Category</p>
+                          <p className="mt-1 text-slate-700">{article.category}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Author</p>
+                          <p className="mt-1 text-slate-700">{article.author}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-start text-left">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Views</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{article.views.toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Published</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{article.publishDate}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 justify-self-start">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
+                          <div className="mt-1">{renderStatusBadge(article.status)}</div>
+                        </div>
+                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-between gap-3 justify-self-start">
+                          <Button variant="ghost" size="sm" className="h-8 flex-1 px-3 text-sm font-semibold border">
+                            Edit
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="ghost" size="sm" className="border h-8 flex-1 px-3 text-sm font-semibold text-red-600 hover:text-red-700">
+                            Delete
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  // No results
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      No articles found. Try adjusting your search.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                No articles found. Try adjusting your search.
+              </div>
+            )}
           </div>
 
           {/* Pagination */}

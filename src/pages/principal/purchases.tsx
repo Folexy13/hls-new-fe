@@ -47,6 +47,7 @@ const PurchasesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [openPurchaseId, setOpenPurchaseId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockPurchases.length / itemsPerPage);
@@ -199,135 +200,78 @@ const PurchasesPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableCaption>A list of all purchases.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('id')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      ID
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('orderNumber')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Order #
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('benfekName')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Benfek
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('date')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Date
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('amount')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Amount
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('paymentMethod')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Payment
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Status
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array(itemsPerPage).fill(0).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : paginatedData.length > 0 ? (
-                  // Actual data
-                  paginatedData.map((purchase) => (
-                    <TableRow key={purchase.id}>
-                      <TableCell className="font-medium">{purchase.id}</TableCell>
-                      <TableCell>{purchase.orderNumber}</TableCell>
-                      <TableCell className="hidden md:table-cell">{purchase.benfekName}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{purchase.date}</TableCell>
-                      <TableCell className="font-medium">{purchase.amount}</TableCell>
-                      <TableCell className="hidden md:table-cell">{purchase.paymentMethod}</TableCell>
-                      <TableCell>{renderStatusBadge(purchase.status)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  // No results
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      No purchases found. Try adjusting your search.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+          {/* Purchases List (Accordion) */}
+          <div className="p-4 space-y-2">
+            {isLoading ? (
+              Array(itemsPerPage).fill(0).map((_, index) => (
+                <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : paginatedData.length > 0 ? (
+              <Accordion
+                type="single"
+                collapsible
+                value={openPurchaseId ? `purchase-${openPurchaseId}` : undefined}
+                onValueChange={(value) =>
+                  setOpenPurchaseId(value ? Number(value.replace('purchase-', '')) : null)
+                }
+                className="space-y-2"
+              >
+                {paginatedData.map((purchase) => (
+                  <AccordionItem
+                    key={purchase.id}
+                    value={`purchase-${purchase.id}`}
+                    className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
+                  >
+                    <AccordionTrigger className="rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
+                      <div className="flex w-full flex-row items-start gap-2 text-left sm:items-center">
+                        <div className="flex w-1/3 items-center gap-2 justify-start">
+                          <span className="text-sm font-semibold text-slate-900 truncate">{purchase.orderNumber}</span>
+                        </div>
+                        <div className="w-1/3 text-center">{renderStatusBadge(purchase.status)}</div>
+                        <div className="w-1/3 text-right">
+                          <div className="inline-flex items-center justify-end gap-2">
+                            <span className="text-sm font-semibold text-slate-900">{purchase.amount}</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Purchase ID</p>
+                          <p className="mt-1 text-slate-900">{purchase.id}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 md:items-center items-end">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Benfek</p>
+                          <p className="mt-1 text-slate-700">{purchase.benfekName}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 md:items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Date</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{purchase.date}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-end">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Payment Method</p>
+                          <p className="mt-1 text-slate-700">{purchase.paymentMethod}</p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                No purchases found. Try adjusting your search.
+              </div>
+            )}
           </div>
 
           {/* Pagination */}

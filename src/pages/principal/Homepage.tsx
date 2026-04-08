@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   LogOut,
   User,
+  UserRound,
   TrendingUp,
   CreditCard,
   Users,
@@ -45,9 +46,9 @@ const principalDashboardSections = [
     title: 'Directory',
     items: [
       {
-        icon: <Users className="h-6 w-6 text-indigo-600" />,
-        label: 'Benfeks',
-        href: '/principal/benfeks',
+        icon: <UserRound className="h-6 w-6 text-indigo-600" />,
+        label: 'My Profile',
+        href: '/principal/users',
       },
       {
         icon: <UserPlus className="h-6 w-6 text-indigo-600" />,
@@ -55,9 +56,9 @@ const principalDashboardSections = [
         href: '/principal/add-benfek',
       },
       {
-        icon: <User className="h-6 w-6 text-indigo-600" />,
-        label: 'Users',
-        href: '/principal/users',
+        icon: <Users className="h-6 w-6 text-indigo-600" />,
+        label: 'Benfeks',
+        href: '/principal/benfeks',
       },
     ],
   },

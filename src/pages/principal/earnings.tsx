@@ -63,6 +63,19 @@ const categoryBreakdown = [
   { category: 'Services', percentage: 10 },
 ];
 
+const topSupplements = [
+  { id: 1, name: 'Vitamin C Immune Boost', purchases: 120 },
+  { id: 2, name: 'Omega-3 Plus', purchases: 98 },
+  { id: 3, name: 'Magnesium Sleep Aid', purchases: 76 },
+  { id: 4, name: 'Joint Care Max', purchases: 64 },
+];
+
+const topBenfeks = [
+  { id: 1, name: 'Benfek James', totalSpent: 245000, frequency: 14, activity: '12 logins • 4h' },
+  { id: 2, name: 'Benfek Linda', totalSpent: 198000, frequency: 10, activity: '9 logins • 3h' },
+  { id: 3, name: 'Benfek Ade', totalSpent: 176500, frequency: 8, activity: '7 logins • 2h' },
+];
+
 const EarningsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [earnings, setEarnings] = useState<Earning[]>([]);
@@ -71,6 +84,9 @@ const EarningsPage: React.FC = () => {
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [dateFilter, setDateFilter] = useState('all-time');
+  const [insightsTab, setInsightsTab] = useState<'supplements' | 'benfeks'>('supplements');
+  const [viewTab, setViewTab] = useState<'statistics' | 'performance'>('statistics');
+  const [openBenfekId, setOpenBenfekId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockEarnings.length / itemsPerPage);
@@ -224,10 +240,10 @@ const EarningsPage: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
               <BackToDashboardButton className="mb-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Earnings</h1>
+              {/* <h1 className="text-2xl font-bold text-gray-900">Earnings</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Track your revenue and earnings performance
-              </p>
+              </p> */}
             </div>
             <div className="mt-4 md:mt-0 flex gap-2">
               <Button variant="outline" className="flex items-center gap-2">
@@ -244,130 +260,201 @@ const EarningsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {isLoading ? (
-            // Skeleton loaders for stats
-            Array(4).fill(0).map((_, index) => (
-              <Card key={index} className="p-6">
-                <Skeleton className="h-7 w-1/2 mb-2" />
-                <Skeleton className="h-9 w-1/3 mb-2" />
-                <Skeleton className="h-5 w-1/4" />
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6 inline-flex rounded-full border border-emerald-100 bg-emerald-50/70 p-1">
+            <button
+              type="button"
+              onClick={() => setViewTab('statistics')}
+              className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
+                viewTab === 'statistics' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+              }`}
+            >
+              Statistics
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewTab('performance')}
+              className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
+                viewTab === 'performance' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+              }`}
+            >
+              Performance
+            </button>
+          </div>
+          {viewTab === 'statistics' ? (
+            <>
+              {/* Banner Carousel */}
+        <div className="mb-8">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
+            <Card className="min-w-full snap-start overflow-hidden">
+              <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+                <div className="h-full w-full p-6 flex flex-col justify-between">
+                  <div className="text-sm uppercase tracking-[0.25em] text-white/70">Earnings Summary</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { title: 'Total Earnings', value: '?5,750,000', change: '+15%' },
+                      { title: 'Monthly Average', value: '?250,000', change: '+8%' },
+                      { title: 'Active Benfeks', value: '124', change: '+12%' },
+                      { title: 'Total Orders', value: '1,450', change: '+18%' },
+                    ].map((stat) => (
+                      <div key={stat.title} className="rounded-xl bg-white/10 border border-white/10 p-3">
+                        <p className="text-xs font-semibold text-white/70">{stat.title}</p>
+                        <p className="text-lg font-bold text-white mt-1">{stat.value}</p>
+                        <p className="text-xs text-emerald-200 mt-1">{stat.change} from last month</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+            <Card className="min-w-full snap-start overflow-hidden">
+              <div className="h-44 sm:h-52 w-full rounded-2xl bg-white border border-slate-200">
+                <div className="h-full w-full p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <PieChart className="h-6 w-6 text-blue-500" />
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-500">Statistics Category</p>
+                      <h3 className="text-xl font-semibold text-gray-900">Earnings by Category</h3>
+                    </div>
+                  </div>
+                  <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600">
+                    Swipe for more
+                  </div>
+                </div>
+              </div>
               </Card>
-            ))
+              <Card className="min-w-full snap-start overflow-hidden">
+                <div className="h-44 sm:h-52 w-full rounded-2xl bg-white border border-slate-200">
+                  <div className="h-full w-full p-6 flex flex-col justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-widest text-slate-500">Peer Rating</p>
+                      <h3 className="text-xl font-semibold text-gray-900">Performance vs Peers</h3>
+                      <p className="text-xs text-gray-500 mt-1">Current vs potential ranking</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                          <span>Current Performance</span>
+                          <span className="font-semibold text-gray-900">68%</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                          <div className="h-full w-[68%] bg-emerald-500" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                          <span>Performance Potential</span>
+                          <span className="font-semibold text-gray-900">92%</span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                          <div className="h-full w-[92%] bg-blue-500" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+
+
+            </>
           ) : (
-            // Actual stats cards
-            [
-              { 
-                title: 'Total Earnings', 
-                value: '₦5,750,000', 
-                change: '+15%', 
-                icon: <DollarSign className="h-5 w-5" />, 
-                color: 'bg-emerald-500' 
-              },
-              { 
-                title: 'Monthly Average', 
-                value: '₦250,000', 
-                change: '+8%', 
-                icon: <BarChart2 className="h-5 w-5" />, 
-                color: 'bg-blue-500' 
-              },
-              { 
-                title: 'Active Benfeks', 
-                value: '124', 
-                change: '+12%', 
-                icon: <Users className="h-5 w-5" />, 
-                color: 'bg-purple-500' 
-              },
-              { 
-                title: 'Total Orders', 
-                value: '1,450', 
-                change: '+18%', 
-                icon: <ShoppingCart className="h-5 w-5" />, 
-                color: 'bg-amber-500' 
-              },
-            ].map((stat, index) => (
-              <Card key={index} className="p-6 border-l-4" style={{ borderLeftColor: stat.color.replace('bg-', '') }}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">{stat.title}</p>
-                    <h3 className="text-2xl font-bold mt-1 text-gray-900">{stat.value}</h3>
-                    <p className="text-xs font-medium text-emerald-600 mt-1 flex items-center">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      {stat.change} from last month
-                    </p>
+            <Card className="overflow-hidden mb-8">
+          <div className="p-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Top Performance</h3>
+            <div className="inline-flex rounded-full border border-emerald-100 bg-emerald-50/70 p-1">
+              <button
+                type="button"
+                onClick={() => setInsightsTab('supplements')}
+                className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
+                  insightsTab === 'supplements' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+                }`}
+              >
+                Highest Sold Supplements
+              </button>
+              <button
+                type="button"
+                onClick={() => setInsightsTab('benfeks')}
+                className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
+                  insightsTab === 'benfeks' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+                }`}
+              >
+                Best Purchasing Benfeks
+              </button>
+            </div>
+          </div>
+          <div className="p-6 bg-white">
+            {insightsTab === 'supplements' ? (
+              <div className="space-y-3">
+                {topSupplements.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {index + 1}. {item.name}
+                      </p>
+                      <p className="text-xs text-slate-500">{item.purchases} purchases</p>
+                    </div>
+                    <span className="text-xs font-semibold text-emerald-700">Top seller</span>
                   </div>
-                  <div className={`${stat.color} text-white p-2 rounded-lg`}>
-                    {stat.icon}
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {topBenfeks.map((benfek) => (
+                  <div
+                    key={benfek.id}
+                    className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenBenfekId((prev) => (prev === benfek.id ? null : benfek.id))
+                      }
+                      className="w-full flex items-center justify-between text-left"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{benfek.name}</p>
+                        <p className="text-xs text-slate-500">₦{benfek.totalSpent.toLocaleString()} spent</p>
+                      </div>
+                      <span className="text-xs text-emerald-700 font-semibold">
+                        {benfek.frequency} purchases
+                      </span>
+                    </button>
+                    {openBenfekId === benfek.id && (
+                      <div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-600">
+                        <div className="min-w-[140px]">
+                          <p className="uppercase text-[10px] font-semibold text-slate-500">Frequency</p>
+                          <p>{benfek.frequency} purchases</p>
+                        </div>
+                        <div className="min-w-[140px]">
+                          <p className="uppercase text-[10px] font-semibold text-slate-500">Total Amount</p>
+                          <p>₦{benfek.totalSpent.toLocaleString()}</p>
+                        </div>
+                        <div className="min-w-[160px]">
+                          <p className="uppercase text-[10px] font-semibold text-slate-500">Activity Rating</p>
+                          <p>{benfek.activity}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </Card>
-            ))
+                ))}
+              </div>
+            )}
+          </div>
+          </Card>
           )}
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Monthly Earnings Chart */}
-          <Card className="overflow-hidden">
-            <div className="p-6 bg-white border-b flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <BarChart2 className="h-5 w-5 text-emerald-500" />
-                <h3 className="text-lg font-semibold text-gray-900">Monthly Earnings</h3>
-              </div>
-              <div>
-                <Button variant="outline" size="sm" className="text-xs">
-                  {dateFilter === 'all-time' ? 'All Time' : 'This Year'}
-                </Button>
-              </div>
-            </div>
-            <div className="p-6">
-              {isLoading ? (
-                <Skeleton className="h-64 w-full" />
-              ) : (
-                renderBarChart()
-              )}
-            </div>
-          </Card>
-
-          {/* Category Breakdown Chart */}
-          <Card className="overflow-hidden">
-            <div className="p-6 bg-white border-b flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <PieChart className="h-5 w-5 text-blue-500" />
-                <h3 className="text-lg font-semibold text-gray-900">Earnings by Category</h3>
-              </div>
-            </div>
-            <div className="p-6">
-              {isLoading ? (
-                <div className="flex flex-col items-center">
-                  <Skeleton className="h-64 w-64 rounded-full" />
-                  <div className="mt-6 grid grid-cols-2 gap-2 w-full">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  {renderPieChart()}
-                  {renderPieChartLegend()}
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
-
-        {/* Earnings Table */}
-        <Card className="overflow-hidden">
+  
+          {/* Earnings Table */}
+        {/* <Card className="overflow-hidden">
           <div className="p-6 bg-white border-b">
             <h3 className="text-lg font-semibold text-gray-900">Earnings History</h3>
           </div>
           
-          {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
@@ -384,7 +471,6 @@ const EarningsPage: React.FC = () => {
             </Button>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <Table>
               <TableCaption>A list of your earnings.</TableCaption>
@@ -508,7 +594,6 @@ const EarningsPage: React.FC = () => {
             </Table>
           </div>
 
-          {/* Pagination */}
           <div className="p-4 bg-white border-t">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-gray-500 order-2 sm:order-1">
@@ -535,7 +620,7 @@ const EarningsPage: React.FC = () => {
               </Pagination>
             </div>
           </div>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );
