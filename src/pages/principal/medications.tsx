@@ -448,11 +448,11 @@ const MedicationsPage: React.FC = () => {
 
   return (
     <div className="flex-1 bg-gray-50 pb-20 sm:pb-8">
+      <BackToDashboardButton isDirty={isDirty} className="fixed left-3 top-16 z-50 text-black/90 hover:text-black/80" />
       {/* Page Header */}
       <div className="bg-white border-b sticky top-0 z-20 sm:relative sm:top-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           
-            <BackToDashboardButton isDirty={isDirty} className="mb-2" />
           <div className="flex flex-row items-center justify-between">
             <div className='flex'>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>

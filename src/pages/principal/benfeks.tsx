@@ -19,7 +19,8 @@ import { Input } from '@/components/ui/input';
 import {
   Search, UserPlus, Filter, Download,
   ChevronDown, Eye, ArrowUpDown,
-  Copy, CheckCircle, Plus
+  Copy, CheckCircle, Plus,
+  User
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { apiClient } from '@/config/axios';
@@ -197,9 +198,63 @@ const BenfeksPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white sticky top-0 z-20 sm:relative">
+    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8 pt-40 lg:pt-44">
+      <div className="fixed left-0 right-0 top-16 lg:top-20 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="py-3">
+            <BackToDashboardButton className="text-black/90 hover:text-black/80" />
+          </div>
+
+          <div className="border-t border-slate-200/80 py-3">
+            <div className="flex flex-row items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-0 sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search benfeks..."
+                  className="pl-10 h-11 sm:h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Export"
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Benfek"
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <User className="h-4 w-4" />
+                  <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : benfeks.length}</p>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white sticky top-0 z-20 sm:relative">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
+          
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <BackToDashboardButton className="mb-3 text-white/80 hover:text-white" />
@@ -225,34 +280,13 @@ const BenfeksPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 -mt-5">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search benfeks..."
-                className="pl-10 h-11 sm:h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
-                <Filter className="h-4 w-4" />
-                <span>Filter</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </Button>
-            </div>
-          </div>
+          <div className="h-2 bg-white border-b" />
           {loadError && (
             <div className="bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-700">
               {loadError}
@@ -342,45 +376,76 @@ const BenfeksPage: React.FC = () => {
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {paginatedData.map((benfek) => (
-                  <AccordionItem key={benfek.id} value={`benfek-${benfek.id}`} className="border-0 bg-white rounded-xl shadow-sm overflow-hidden">
-                    <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-gray-50 transition-colors text-left">
-                      <div className="flex items-center gap-4 w-full text-left justify-between">
-                        <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
+                  <AccordionItem
+                    key={benfek.id}
+                    value={`benfek-${benfek.id}`}
+                    className="rounded-xl border border-slate-200 bg-slate-50/40 overflow-hidden"
+                  >
+                    <AccordionTrigger className="rounded-xl bg-white px-4 py-4 hover:no-underline">
+                      <div className="flex w-full items-center gap-3 text-left min-w-0">
+                        {/* <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
                           {benfek.benfekName.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0 pr-2">
-                          <p className="font-bold text-gray-900 truncate text-base text-left">{benfek.benfekName}</p>
-                          <p className="text-sm text-gray-500 mt-0.5 text-left">{benfek.benfekPhone}</p>
-                          <div className="mt-2 flex items-center gap-2">
+                        </div> */}
+                        <div className="flex flex-1 min-w-0 items-center justify-between gap-3 pr-2">
+                          <p className="flex-1 min-w-0 font-bold text-gray-900 truncate text-base text-left">
+                            {benfek.benfekName}
+                          </p>
+                          {/* <p className="text-sm text-gray-500 mt-0.5 text-left">{benfek.benfekPhone}</p> */}
+                          <div className="flex shrink-0 items-center gap-2">
                             {renderStatusBadge(benfek.registrationStatus)}
                           </div>
                         </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4 bg-slate-50/80">
-                      <div className="space-y-4 pt-2">
-                        <div className="bg-white p-4 rounded-xl border border-slate-200">
-                          <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Quiz Access Code</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-2xl font-black text-blue-600 tracking-widest font-mono">{benfek.code}</span>
-                            <Button size="sm" className="rounded-full bg-white border-gray-200 text-gray-600 hover:bg-gray-100" onClick={() => copyCode(benfek.code)}>
+                    <AccordionContent className="px-4 pb-4 pt-2">
+                      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-700">
+                        <div className="rounded-xl border border-slate-200 bg-white p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            Code
+                          </p>
+                          <div className="mt-2 flex items-center justify-between gap-3">
+                            <span className="text-2xl font-black text-blue-600 tracking-widest font-mono">
+                              {benfek.code}
+                            </span>
+                            <Button
+                              size="sm"
+                              className="rounded-full bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                              onClick={() => copyCode(benfek.code)}
+                            >
                               <Copy className="h-4 w-4 mr-2" /> Copy
                             </Button>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500 text-xs font-semibold">CREATED</p>
-                            <p className="font-bold text-gray-900">{new Date(benfek.createdAt).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs font-semibold">CONDITION</p>
-                            <p className="font-bold text-gray-900">{benfek.hasCurrentCondition ? 'Yes' : 'No'}</p>
-                          </div>
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Created
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {new Date(benfek.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <div className="flex gap-2 pt-2">
-                          <Button variant="outline" size="sm" className="flex-1 rounded-full h-10 border-gray-200" onClick={() => { setSelectedBenfek(benfek); setIsModalOpen(true); }}>
-                            <Eye className="h-4 w-4 mr-2" /> Details
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Condition
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {benfek.hasCurrentCondition ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-start">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full rounded-full h-10 border-gray-200"
+                            onClick={() => {
+                              setSelectedBenfek(benfek);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> Health Details
                           </Button>
                         </div>
                       </div>
@@ -394,9 +459,9 @@ const BenfeksPage: React.FC = () => {
           {/* Pagination */}
           {!isLoading && benfeks.length > 0 && (
             <div className="p-4 bg-white border-t flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-500">
+              {/* <div className="text-sm text-gray-500">
                 Showing {`${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {filteredData.length} entries
-              </div>
+              </div> */}
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
@@ -421,8 +486,8 @@ const BenfeksPage: React.FC = () => {
       >
         {selectedBenfek ? (
           <div className="space-y-6">
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
-              <p className="text-blue-600 text-xs uppercase tracking-[0.2em] font-black mb-2">Quiz Access Code</p>
+            {/* <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
+              <p className="text-blue-600 text-xs uppercase tracking-[0.2em] font-black mb-2">Code</p>
               <div className="flex items-center justify-center gap-4">
                 <span className="text-4xl font-black text-blue-700 tracking-widest font-mono">{selectedBenfek.code}</span>
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-blue-100" onClick={() => copyCode(selectedBenfek.code)}>
@@ -430,7 +495,7 @@ const BenfeksPage: React.FC = () => {
                 </Button>
               </div>
               <p className="mt-4 text-sm text-blue-500 font-medium italic">Share this code with {selectedBenfek.benfekName} to complete registration.</p>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">

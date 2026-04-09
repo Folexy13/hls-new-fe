@@ -233,17 +233,14 @@ const EarningsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-4">
+      <BackToDashboardButton className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
       {/* Page Header */}
-      <div className="bg-white border-b">
+      {/* <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <BackToDashboardButton className="mb-3" />
-              {/* <h1 className="text-2xl font-bold text-gray-900">Earnings</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Track your revenue and earnings performance
-              </p> */}
+
             </div>
             <div className="mt-4 md:mt-0 flex gap-2">
               <Button variant="outline" className="flex items-center gap-2">
@@ -258,25 +255,37 @@ const EarningsPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6 inline-flex rounded-full border border-emerald-100 bg-emerald-50/70 p-1">
+          <div
+            role="tablist"
+            aria-orientation="horizontal"
+            className="grid grid-cols-2 w-full max-w-2xl mx-auto mb-4 h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
+          >
             <button
               type="button"
+              role="tab"
+              aria-selected={viewTab === 'statistics'}
               onClick={() => setViewTab('statistics')}
-              className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
-                viewTab === 'statistics' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                viewTab === 'statistics'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : ''
               }`}
             >
               Statistics
             </button>
             <button
               type="button"
+              role="tab"
+              aria-selected={viewTab === 'performance'}
               onClick={() => setViewTab('performance')}
-              className={`px-4 py-2 text-xs font-semibold rounded-full transition ${
-                viewTab === 'performance' ? 'bg-emerald-600 text-white' : 'text-emerald-700'
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${
+                viewTab === 'performance'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : ''
               }`}
             >
               Performance
@@ -288,8 +297,8 @@ const EarningsPage: React.FC = () => {
         <div className="mb-8">
           <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
             <Card className="min-w-full snap-start overflow-hidden">
-              <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
-                <div className="h-full w-full p-6 flex flex-col justify-between">
+              <div className="h-[60vh] sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+                <div className="h-full w-full p-6 flex flex-col gap-6">
                   <div className="text-sm uppercase tracking-[0.25em] text-white/70">Earnings Summary</div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
@@ -309,46 +318,124 @@ const EarningsPage: React.FC = () => {
               </div>
             </Card>
             <Card className="min-w-full snap-start overflow-hidden">
-              <div className="h-44 sm:h-52 w-full rounded-2xl bg-white border border-slate-200">
-                <div className="h-full w-full p-6 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <PieChart className="h-6 w-6 text-blue-500" />
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-slate-500">Statistics Category</p>
-                      <h3 className="text-xl font-semibold text-gray-900">Earnings by Category</h3>
+              <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white border border-white/10">
+                <div className="h-full w-full p-6 flex flex-col justify-between gap-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <PieChart className="h-6 w-6 text-sky-300" />
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-white/70">Statistics Category</p>
+                        <h3 className="text-xl font-semibold text-white">Earnings by Category</h3>
+                      </div>
+                    </div>
+                    <div className="hidden sm:inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70">
+                      Swipe for more
                     </div>
                   </div>
-                  <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-600">
-                    Swipe for more
+
+                  <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-4">
+                    <div className="flex items-center justify-center">
+                      <div
+                        className="relative h-28 w-28 rounded-full"
+                        style={{
+                          background: `conic-gradient(
+                            #10b981 0% 45%,
+                            #3b82f6 45% 70%,
+                            #a855f7 70% 90%,
+                            #f59e0b 90% 100%
+                          )`,
+                        }}
+                      >
+                        <div className="absolute inset-3 rounded-full bg-slate-950 border border-white/10 flex flex-col items-center justify-center text-center px-2">
+                          <p className="text-[10px] uppercase tracking-wider text-white/60 font-semibold">Top</p>
+                          <p className="text-sm font-bold text-white leading-tight">Medications</p>
+                          <p className="text-xs font-semibold text-emerald-300">45%</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {categoryBreakdown.map((item, index) => {
+                        const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
+                        return (
+                          <div key={item.category} className="flex items-center gap-3">
+                            <div className={`h-3 w-3 rounded-sm ${colors[index % colors.length]}`} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-xs font-semibold text-slate-900 truncate">{item.category}</p>
+                                <p className="text-xs font-bold text-slate-950">{item.percentage}%</p>
+                              </div>
+                              <div className="mt-1 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                                <div
+                                  className={`h-full ${colors[index % colors.length]}`}
+                                  style={{ width: `${item.percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
               </Card>
               <Card className="min-w-full snap-start overflow-hidden">
-                <div className="h-44 sm:h-52 w-full rounded-2xl bg-white border border-slate-200">
-                  <div className="h-full w-full p-6 flex flex-col justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-slate-500">Peer Rating</p>
-                      <h3 className="text-xl font-semibold text-gray-900">Performance vs Peers</h3>
-                      <p className="text-xs text-gray-500 mt-1">Current vs potential ranking</p>
-                    </div>
-                    <div className="space-y-3">
+                <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900 text-white border border-white/10">
+                  <div className="h-full w-full p-6 flex flex-col justify-between gap-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                          <span>Current Performance</span>
-                          <span className="font-semibold text-gray-900">68%</span>
+                        <p className="text-xs uppercase tracking-widest text-white/70">Peer Rating</p>
+                        <h3 className="text-xl font-semibold text-white">Performance vs Peers</h3>
+                        <p className="text-xs text-white/60 mt-1">Current vs potential ranking</p>
+                      </div>
+                      <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-white/70">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                        Current
+                        <span className="ml-3 inline-flex h-2 w-2 rounded-full bg-sky-400" />
+                        Potential
+                      </div>
+                    </div>
+
+                    {/* Peer band: shows relative position against peers */}
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-white/60 uppercase tracking-wider">
+                        <span>Bottom</span>
+                        <span>Average</span>
+                        <span>Top</span>
+                      </div>
+                      <div className="mt-2 relative h-3 w-full rounded-full overflow-hidden bg-white/10">
+                        <div className="absolute inset-0 bg-gradient-to-r from-rose-200 via-amber-200 to-emerald-200" />
+
+                        {/* Current marker (68%) */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2"
+                          style={{ left: '68%' }}
+                        >
+                          <div className="h-5 w-1.5 rounded-full bg-emerald-400 shadow" />
                         </div>
-                        <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full w-[68%] bg-emerald-500" />
+
+                        {/* Potential marker (92%) */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2"
+                          style={{ left: '92%' }}
+                        >
+                          <div className="h-5 w-1.5 rounded-full bg-sky-400 shadow" />
                         </div>
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                          <span>Performance Potential</span>
-                          <span className="font-semibold text-gray-900">92%</span>
+
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <div className="rounded-lg bg-white/10 border border-white/10 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-950/80">
+                            Current
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-950">68%</p>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                          <div className="h-full w-[92%] bg-blue-500" />
+                        <div className="rounded-lg bg-white/10 border border-white/10 p-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-900/80">
+                            Potential
+                          </p>
+                          <p className="mt-1 text-lg font-bold text-slate-950">92%</p>
                         </div>
                       </div>
                     </div>
@@ -362,7 +449,7 @@ const EarningsPage: React.FC = () => {
             </>
           ) : (
             <Card className="overflow-hidden mb-8">
-          <div className="p-6 border-b bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="p-6 border-b bg-[chocolate] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 className="text-lg font-semibold text-gray-900">Top Performance</h3>
             <div className="inline-flex rounded-full border border-emerald-100 bg-emerald-50/70 p-1">
               <button

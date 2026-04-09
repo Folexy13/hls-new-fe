@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -42,7 +42,7 @@ import MedicationsPage from "./pages/principal/medications";
 import PurchasesPage from "./pages/principal/purchases";
 import ArticlesPage from "./pages/principal/articles";
 import WithdrawPage from "./pages/principal/withdraw";
-import UsersPage from "./pages/principal/users";
+import MyProfilePage from "./pages/principal/my-profile";
 
 // Import Wholesaler pages
 import WholesalerEarningsPage from "./pages/wholesaler/earnings";
@@ -82,7 +82,8 @@ const App = () => (
                 <Route path="/marketplace" element={<MarketplacePage />} />
                 <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
                 <Route path="/principal/add-benfek" element={<AddBenfekPage />} />
-                <Route path="/principal/users" element={<UsersPage />} />
+                <Route path="/principal/users" element={<Navigate to="/principal/my-profile" replace />} />
+                <Route path="/principal/my-profile" element={<MyProfilePage />} />
                  <Route path="/assessment" element={<AssessmentPage/>} />
                  <Route path="/principal/benfeks" element={<BenfeksPage />} />
                  <Route path="/quiz" element={<QuizPage />} />

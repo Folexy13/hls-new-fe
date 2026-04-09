@@ -185,7 +185,7 @@ const AddBenfekPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
+    <div className="min-h-screen bg-slate-50 pb-16 pt-24">
       <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -221,7 +221,10 @@ const AddBenfekPage: React.FC = () => {
         </div>
       </div> */}
 
-<BackToDashboardButton isDirty={isDirty} className="mt-2 ml-4 text-black" />
+      <BackToDashboardButton
+        isDirty={isDirty}
+        className="fixed left-3 top-16 z-50 text-black/90 hover:text-black/80"
+      />
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {isSuccess ? (
