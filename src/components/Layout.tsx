@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Bell, Settings } from 'lucide-react';
@@ -14,6 +14,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hidePrincipalFooter, setHidePrincipalFooter] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Get navigation items based on authentication and role
   // Only show common navigation items to unauthenticated users or if they match current role permission
@@ -41,6 +43,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isIOS]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      // Close when clicking outside both the menu panel and the hamburger button.
+      if (mobileMenuRef.current?.contains(target)) return;
+      if (mobileMenuButtonRef.current?.contains(target)) return;
+
+      setMobileMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [mobileMenuOpen]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -72,6 +92,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </button>
             )}
             <button
+              ref={mobileMenuButtonRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-600"
             >
@@ -82,7 +103,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="absolute top-full right-0 w-1/2 max-w-[320px] bg-white shadow-lg border-l border-t z-40 rounded-bl-2xl">
+          <div
+            ref={mobileMenuRef}
+            className="absolute top-full right-0 w-1/2 max-w-[320px] bg-white shadow-lg border-l border-t z-40 rounded-bl-2xl"
+          >
             <nav className="px-4 py-3 space-y-1">
               {/* Always show Home link */}
               <Link
@@ -275,24 +299,33 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </main>
 
       {isAuthenticated && userRole === UserRole.PRINCIPAL && (
-        <footer className={`fixed bottom-0 left-0 right-0 z-40 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 transition-transform ${hidePrincipalFooter ? 'translate-y-full' : 'translate-y-0'}`}>
+        <footer className={`fixed bottom-0 left-0 right-0 z-50 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 transition-transform ${hidePrincipalFooter ? 'translate-y-full' : 'translate-y-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 gap-2 flex items-center justify-center">
-            <User className="text-white" />
+            <Settings className="text-white" />
             <Link
               to="/principal/settings"
               className="text-md font-medium text-white tracking-widest"
             >
-              User Profile
+              Settings
             </Link>
           </div>
         </footer>
       )}
 
       {/* Bottom Navigation for Mobile (Private Routes) */}
-      {isAuthenticated && (
+      {isAuthenticated &&
+        (userRole === UserRole.PRINCIPAL
+          ? privateNavigation.filter((item) => item.name !== 'Dashboard')
+          : privateNavigation
+        ).length > 0 && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
           <div className="flex justify-around py-2">
-            {privateNavigation.slice(0, 4).map((item) => (
+            {(userRole === UserRole.PRINCIPAL
+              ? privateNavigation.filter((item) => item.name !== 'Dashboard')
+              : privateNavigation
+            )
+              .slice(0, 4)
+              .map((item) => (
               <Link
                 key={item.name}
                 to={item.href}

@@ -19,11 +19,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { Icon } from '@iconify/react';
 import { apiClient } from '@/config/axios';
 
 const principalDashboardSections = [
   {
-    title: 'Wallet Shortcuts',
+    title: 'Wallet',
     items: [
       {
         icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
@@ -46,17 +47,17 @@ const principalDashboardSections = [
     title: 'Directory',
     items: [
       {
-        icon: <UserRound className="h-6 w-6 text-indigo-600" />,
+        icon: <Icon icon="healthicons:doctor-male-outline" className="h-9 w-9 text-emerald-600" />,
         label: 'My Profile',
-        href: '/principal/users',
+        href: '/principal/my-profile',
       },
       {
-        icon: <UserPlus className="h-6 w-6 text-indigo-600" />,
+        icon: <UserPlus className="h-6 w-6 text-emerald-600" />,
         label: 'Add Benfek',
         href: '/principal/add-benfek',
       },
       {
-        icon: <Users className="h-6 w-6 text-indigo-600" />,
+        icon: <Users className="h-6 w-6 text-emerald-600" />,
         label: 'Benfeks',
         href: '/principal/benfeks',
       },
@@ -66,17 +67,17 @@ const principalDashboardSections = [
     title: 'Build webpage',
     items: [
       {
-        icon: <Pill className="h-6 w-6 text-purple-600" />,
+        icon: <Pill className="h-6 w-6 text-emerald-600" />,
         label: 'Medications',
         href: '/principal/medications',
       },
       {
-        icon: <FileText className="h-6 w-6 text-purple-600" />,
+        icon: <FileText className="h-6 w-6 text-emerald-600" />,
         label: 'Articles',
         href: '/principal/articles',
       },
       {
-        icon: <Mic className="h-6 w-6 text-purple-600" />,
+        icon: <Mic className="h-6 w-6 text-emerald-600" />,
         label: 'Podcasts',
         href: '/principal/podcasts',
       },
@@ -184,7 +185,7 @@ const PrincipalHomepage: React.FC = () => {
   }));
 
   const walletShortcutSections = principalDashboardSections.filter((section) =>
-    ['Wallet Shortcuts', 'Directory', 'Build webpage'].includes(section.title)
+    ['Wallet', 'Directory', 'Build webpage'].includes(section.title)
   );
 
   return (
@@ -272,13 +273,13 @@ const PrincipalHomepage: React.FC = () => {
                     return next;
                   })
                 }
-                className="flex-1 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-800 shadow-sm hover:bg-rose-100 transition-colors flex items-center justify-between"
+                className="flex-1 rounded-full border border-yellow-200 bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-800 shadow-sm hover:bg-yellow-100 transition-colors flex items-center justify-between"
               >
                 <span>Quick Actions</span>
                 {showQuickAccess ? (
-                  <ChevronUp className="h-4 w-4 text-rose-500" />
+                  <ChevronUp className="h-4 w-4 text-yellow-500" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-rose-500" />
+                  <ChevronDown className="h-4 w-4 text-yellow-500" />
                 )}
               </button>
               <button
@@ -292,13 +293,13 @@ const PrincipalHomepage: React.FC = () => {
                     return next;
                   })
                 }
-                className="flex-1 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 shadow-sm hover:bg-emerald-100 transition-colors flex items-center justify-between"
+                className="flex-1 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-800 shadow-sm hover:bg-rose-100 transition-colors flex items-center justify-between"
               >
                 <span>Recent Activities</span>
                 {showRecentActivities ? (
-                  <ChevronUp className="h-4 w-4 text-emerald-500" />
+                  <ChevronUp className="h-4 w-4 text-rose-500" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-emerald-500" />
+                  <ChevronDown className="h-4 w-4 text-rose-500" />
                 )}
               </button>
             </div>
@@ -371,10 +372,12 @@ const PrincipalHomepage: React.FC = () => {
                           <Link
                             to={item.href}
                             key={item.label}
-                            className="bg-slate-50 rounded-xl h-20 flex flex-col items-center justify-center text-center border border-slate-100 hover:bg-white hover:shadow-sm transition-all"
+                            className="bg-slate-50 rounded-xl h-20 flex flex-col items-center justify-between py-3 text-center border border-slate-100 hover:bg-white hover:shadow-sm transition-all"
                           >
-                            {item.icon}
-                            <span className="text-xs text-gray-700">{item.label}</span>
+                            <div className="flex h-9 w-9 items-center justify-center">
+                              {item.icon}
+                            </div>
+                            <span className="text-xs text-gray-700 leading-none">{item.label}</span>
                           </Link>
                         ))}
                       </div>

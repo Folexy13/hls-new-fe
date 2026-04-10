@@ -172,12 +172,12 @@ const PodcastsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
+      <BackToDashboardButton className="fixed left-3 top-16 z-50 text-black/90 hover:text-black/80" />
       {/* Page Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <BackToDashboardButton className="mb-3" />
               <h1 className="text-2xl font-bold text-gray-900">Podcasts</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Manage your health podcasts and episodes

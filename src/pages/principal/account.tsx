@@ -66,7 +66,7 @@ const AccountPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [activeTab, setActiveTab] = useState('edit-profile');
+  const [activeTab, setActiveTab] = useState('update-account');
   const [copied, setCopied] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'credit' | 'debit'>('all');
@@ -189,7 +189,7 @@ const AccountPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-12">
       {/* Page Header */}
       {/* <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -210,13 +210,12 @@ const AccountPage: React.FC = () => {
           </div>
         </div>
       </div> */}
-      <BackToDashboardButton className="ml-3 mt-3 " />
+      <BackToDashboardButton className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-        <Tabs defaultValue="edit-profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 w-full max-w-2xl mx-auto mb-8">
-            <TabsTrigger value="edit-profile">Edit Profile</TabsTrigger>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6">
+        <Tabs defaultValue="update-account" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-2 w-full max-w-2xl mx-auto mb-8">
             <TabsTrigger value="update-account">Update Account</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -589,59 +588,6 @@ const AccountPage: React.FC = () => {
               </div>
             </Card>
           </TabsContent>
-          <TabsContent value="edit-profile">
-            <Card>
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">Edit Profile</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Update your personal and professional details.
-                </p>
-              </div>
-              <div className="p-6">
-                {isLoading ? (
-                  <div className="space-y-6">
-                    <Skeleton className="h-24 w-24 rounded-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                ) : (
-                  <form className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-20 w-20 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-semibold">
-                        DN
-                      </div>
-                      <div>
-                        <Button variant="outline" size="sm">Change Image</Button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Principal Name</label>
-                      <Input defaultValue="" placeholder="Enter principal name" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Profession</label>
-                      <Input defaultValue="" placeholder="Enter profession" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Current Place of Work</label>
-                      <Input defaultValue="" placeholder="Enter current place of work" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
-                      <Input defaultValue="" placeholder="Enter license number" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
-                      <Input defaultValue="" placeholder="Enter years of experience" />
-                    </div>
-                    <Button>Save Profile</Button>
-                  </form>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="update-account">
             <Card>
               <div className="p-6 border-b">
