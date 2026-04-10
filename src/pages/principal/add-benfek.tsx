@@ -29,7 +29,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  UserPlus, CheckCircle, Upload, X,
+  UserPlus, HeartPulse, CheckCircle, Upload, X,
   Info, AlertCircle, Mail
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -221,12 +221,17 @@ const AddBenfekPage: React.FC = () => {
         </div>
       </div> */}
 
-      <BackToDashboardButton
-        isDirty={isDirty}
-        className="fixed left-3 top-16 z-50 text-black/90 hover:text-black/80"
-      />
+      {/* Fixed header background so scrolling content never shows between the back button and the tabs. */}
+      <div className="fixed left-0 right-0 top-[65px] z-40 h-[92px] bg-gray-50" />
+
+      <div className="fixed left-0 right-0 top-[65px] z-50 bg-transparent px-3 pt-2">
+        <BackToDashboardButton
+          isDirty={isDirty}
+          className="text-black/90 hover:text-black/80"
+        />
+      </div>
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-8">
         {isSuccess ? (
           <Card className="max-w-3xl mx-auto">
             <div className="p-6 flex flex-col items-center text-center">
@@ -262,7 +267,7 @@ const AddBenfekPage: React.FC = () => {
                 onValueChange={setActiveTab}
                 className="max-w-3xl mx-auto"
               >
-                <TabsList className="grid grid-cols-2 w-full mb-6 bg-white shadow-sm border border-slate-200">
+                <TabsList className="grid grid-cols-2 w-[92vw] bg-white shadow-sm border border-slate-200 fixed top-28 left-1/2 -translate-x-1/2 z-50">
                   <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                   <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
                 </TabsList>
@@ -272,11 +277,22 @@ const AddBenfekPage: React.FC = () => {
                   <Card className="border border-slate-200 shadow-sm">
                     <div className="p-6 border-b bg-white">
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <UserPlus className="h-5 w-5 mr-2 text-emerald-500" />
-                        Benfek Information
+                        {manualStep === 0 ? (
+                          <>
+                            <UserPlus className="h-5 w-5 mr-2 text-emerald-500" />
+                            Basic Details
+                          </>
+                        ) : (
+                          <>
+                            <HeartPulse className="h-5 w-5 mr-2 text-emerald-500" />
+                            Health Factors
+                          </>
+                        )}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        Enter the details of the benfek you want to add to your network.
+                        {manualStep === 0
+                          ? 'Enter the details of the benfek you want to add to your network.'
+                          : 'Provide health factors to personalize the benfek experience.'}
                       </p>
                     </div>
 
@@ -290,9 +306,9 @@ const AddBenfekPage: React.FC = () => {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                           {manualStep === 0 && (
                             <div>
-                              <h4 className="text-md font-medium text-gray-900 mb-4">
+                              {/* <h4 className="text-md font-medium text-gray-900 mb-4">
                                 Basic Details
-                              </h4>
+                              </h4> */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                               <FormField
                                 control={form.control}
@@ -301,7 +317,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>First Name</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="John" {...field} />
+                                      <Input className='bg-gray-100' placeholder="John" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -315,7 +331,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Last Name</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="Doe" {...field} />
+                                      <Input className='bg-gray-100' placeholder="Doe" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -329,7 +345,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Email Address</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="john.doe@example.com" {...field} />
+                                      <Input className='bg-gray-100' placeholder="john.doe@example.com" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -343,7 +359,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Phone Number</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="+234 123 456 7890" {...field} />
+                                      <Input className='bg-gray-100' placeholder="+234 123 456 7890" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -357,7 +373,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Age</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g. 32" {...field} />
+                                      <Input className='bg-gray-100' placeholder="e.g. 32" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -375,7 +391,7 @@ const AddBenfekPage: React.FC = () => {
                                       defaultValue={field.value}
                                     >
                                       <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="bg-gray-100">
                                           <SelectValue placeholder="Select gender" />
                                         </SelectTrigger>
                                       </FormControl>
@@ -399,9 +415,6 @@ const AddBenfekPage: React.FC = () => {
 
                           {manualStep === 1 && (
                             <div>
-                              <h4 className="text-md font-medium text-gray-900 mb-4">
-                                Health Factors
-                              </h4>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                               <FormField
                                 control={form.control}
@@ -410,7 +423,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Allergies</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g. Peanuts, dust" {...field} />
+                                      <Input className='bg-gray-100' placeholder="e.g. Peanuts, dust" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -424,7 +437,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Health Scares</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g. Hypertension episode" {...field} />
+                                      <Input className="bg-gray-100" placeholder="e.g. Hypertension episode" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -438,7 +451,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Family Condition</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g. Diabetes" {...field} />
+                                      <Input className="bg-gray-100" placeholder="e.g. Diabetes" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -452,7 +465,7 @@ const AddBenfekPage: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Medications</FormLabel>
                                     <FormControl>
-                                      <Input placeholder="e.g. Vitamin D, Omega-3" {...field} />
+                                      <Input className="bg-gray-100" placeholder="e.g. Vitamin D, Omega-3" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -462,21 +475,21 @@ const AddBenfekPage: React.FC = () => {
 
                               <div className="mt-4">
                                 <FormField
-                                  control={form.control}
-                                  name="hasCurrentCondition"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Current Health Condition</FormLabel>
-                                      <FormControl>
-                                        <Input placeholder="e.g. Mild asthma" {...field} />
-                                      </FormControl>
-                                      <FormDescription>
-                                        Enter any ongoing condition if applicable.
-                                      </FormDescription>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                                control={form.control}
+                                name="hasCurrentCondition"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Current Health Condition</FormLabel>
+                                    <FormControl>
+                                      <Input className="bg-gray-100" placeholder="e.g. Mild asthma" {...field} />
+                                    </FormControl>
+                                    <FormDescription>
+                                      Enter any ongoing condition if applicable.
+                                    </FormDescription>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
                               </div>
                             </div>
                           )}
