@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Search, Filter, Download, Eye, ArrowUpDown,
-  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2
+  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2, Camera, Images
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
@@ -448,11 +448,10 @@ const MedicationsPage: React.FC = () => {
 
   return (
     <div className="flex-1 bg-gray-50 pb-20 sm:pb-8">
-      <BackToDashboardButton isDirty={isDirty} className="fixed left-3 top-16 z-50 text-black/90 hover:text-black/80" />
+      <BackToDashboardButton isDirty={isDirty} className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
       {/* Page Header */}
-      <div className="bg-white border-b sticky top-0 z-20 sm:relative sm:top-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          
+      <div className="bg-white border-b top-28 z-20 sm:relative sm:top-auto fixed w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 sm:py-6">
           <div className="flex flex-row items-center justify-between">
             <div className='flex'>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
@@ -492,7 +491,7 @@ const MedicationsPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8 mt-20">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -714,47 +713,59 @@ const MedicationsPage: React.FC = () => {
                 {paginatedData.map((medication) => (
                   <AccordionItem key={medication.id} value={`medication-${medication.id}`} className="border-0 bg-white rounded-xl shadow-sm overflow-hidden">
                     <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4 w-full">
-                        <div className="relative">
-                          <img
-                            src={medication.image}
-                            alt={medication.name}
-                            className="h-14 w-14 rounded-lg object-cover shadow-sm border border-gray-100"
-                          />
-                          {medication.stock <= 10 && (
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                          )}
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <div className="flex flex-1 items-center gap-3 min-w-0">
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={medication.image}
+                              alt={medication.name}
+                              className="h-14 w-14 rounded-lg object-cover shadow-sm border border-gray-100"
+                            />
+                            {medication.stock < 5 && (
+                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 text-center flex flex-col items-center justify-center">
+                            <p className="font-bold text-gray-900 truncate text-base">
+                              {medication.name}
+                            </p>
+                            <span className="font-semibold text-gray-500">{medication.manufacturer ? ` (${medication.manufacturer})` : ''}</span>
+                          </div>
                         </div>
-                        <div className="flex-1 text-left min-w-0">
-                          <p className="font-bold text-gray-900 truncate text-base">{medication.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm font-bold text-emerald-600">{medication.price}</span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-500 font-medium">{medication.category}</span>
-                          </div>
-                          <div className="mt-2">
-                            {renderStatusBadge(medication.status)}
-                          </div>
+
+                        <div className="text-right flex-shrink-0">
+                          {/* <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Price</p> */}
+                          <p className="text-sm font-bold text-emerald-600">{medication.price}</p>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 bg-white">
                       <div className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded-lg">
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Stock</p>
-                            <p className="font-bold text-gray-900 mt-0.5">{medication.stock} units</p>
+                        <div className="rounded-xl border border-slate-200 bg-gray-50/60 p-4 text-sm">
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Stock Qty</p>
+                            <p className={`font-bold ${medication.stock < 5 ? 'text-red-600' : 'text-gray-900'}`}>
+                              {medication.stock < 5 ? 'Low' : medication.stock}
+                            </p>
                           </div>
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Manufacturer</p>
-                            <p className="font-bold text-gray-900 mt-0.5 truncate">{medication.manufacturer}</p>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Category</p>
+                            <p className="font-bold text-gray-900 truncate max-w-[60%] text-right">{medication.category}</p>
                           </div>
-                          <div className="col-span-2">
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Status</p>
+                            <div className="pt-0.5">{renderStatusBadge(medication.status)}</div>
+                          </div>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
                             <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Date Added</p>
-                            <p className="font-bold text-gray-900 mt-0.5">{medication.dateAdded}</p>
+                            <p className="font-bold text-gray-900">{medication.dateAdded}</p>
                           </div>
                         </div>
                         {medication.description && (
@@ -811,9 +822,9 @@ const MedicationsPage: React.FC = () => {
           {!isLoading && medications.length > 0 && (
             <div className="p-4 bg-white border-t">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-500 order-2 sm:order-1">
+                {/* <div className="text-sm text-gray-500 order-2 sm:order-1">
                   Showing {`${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {filteredData.length} entries
-                </div>
+                </div> */}
                 <Pagination className="order-1 sm:order-2">
                   <PaginationContent>
                     <PaginationItem>
@@ -913,37 +924,8 @@ const MedicationsPage: React.FC = () => {
         ) : (
           // Add New Medication Form
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-md border overflow-hidden bg-gray-100 flex items-center justify-center">
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Image className="h-8 w-8 text-gray-400" />
-                    )}
-                  </div>
-                  <label htmlFor="medication-image" className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-full cursor-pointer">
-                    <Plus className="h-4 w-4" />
-                  </label>
-                  <input
-                    id="medication-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    title = "Upload medication image"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">Upload image</p>
-              </div>
-
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Medication Name <span className="text-red-500">*</span></Label>
                     <Input
@@ -1003,14 +985,13 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.status}
                       onChange={handleInputChange}
                       title = "Medication status"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="In Stock">In Stock</option>
                       <option value="Low Stock">Low Stock</option>
                       <option value="Out of Stock">Out of Stock</option>
                     </select>
                   </div>
-                </div>
               </div>
             </div>
 
@@ -1024,6 +1005,60 @@ const MedicationsPage: React.FC = () => {
                 placeholder="Enter medication description..."
                 className="min-h-32"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Medication Image <span className="text-red-500">*</span></Label>
+              <div className="w-32 mx-auto">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-md border overflow-hidden bg-gray-100 flex items-center justify-center">
+                    {previewImage ? (
+                      <img
+                        src={previewImage}
+                        alt="Medication preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex w-32 items-center justify-around">
+                    <label
+                      htmlFor="medication-image-camera"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 cursor-pointer"
+                      title="Snap with camera"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </label>
+                    <label
+                      htmlFor="medication-image-gallery"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 cursor-pointer"
+                      title="Select from gallery"
+                    >
+                      <Images className="h-5 w-5" />
+                    </label>
+                  </div>
+
+                  <input
+                    id="medication-image-camera"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    title="Snap medication image"
+                  />
+                  <input
+                    id="medication-image-gallery"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    title="Upload medication image"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 flex justify-end gap-2 z-10">

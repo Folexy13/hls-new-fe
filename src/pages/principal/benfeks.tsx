@@ -399,20 +399,23 @@ const BenfeksPage: React.FC = () => {
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 pt-2">
                       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-700">
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
                             Code
-                          </p>
-                          <div className="mt-2 flex items-center justify-between gap-3">
-                            <span className="text-2xl font-black text-blue-600 tracking-widest font-mono">
+                          </span>
+                          <div className="flex items-center gap-2 self-start">
+                            <span className="font-mono text-sm font-black tracking-widest text-blue-600 whitespace-nowrap">
                               {benfek.code}
                             </span>
                             <Button
-                              size="sm"
-                              className="rounded-full bg-white border-gray-200 text-gray-600 hover:bg-gray-100"
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                               onClick={() => copyCode(benfek.code)}
+                              aria-label="Copy code"
                             >
-                              <Copy className="h-4 w-4 mr-2" /> Copy
+                              <Copy className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -423,6 +426,15 @@ const BenfeksPage: React.FC = () => {
                           </span>
                           <span className="font-semibold text-slate-900 whitespace-nowrap">
                             {new Date(benfek.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Phone
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {benfek.benfekPhone}
                           </span>
                         </div>
 
@@ -481,7 +493,7 @@ const BenfeksPage: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Benfek Details"
+        title="Benfek's Health Details"
         size="lg"
       >
         {selectedBenfek ? (
@@ -503,20 +515,12 @@ const BenfeksPage: React.FC = () => {
                 <p className="text-lg font-bold text-gray-900">{selectedBenfek.benfekName}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Phone Number</p>
-                <p className="text-lg font-bold text-gray-900">{selectedBenfek.benfekPhone}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Registration Status</p>
-                <div className="pt-1">{renderStatusBadge(selectedBenfek.isUsed)}</div>
-              </div>
-              <div className="space-y-1">
                 <p className="text-xs text-gray-400 font-bold uppercase">Current Condition</p>
                 <p className="text-lg font-bold text-gray-900">{selectedBenfek.hasCurrentCondition ? 'Yes' : 'No'}</p>
               </div>
             </div>
 
-            <div className="space-y-4 border-t pt-6">
+            <div className="space-y-4 pt-6">
               {selectedBenfek.allergies && (
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Allergies</p>

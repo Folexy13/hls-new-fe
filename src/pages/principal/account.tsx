@@ -195,7 +195,6 @@ const AccountPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              
               <h1 className="text-2xl font-bold text-gray-900">Account</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Manage your wallet and transactions
@@ -213,9 +212,9 @@ const AccountPage: React.FC = () => {
       <BackToDashboardButton className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
 
       {/* Main Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6 mt-10">
         <Tabs defaultValue="update-account" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 w-full max-w-2xl mx-auto mb-8">
+          <TabsList className="fixed grid grid-cols-2 w-full max-w-2xl mx-auto top-28">
             <TabsTrigger value="update-account">Update Account</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -284,14 +283,14 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">NEJJE HEALTH SOLUTIONS</span>
+                        <span>NEJJE HEALTH SOLUTIONS</span>
                       </div>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">1234567890</span>
+                        <span>1234567890</span>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -316,7 +315,7 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">First Bank of Nigeria</span>
+                        <span>First Bank of Nigeria</span>
                       </div>
                     </div>
                   </div>
@@ -614,14 +613,13 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">NEJJE HEALTH SOLUTIONS</span>
+                        <p className='text-sm'>NEJJE HEALTH SOLUTIONS</p>
                       </div>
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">1234567890</span>
+                        <p className='text-sm'>1234567890</p>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -642,11 +640,10 @@ const AccountPage: React.FC = () => {
                         </Button>
                       </div>
                     </div>
-                    
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span className="font-medium">First Bank of Nigeria</span>
+                        <p className='text-sm'>First Bank of Nigeria</p>
                         <Button variant="outline" size="sm">Change Account</Button>
                       </div>
                     </div>
