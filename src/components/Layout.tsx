@@ -47,7 +47,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
-    const onPointerDown = (event: PointerEvent) => {
+const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
 
@@ -61,7 +61,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [mobileMenuOpen]);
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Mobile Header */}

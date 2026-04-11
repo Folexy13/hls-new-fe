@@ -140,12 +140,12 @@ const App = () => (
                 <Route
                   path="/blog/:id"
                   element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
+                    // <RoleBasedRoute
+                    //   allowedRoles={[UserRole.BENFEK]}
+                    //   fallbackPath="/"
+                    // >
                       <BlogPage />
-                    </RoleBasedRoute>
+                    // </RoleBasedRoute>
                   }
                 />
                 {/* <Route
