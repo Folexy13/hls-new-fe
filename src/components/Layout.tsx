@@ -17,10 +17,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-
-
   // Get navigation items based on authentication and role
   // Only show common navigation items to unauthenticated users or if they match current role permission
   const navigation = isAuthenticated ? [] : commonNavigation.filter(item => item.href === '/');
