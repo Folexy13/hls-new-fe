@@ -329,14 +329,14 @@ const Homepage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative bg-[#e0f2fe] pb-20 min-h-[70svh] sm:pb-28 lg:pb-44 xl:pb-52 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Content Container */}
         <div className="max-w-7xl mx-auto relative z-20 text-center">
           {/* Text Content */}
           <div className="pt-6 sm:pt-12 lg:pt-16 pb-4 sm:pb-6">
-            <div className="inline-flex items-center justify-center rounded-full bg-white/80 px-5 py-2 shadow-sm mb-4">
+            <div className="inline-flex items-center justify-center rounded-full px-5 py-2 mb-4">
               <p className="text-sm sm:text-base lg:text-lg text-blue-900 font-normal tracking-[0.08em]">
                 Food Extracts • Nutrients • Supplements
               </p>
@@ -348,7 +348,7 @@ const Homepage: React.FC = () => {
               For YOU.
             </h1>
 
-            <div className="flex justify-center mb-6 sm:mb-8">
+            <div className="flex justify-center mb-[5px] sm:mb-8">
               <button
                 onClick={handleQuizStart}
                 className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 sm:px-6 sm:py-2.5 rounded-none text-sm sm:text-base font-semibold transition-colors shadow-sm"
@@ -359,7 +359,7 @@ const Homepage: React.FC = () => {
           </div>
 
           {/* Doctor Image - positioned above curve */}
-          <div className="relative z-30 flex justify-center">
+          <div className="absolute left-1/2 -translate-x-1/2 z-30 flex justify-center">
             <img
               src={doctor}
               alt="Health and wellness background"
@@ -369,20 +369,20 @@ const Homepage: React.FC = () => {
         </div>
 
         {/* Curved bottom background */}
-        <div className="absolute inset-x-0 bottom-0 h-20 sm:h-28 lg:h-44 xl:h-52 z-10 overflow-hidden">
-          <div className="h-full w-full rounded-tl-[50%] rounded-tr-[50%] bg-[#00657e]" />
+        <div className="absolute inset-x-0 bottom-2 -left-[15vw] h-20 sm:h-28 lg:h-44 xl:h-52 z-10">
+          <div className="h-[100vw] w-[130vw] rounded-t-full rounded-b-lg bg-[#00657e]" />
         </div>
 
         {/* Pills Images */}
         <img
           src={rightPill}
           alt="Green pill"
-          className="absolute bottom-4 left-2 sm:left-6 lg:left-10 w-10 sm:w-14 lg:w-20 h-auto z-20"
+          className="absolute bottom-7 left-7 sm:left-6 lg:left-10 w-14 sm:w-14 lg:w-20 h-auto z-20"
         />
         <img
           src={leftPill}
           alt="Green pill"
-          className="absolute bottom-4 right-2 sm:right-6 lg:right-10 w-10 sm:w-14 lg:w-20 h-auto z-20"
+          className="absolute bottom-7 right-7 sm:right-6 lg:right-10 w-14 sm:w-14 lg:w-20 h-auto z-20"
         />
       </section>
 
@@ -398,13 +398,13 @@ const Homepage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {whyTakeQuiz.map((item, index) => (
               <div
                 key={index}
-                className="group h-full rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/40 p-5 text-center shadow-[0_18px_40px_-30px_rgba(15,23,42,0.45)] transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-[0_24px_46px_-30px_rgba(15,23,42,0.55)]"
+                className="group h-full rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/40 p-5 text-center transition-all hover:-translate-y-1 hover:border-emerald-200"
               >
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#005073] ring-1 ring-emerald-100 transition group-hover:bg-[#005073] group-hover:text-white">
+                <div className="mx-auto mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#005073] ring-1 ring-emerald-100 transition ">
                   <item.icon className="h-7 w-7" />
                 </div>
                 <p className="text-sm sm:text-base font-semibold text-gray-900 leading-snug">
@@ -435,7 +435,7 @@ const Homepage: React.FC = () => {
           <Carousel className="w-full">
             <CarouselContent className="-ml-3 sm:-ml-4">
               {products.map((product) => (
-                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[86%] sm:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                     <Link to={`/product/${product.id}`}>
                       <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-white p-5 border-b border-gray-100">
@@ -447,10 +447,13 @@ const Homepage: React.FC = () => {
                       </div>
                     </Link>
                     <div className="p-4 sm:p-5 flex flex-1 flex-col">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 leading-snug">{product.name}</h3>
-                      <p className="text-gray-700 text-sm leading-6 mb-5 hidden sm:block flex-1">{product.description}</p>
+                      <div className='flex flex-row justify-between'>
+                        <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-2 leading-snug">{product.name}</h3>
+                        {/* <p className="text-gray-700 text-sm leading-6 mb-5 hidden sm:block flex-1">{product.description}</p> */}
+                        <span className="text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                      </div>
                       <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-lg sm:text-xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                        {/* <span className="text-lg sm:text-xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span> */}
                         <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold">
                           Add to Cart
                         </button>
@@ -486,7 +489,7 @@ const Homepage: React.FC = () => {
                 {testimonials.map((testimonial, index) => (
                   <CarouselItem
                     key={index}
-                    className="pl-0 basis-[90%] sm:basis-1/2 lg:basis-1/3"
+                    className="pl-0 basis-[80%] sm:basis-1/2 lg:basis-1/3 p-2"
                   >
                     <article className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-shadow hover:shadow-[0_24px_48px_-28px_rgba(15,23,42,0.45)]">
                       <div className="mb-4 flex items-start justify-between gap-3">
@@ -583,17 +586,17 @@ const Homepage: React.FC = () => {
 
           <div className="overflow-hidden pl-2">
             <Carousel className="w-full">
-              <CarouselContent>
+              <CarouselContent className='space-2'>
                 {blogs.map((blog) => (
-                  <CarouselItem key={blog.id} className="basis-[85%] pl-3 sm:basis-1/2 lg:basis-1/3">
-                    <article className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                      <Link to={`/blog/${blog.id}`}>
+                  <CarouselItem key={blog.id} className="basis-[75%] sm:basis-1/2 lg:basis-1/3">
+                    <article className="bg-gray-50 border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+                      <div className='w-full'>
                         <img
                           src={blog.image}
                           alt={blog.title}
-                          className="w-full h-24 sm:h-40 lg:h-48 object-contain bg-white p-1"
+                          className="w-full h-24 sm:h-40 lg:h-48 object-contain p-1"
                         />
-                      </Link>
+                      </div>
                       <div className="p-3 sm:p-6 flex-1 flex flex-col">
                         <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
                         <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
