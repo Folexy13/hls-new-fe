@@ -14,8 +14,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hidePrincipalFooter, setHidePrincipalFooter] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-  const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+
 
   // Get navigation items based on authentication and role
   // Only show common navigation items to unauthenticated users or if they match current role permission
@@ -47,7 +49,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
-    const onPointerDown = (event: PointerEvent) => {
+const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
 
@@ -61,7 +63,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [mobileMenuOpen]);
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Mobile Header */}
