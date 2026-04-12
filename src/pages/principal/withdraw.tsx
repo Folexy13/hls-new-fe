@@ -32,6 +32,18 @@ type Withdrawal = {
   processingTime: string;
 };
 
+type UnresolvedCredit = {
+  id: number;
+  supplement: string;
+  // Total amount the benfek paid (cost price + returns).
+  amount: number;
+  date: string;
+  // Total cost price of the pack (principal's cost basis).
+  costPrice: number;
+  // Markup factor applied to cost price (e.g. 1.3 -> 30% markup).
+  markupFactor: number;
+};
+
 // Mock data for withdrawals
 const mockWithdrawals: Withdrawal[] = Array(30).fill(0).map((_, i) => ({
   id: i + 1,
@@ -61,22 +73,28 @@ const WithdrawPage: React.FC = () => {
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
   const [walletBalance] = useState(1250000);
   const [withdrawableBalance, setWithdrawableBalance] = useState(540000);
-  const [unresolvedCredits, setUnresolvedCredits] = useState([
+  const [unresolvedCredits, setUnresolvedCredits] = useState<UnresolvedCredit[]>([
     {
       id: 1,
       supplement: 'Economic Pack',
+      costPrice: 100000,
+      markupFactor: 1.2,
       amount: 120000,
       date: '12/03/2025',
     },
     {
       id: 2,
       supplement: "Doctor's Choice",
+      costPrice: 50000,
+      markupFactor: 1.7,
       amount: 85000,
       date: '10/03/2025',
     },
     {
       id: 3,
       supplement: 'Premium Offer Pack',
+      costPrice: 150000,
+      markupFactor: 1.4,
       amount: 210000,
       date: '08/03/2025',
     },
@@ -530,12 +548,17 @@ const WithdrawPage: React.FC = () => {
             ) : (
               <Accordion type="single" collapsible className="space-y-4">
                 {unresolvedCredits.map((credit) => {
-                  const tax = credit.amount * 0.075;
-                  const serviceCharge = credit.amount * 0.05;
-                  const amountAfterTax = credit.amount - tax;
+                  const totalAmountPurchased =
+                    credit.amount ?? Math.round(credit.costPrice * credit.markupFactor);
+                  const returns = Math.max(0, totalAmountPurchased - credit.costPrice);
+
+                  // All derived values are computed from returns (the markup/profit portion).
+                  const tax = returns * 0.075;
+                  const serviceCharge = returns * 0.05;
+                  const amountAfterTax = returns - tax;
                   const hlsCommission = amountAfterTax * 0.3;
                   const principalShare =
-                    credit.amount - tax - serviceCharge - hlsCommission;
+                    returns - tax - serviceCharge - hlsCommission;
 
                   return (
                     <AccordionItem
@@ -563,7 +586,23 @@ const WithdrawPage: React.FC = () => {
                               Total Amount Purchased
                             </span>
                             <span className="font-semibold text-slate-900">
-                              ₦{credit.amount.toLocaleString()}
+                              ₦{totalAmountPurchased.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Cost Price
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(credit.costPrice).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <span className="text-xs font-semibold uppercase text-slate-500">
+                              Returns (Markup)
+                            </span>
+                            <span className="font-semibold text-slate-900">
+                              ₦{Math.round(returns).toLocaleString()}
                             </span>
                           </div>
                           <div className="flex items-start justify-between gap-4">
@@ -576,7 +615,7 @@ const WithdrawPage: React.FC = () => {
                           </div>
                           <div className="flex items-start justify-between gap-4">
                             <span className="text-xs font-semibold uppercase text-slate-500">
-                              Tax Deducted (7.5%)
+                              Tax Deducted (7.5% of returns)
                             </span>
                             <span className="font-semibold text-slate-900">
                               ₦{Math.round(tax).toLocaleString()}
@@ -584,7 +623,7 @@ const WithdrawPage: React.FC = () => {
                           </div>
                           <div className="flex items-start justify-between gap-4">
                             <span className="text-xs font-semibold uppercase text-slate-500">
-                              Service Charge (5%)
+                              Service Charge (5% of returns)
                             </span>
                             <span className="font-semibold text-slate-900">
                               ₦{Math.round(serviceCharge).toLocaleString()}
@@ -592,7 +631,7 @@ const WithdrawPage: React.FC = () => {
                           </div>
                           <div className="flex items-start justify-between gap-4">
                             <span className="text-xs font-semibold uppercase text-slate-500">
-                              HLS Commission (30% after tax)
+                              HLS Commission (30% of returns after tax)
                             </span>
                             <span className="font-semibold text-slate-900">
                               ₦{Math.round(hlsCommission).toLocaleString()}
@@ -692,7 +731,6 @@ const WithdrawPage: React.FC = () => {
                                 Minimum withdrawal amount: ₦10,000.00
                               </p>
                             </div>
-                            
                             {/* Submit Button */}
                             <div>
                               <Button 

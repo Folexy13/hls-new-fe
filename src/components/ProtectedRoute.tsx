@@ -11,19 +11,20 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { isAuthenticated, user } = useStore();
   const location = useLocation();
+  const role = String(user?.role ?? '').toLowerCase();
 
   if (!isAuthenticated) {
     return <Navigate to="/auth/signin" replace />;
   }
 
   // If a specific role is required and the user doesn't have it, redirect to their appropriate homepage
-  if (requiredRole && user?.role !== requiredRole) {
+  if (requiredRole && role !== String(requiredRole).toLowerCase()) {
     // Redirect based on user role
-    if (user?.role === 'principal') {
+    if (role === 'principal') {
       return <Navigate to="/principal" replace />;
-    } else if (user?.role === 'wholesaler') {
+    } else if (role === 'wholesaler') {
       return <Navigate to="/wholesaler" replace />;
-    } else if (user?.role === 'benfek') {
+    } else if (role === 'benfek') {
       return <Navigate to="/benfek" replace />;
     } else {
       // Default homepage for other roles
@@ -32,12 +33,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }
 
   // Check if user is on the root path and redirect to their role-specific homepage
-  if (location.pathname === '/' && user?.role) {
-    if (user.role === 'principal') {
+  if (location.pathname === '/' && role) {
+    if (role === 'principal') {
       return <Navigate to="/principal" replace />;
-    } else if (user.role === 'wholesaler') {
+    } else if (role === 'wholesaler') {
       return <Navigate to="/wholesaler" replace />;
-    } else if (user.role === 'benfek') {
+    } else if (role === 'benfek') {
       return <Navigate to="/benfek" replace />;
     }
   }

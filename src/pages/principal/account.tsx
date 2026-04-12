@@ -189,7 +189,7 @@ const AccountPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-12">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
       {/* Page Header */}
       {/* <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -209,16 +209,20 @@ const AccountPage: React.FC = () => {
           </div>
         </div>
       </div> */}
-      <BackToDashboardButton className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
-
       {/* Main Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6 mt-10">
-        <Tabs defaultValue="update-account" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="fixed grid grid-cols-2 w-full max-w-2xl mx-auto top-28">
+      <Tabs defaultValue="update-account" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Fixed Header (Back + Tabs) */}
+        <div className="fixed left-0 right-0 top-[64px] z-50 bg-gray-50">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 -b-1 space-y-3">
+            <BackToDashboardButton className="text-black/90 hover:text-black/80" />
+            <TabsList className="grid grid-cols-2 w-full max-w-2xl mx-auto">
             <TabsTrigger value="update-account">Update Account</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
+          </div>
+        </div>
 
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6 pt-8">
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Weekly Summary */}
@@ -820,8 +824,8 @@ const AccountPage: React.FC = () => {
               </div>
             </Card>
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 };

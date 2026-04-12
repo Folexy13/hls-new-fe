@@ -17,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Search, Filter, Download, Eye, ArrowUpDown,
-  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2, Camera, Images
+  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2, Camera, Images, Pill
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
@@ -447,72 +447,85 @@ const MedicationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-gray-50 pb-20 sm:pb-8">
-      <BackToDashboardButton isDirty={isDirty} className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
-      {/* Page Header */}
-      <div className="bg-white border-b top-28 z-20 sm:relative sm:top-auto fixed w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 sm:py-6">
-          <div className="flex flex-row items-center justify-between">
-            <div className='flex'>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
-              <p className="hidden sm:block mt-1 text-sm text-gray-500">
-                Manage your medication inventory
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="flex items-center gap-2 h-6 px-4 shadow-sm"
-                onClick={() => {
-                  setSelectedMedication(null);
-                  setEditingMedicationId(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    status: 'In Stock',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
-                  setPreviewImage(null);
-                  setIsDirty(false);
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Medication</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
-            </div>
+    <div className="flex-1 min-h-screen bg-gray-50 pb-20 sm:pb-8 pt-[70px]">
+      {/* Fixed Header (Back + Title) */}
+      <div className="fixed left-0 right-0 top-[64px] z-50 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
+          <BackToDashboardButton isDirty={isDirty} className="text-black/90 hover:text-black/80" />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
+            <Button
+              size="sm"
+              className="flex items-center gap-2 h-9 px-4 shadow-sm"
+              onClick={() => {
+                setSelectedMedication(null);
+                setEditingMedicationId(null);
+                setNewMedication({
+                  name: '',
+                  category: '',
+                  price: '',
+                  stock: 0,
+                  manufacturer: '',
+                  status: 'In Stock',
+                  description: '',
+                  image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
+                });
+                setPreviewImage(null);
+                setIsDirty(false);
+                setIsModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Medication</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8 mt-20">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8 pt-8">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
+          <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search medications..."
-                className="pl-10 h-11 sm:h-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                className="pl-10 h-11 sm:h-10 bg-gray-100 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Filter"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
                 <Filter className="h-4 w-4" />
-                <span>Filter</span>
-                <ChevronDown className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Export"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
                 <Download className="h-4 w-4" />
-                <span>Export</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Medications count"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
+                <Pill className="h-4 w-4" />
+                <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : medications.length}</p>
               </Button>
             </div>
           </div>
