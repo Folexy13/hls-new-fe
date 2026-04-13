@@ -111,6 +111,7 @@ const PrincipalSignupPage = () => {
         email: formData.email.trim(),
         phone: formData.phone.trim() || undefined,
         password: formData.password,
+        role: "principal",
       });
 
       if (response.data.success) {
