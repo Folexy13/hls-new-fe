@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { 
   Search, Download, ArrowUpDown, TrendingUp, 
   Calendar, ChevronDown, BarChart2, PieChart,
-  Users, ShoppingCart, DollarSign, ArrowUp
+  Users, ShoppingCart, DollarSign, ArrowUp, Filter,
+  Info, X
 } from 'lucide-react';
 
 // Define the Earning type
@@ -87,9 +88,17 @@ const EarningsPage: React.FC = () => {
   const [insightsTab, setInsightsTab] = useState<'supplements' | 'benfeks'>('supplements');
   const [viewTab, setViewTab] = useState<'statistics' | 'performance'>('statistics');
   const [openBenfekId, setOpenBenfekId] = useState<number | null>(null);
+  const [activeSlideExplanation, setActiveSlideExplanation] = useState<null | 'summary' | 'category' | 'peer'>(null);
   
   const itemsPerPage = 10;
   const totalPages = Math.ceil(mockEarnings.length / itemsPerPage);
+
+  // Peer rating benchmarks (until wired to real analytics)
+  const peerCurrent = 68;
+  const peerPotential = 92;
+  const peerAverage = 50;
+
+  const closeSlideExplanation = () => setActiveSlideExplanation(null);
 
   // Simulate loading data
   useEffect(() => {
@@ -233,36 +242,15 @@ const EarningsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-4">
-      <BackToDashboardButton className="fixed left-3 top-[70px] z-50 text-black/90 hover:text-black/80" />
-      {/* Page Header */}
-      {/* <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-
-            </div>
-            <div className="mt-4 md:mt-0 flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>Date Range</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div> */}
-
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
+      {/* Fixed Header (Back + Tabs) */}
+      <div className="fixed left-0 right-0 top-[70px] z-50 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1 space-y-3">
+          <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           <div
             role="tablist"
             aria-orientation="horizontal"
-            className="grid grid-cols-2 w-full max-w-2xl mx-auto mb-4 h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
+            className="grid grid-cols-2 w-full max-w-2xl mx-auto h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
           >
             <button
               type="button"
@@ -291,34 +279,191 @@ const EarningsPage: React.FC = () => {
               Performance
             </button>
           </div>
+        </div>
+      </div>
+      {/* Page Header */}
+      {/* <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+
+            </div>
+            <div className="mt-4 md:mt-0 flex gap-2">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>Date Range</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                <span>Export</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div> */}
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
           {viewTab === 'statistics' ? (
             <>
               {/* Banner Carousel */}
         <div className="mb-8">
           <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
             <Card className="min-w-full snap-start overflow-hidden">
-              <div className="h-[60vh] sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
-                <div className="h-full w-full p-6 flex flex-col gap-6">
-                  <div className="text-sm uppercase tracking-[0.25em] text-white/70">Earnings Summary</div>
+              <div className="relative h-[60vh] min-h-[400px] sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Explain earnings summary"
+                  onClick={() => setActiveSlideExplanation('summary')}
+                  className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+
+                {activeSlideExplanation === 'summary' && (
+                  <div
+                    className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm"
+                    onClick={closeSlideExplanation}
+                    role="dialog"
+                    aria-modal="true"
+                  >
+                    <div
+                      className="w-full rounded-t-2xl border-t border-white/10 bg-slate-950/95 p-4 sm:p-5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
+                            Interpretation
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-white">Earnings Summary</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Close"
+                          onClick={closeSlideExplanation}
+                          className="h-9 w-9 rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="mt-3 space-y-2 text-sm text-white/80">
+                        <p>
+                          This card is a quick snapshot of your revenue. The percentage below each metric shows the change compared to last month.
+                        </p>
+                        <p>
+                          Use <span className="font-semibold text-white">Filter</span> to focus on a date range/category, and <span className="font-semibold text-white">Export</span> to download a report.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="h-full w-full py-5 px-3 flex flex-col gap-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm uppercase tracking-[0.25em] text-white/70">Earnings Summary</div>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { title: 'Total Earnings', value: '?5,750,000', change: '+15%' },
-                      { title: 'Monthly Average', value: '?250,000', change: '+8%' },
-                      { title: 'Active Benfeks', value: '124', change: '+12%' },
-                      { title: 'Total Orders', value: '1,450', change: '+18%' },
+                      { title: 'Total Earnings', value: '₦5,750,000', change: '+15%', icon: DollarSign },
+                      { title: 'Monthly Average', value: '₦250,000', change: '+8%', icon: Calendar },
+                      { title: 'Active Benfeks', value: '124', change: '+12%', icon: Users },
+                      { title: 'Total Orders', value: '1,450', change: '+18%', icon: ShoppingCart },
                     ].map((stat) => (
-                      <div key={stat.title} className="rounded-xl bg-white/10 border border-white/10 p-3">
-                        <p className="text-xs font-semibold text-white/70">{stat.title}</p>
-                        <p className="text-lg font-bold text-white mt-1">{stat.value}</p>
+                      <div key={stat.title} className="rounded-xl bg-white/10 border border-white/10 p-2">
+                        <div className="flex items-center gap-2">
+                          <stat.icon className="h-4 w-4 text-white/70" />
+                          <p className="text-xs font-semibold text-white/70">{stat.title}</p>
+                        </div>
+                        <p className="text-sm font-bold text-white mt-1">{stat.value}</p>
                         <p className="text-xs text-emerald-200 mt-1">{stat.change} from last month</p>
                       </div>
                     ))}
                   </div>
+                  <div className="absolute bottom-5 right-5 flex items-center gap-5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Filter"
+                        className="h-9 w-9 rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        <Filter className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Export"
+                        className="h-9 w-9 rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
                 </div>
               </div>
             </Card>
-            <Card className="min-w-full snap-start overflow-hidden">
+            <Card className="relative min-w-full snap-start overflow-hidden">
               <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white border border-white/10">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Explain earnings by category"
+                  onClick={() => setActiveSlideExplanation('category')}
+                  className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+
+                {activeSlideExplanation === 'category' && (
+                  <div
+                    className="absolute bottom-0 z-30 flex items-end bg-black/50 backdrop-blur-sm"
+                    onClick={closeSlideExplanation}
+                    role="dialog"
+                    aria-modal="true"
+                  >
+                    <div
+                      className="w-full rounded-t-2xl border-t border-white/10 bg-slate-950/95 p-4 sm:p-5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
+                            Interpretation
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-white">Earnings by Category</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Close"
+                          onClick={closeSlideExplanation}
+                          className="h-9 w-9 rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="mt-3 space-y-2 text-sm text-white/80">
+                        <p>
+                          The donut highlights how your earnings are split across categories. The list on the right shows each category’s share.
+                        </p>
+                        <p>
+                          Focus on the largest slice to identify what drives revenue, then track changes over time to confirm growth.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="h-full w-full p-6 flex flex-col justify-between gap-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -381,7 +526,63 @@ const EarningsPage: React.FC = () => {
               </div>
               </Card>
               <Card className="min-w-full snap-start overflow-hidden">
-                <div className="h-44 sm:h-52 w-full rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900 text-white border border-white/10">
+                <div className="relative h-full sm:h-52 w-full rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-950 to-slate-900 text-white border border-white/10">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Explain performance vs peers"
+                    onClick={() => setActiveSlideExplanation('peer')}
+                    className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full border-white/10 bg-white/5 text-white hover:bg-white/10"
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
+
+                  {activeSlideExplanation === 'peer' && (
+                    <div
+                      className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm"
+                      onClick={closeSlideExplanation}
+                      role="dialog"
+                      aria-modal="true"
+                    >
+                      <div
+                        className="w-full rounded-t-2xl border-t border-white/10 bg-slate-950/95 p-4 sm:p-5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
+                              Interpretation
+                            </p>
+                            <p className="mt-1 text-base font-semibold text-white">Performance vs Peers</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Close"
+                            onClick={closeSlideExplanation}
+                            className="h-9 w-9 rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="mt-3 space-y-2 text-sm text-white/80">
+                          <p>
+                            The bar shows your position against other principals: <span className="font-semibold text-white">Bottom → Average → Top</span>.
+                          </p>
+                          <p>
+                            <span className="font-semibold text-white">Current</span> is where you are now. <span className="font-semibold text-white">Potential</span> is your projected position if performance improves.
+                          </p>
+                          <p>
+                            The <span className="font-semibold text-white">Average</span> marker is a baseline for comparison (how you perform versus an average principal).
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="h-full w-full p-6 flex flex-col justify-between gap-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -392,6 +593,8 @@ const EarningsPage: React.FC = () => {
                       <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-white/70">
                         <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                         Current
+                        <span className="ml-3 inline-flex h-2 w-2 rounded-full bg-white/70" />
+                        Average
                         <span className="ml-3 inline-flex h-2 w-2 rounded-full bg-sky-400" />
                         Potential
                       </div>
@@ -410,15 +613,23 @@ const EarningsPage: React.FC = () => {
                         {/* Current marker (68%) */}
                         <div
                           className="absolute top-1/2 -translate-y-1/2"
-                          style={{ left: '68%' }}
+                          style={{ left: `${peerCurrent}%` }}
                         >
                           <div className="h-5 w-1.5 rounded-full bg-emerald-400 shadow" />
+                        </div>
+
+                        {/* Average marker */}
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2"
+                          style={{ left: `${peerAverage}%` }}
+                        >
+                          <div className="h-5 w-1.5 rounded-full bg-white/80 shadow" />
                         </div>
 
                         {/* Potential marker (92%) */}
                         <div
                           className="absolute top-1/2 -translate-y-1/2"
-                          style={{ left: '92%' }}
+                          style={{ left: `${peerPotential}%` }}
                         >
                           <div className="h-5 w-1.5 rounded-full bg-sky-400 shadow" />
                         </div>
@@ -426,16 +637,31 @@ const EarningsPage: React.FC = () => {
 
                       <div className="mt-3 grid grid-cols-2 gap-3">
                         <div className="rounded-lg bg-white/10 border border-white/10 p-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-950/80">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 flex items-center gap-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                             Current
                           </p>
-                          <p className="mt-1 text-lg font-bold text-slate-950">68%</p>
+                          <p className="mt-1 text-lg font-bold text-white">{peerCurrent}%</p>
                         </div>
                         <div className="rounded-lg bg-white/10 border border-white/10 p-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-900/80">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 flex items-center gap-2">
+                            <span className="inline-flex h-2 w-2 rounded-full bg-sky-400" />
                             Potential
                           </p>
-                          <p className="mt-1 text-lg font-bold text-slate-950">92%</p>
+                          <p className="mt-1 text-lg font-bold text-white">{peerPotential}%</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-white/70">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-white/70" />
+                          Average principal: <span className="text-white">{peerAverage}%</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                          You vs avg: <span className="text-white">+{peerCurrent - peerAverage} pts</span>
+                        </div>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                          Potential vs avg: <span className="text-white">+{peerPotential - peerAverage} pts</span>
                         </div>
                       </div>
                     </div>

@@ -20,8 +20,9 @@ const SignInPage = () => {
   // Redirect authenticated users to their dashboard
   React.useEffect(() => {
     if (isAuthenticated && user) {
+      const role = String(user.role ?? '').toLowerCase();
       let redirectPath = '/dashboard';
-      switch (user.role) {
+      switch (role) {
         case 'benfek':
           redirectPath = '/benfek/dashboard';
           break;
@@ -54,7 +55,7 @@ const SignInPage = () => {
         id: response.user.id,
         email: response.user.email,
         name: `${response.user.firstName} ${response.user.lastName}`,
-        role: response.user.role,
+        role: String(response.user.role ?? '').toLowerCase(),
         isAuthenticated: true,
       };
 
@@ -62,8 +63,9 @@ const SignInPage = () => {
       toast.success('Successfully signed in!');
       
       // Role-based routing
+      const role = String(response.user.role ?? '').toLowerCase();
       let redirectPath = '/dashboard'; // default fallback
-      switch (response.user.role) {
+      switch (role) {
         case 'benfek':
           redirectPath = '/benfek/dashboard';
           break;

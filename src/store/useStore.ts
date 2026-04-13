@@ -83,6 +83,11 @@ interface StoreState {
   setCartFromBackend: (items: CartItem[]) => void;
 }
 
+const normalizeUser = (user: User): User => ({
+  ...user,
+  role: String(user.role ?? '').toLowerCase(),
+});
+
 export const useStore = create<StoreState>()(
   persist(
     (set, get) => ({
@@ -99,13 +104,13 @@ export const useStore = create<StoreState>()(
 
       // Actions
       setUser: (user) =>
-        set({ user, isAuthenticated: true }),
+        set({ user: normalizeUser(user), isAuthenticated: true }),
 
       login: (user, accessToken, refreshToken) => {
         console.log('User logged in:', user);
         console.log('Access Token:', accessToken);  
         tokenManager.setTokens(accessToken, refreshToken);
-        set({ user, isAuthenticated: true });
+        set({ user: normalizeUser(user), isAuthenticated: true });
       },
 
       logout: () => {
@@ -124,6 +129,13 @@ export const useStore = create<StoreState>()(
           cartItems: [], 
           cartTotal: 0 
         });
+
+        // Ensure we leave protected areas after logout (works even when logout is called
+        // from non-route-aware places like AuthWrapper).
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
+          // Use replace to avoid leaving a "logged-in" page in history.
+          window.location.replace('/auth/signin');
+        }
       },
       setBenfekProfile: (profile) => set({ benfekProfile: profile }),
 

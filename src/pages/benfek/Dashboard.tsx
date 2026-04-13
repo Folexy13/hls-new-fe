@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Search, Newspaper, Tv, ShoppingCart, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X } from 'lucide-react';
+import { Menu, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NavLink } from 'react-router-dom';
@@ -237,12 +237,12 @@ const Dashboard = () => {
 
         <div className="max-w-6xl mx-auto">
           <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md py-3">
-            <div className="flex flex-col items-center px-4">
+            <div className="flex flex-col items-center px-2">
               <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
               <button
                 type="button"
                 onClick={() => setActiveTab('pharmacy')}
-                className={`flex-1 rounded-l-full rounded-r-none px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
+                className={`flex-1 rounded-l-full rounded-r-none py-2 text-xs font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'pharmacy'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-transparent text-emerald-800'
@@ -263,7 +263,7 @@ const Dashboard = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTab('nutrient')}
-                  className="flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold transition"
+                  className="flex w-full items-center justify-start gap-2 px-1 py-2 text-xs font-semibold transition"
                 >
                   <Layers
                     className={`h-4 w-4 ${
@@ -280,12 +280,18 @@ const Dashboard = () => {
                       setShowNutrientNotice(true);
                       setHasNutrientNotice(false);
                     }}
-                    className="absolute right-0 top-0 h-6 w-6 rounded-full bg-white text-emerald-700 shadow-sm flex items-center justify-center"
+                    className="absolute right-2 top-1 h-2.5 w-2.5 rounded-full bg-red-700 text-red-700 shadow-sm flex items-center justify-center"
                     aria-label="Nutrient pack update"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+                  >
+                    <Dot 
+                     onClick={(event) => {
+                      event.stopPropagation();
+                      setShowNutrientNotice(true);
+                      setHasNutrientNotice(false);
+                    }}
+                    />
+                  </button>
+                )}
               </div>
             </div>
             </div>
@@ -294,6 +300,33 @@ const Dashboard = () => {
           <div >
             {activeTab === 'pharmacy' ? (
               <div className="space-y-4">
+                {selectedPharmacy && (
+                  <div className="w-full px-4">
+                    <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80">
+                        Selected pharmacy
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <span className="truncate">{selectedPharmacy}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <Input
+                        value={selectedPharmacy}
+                        readOnly
+                        onFocus={() => setShowPharmacyModal(true)}
+                        onClick={() => setShowPharmacyModal(true)}
+                        className="h-11"
+                        aria-label="Change pharmacy"
+                      />
+                      <p className="mt-1 text-xs text-slate-500">
+                        Tap to change pharmacy
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="w-full px-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className="relative flex-1 max-w-xl">
@@ -502,7 +535,7 @@ const Dashboard = () => {
       </div>
 
       <Dialog open={showPharmacyModal} onOpenChange={setShowPharmacyModal}>
-        <DialogContent className="w-[calc(100vw-4rem)] max-w-[24rem] gap-0 overflow-hidden rounded-none border border-emerald-100 bg-white p-0 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.45)] [&>button]:hidden sm:w-[24rem]">
+        <DialogContent className="sm:max-w-[24rem] gap-0 overflow-hidden rounded-none border border-emerald-100 bg-white p-0 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.45)] [&>button]:hidden sm:w-[24rem]">
           <div className="h-1.5 w-full bg-green-800" />
 
           <div className="flex max-h-[min(36rem,calc(100vh-4rem))] flex-col">
@@ -516,7 +549,7 @@ const Dashboard = () => {
                     <DialogTitle className="text-xl font-semibold tracking-[-0.02em] text-slate-950">
                       Select your pharmacy
                     </DialogTitle>
-                    <DialogDescription className="max-w-sm text-sm leading-6 text-slate-500">
+                    <DialogDescription className="sm:max-w-sm text-sm leading-6 text-slate-500 w-[70vw]">
                       Start typing to find and select one pharmacy before you continue.
                     </DialogDescription>
                   </DialogHeader>
@@ -531,61 +564,73 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="flex-1 space-y-1.5 overflow-y-auto px-5 pb-1.5 sm:px-6 sm:pb-2">
-              <div className="space-y-2">
-                <label
-                  htmlFor="pharmacy-search"
-                  className="text-sm font-medium text-slate-800"
-                >
-                  Pharmacy name
-                </label>
-                <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-2 transition focus-within:border-emerald-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      id="pharmacy-search"
-                      value={pharmacySearch}
-                      onChange={(e) => setPharmacySearch(e.target.value)}
-                      placeholder="Enter pharmacy name"
-                      className="h-11 border-0 bg-transparent pl-10 pr-10 text-sm text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
-                    />
-                    {pharmacySearch && (
-                      <button
-                        type="button"
-                        onClick={() => setPharmacySearch('')}
-                        className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        aria-label="Clear pharmacy search"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      )}
-                  </div>
+            {selectedPharmacy && (
+              <div className="rounded-[18px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80">
+                  Selected pharmacy
+                </p>
+                <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <span>{selectedPharmacy}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPharmacy(null);
+                    setPharmacySearch('');
+                  }}
+                  className="mt-2 text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
+                >
+                  Change pharmacy
+                </button>
               </div>
+            )}
 
-              {selectedPharmacy && (
-                <div className="rounded-[18px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80">
-                    Selected pharmacy
-                  </p>
-                  <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-emerald-950">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <span>{selectedPharmacy}</span>
+            <div className="flex-1 space-y-1.5 overflow-y-auto px-5 pb-1.5 sm:px-6 sm:pb-2">
+              {!selectedPharmacy && (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="pharmacy-search"
+                    className="text-sm font-medium text-slate-800"
+                  >
+                    Pharmacy name
+                  </label>
+                  <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-2 transition focus-within:border-emerald-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="pharmacy-search"
+                        value={pharmacySearch}
+                        onChange={(e) => setPharmacySearch(e.target.value)}
+                        placeholder="Enter pharmacy name"
+                        className="h-11 border-0 bg-transparent pl-10 pr-10 text-sm text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
+                      />
+                      {pharmacySearch && (
+                        <button
+                          type="button"
+                          onClick={() => setPharmacySearch('')}
+                          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                          aria-label="Clear pharmacy search"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-semibold text-slate-900"></p>
-                  <p className="text-xs text-slate-500">
-                    {pharmacySearch.trim()
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm font-semibold text-slate-900"></p>
+                    <p className="text-xs text-slate-500">
+                    {!selectedPharmacy && pharmacySearch.trim()
                       ? `${filteredPharmacyDirectory.length} result${filteredPharmacyDirectory.length === 1 ? '' : 's'}`
                       : ''}
-                  </p>
-                </div>
+                    </p>
+                  </div>
 
-                {pharmacySearch.trim() ? (
+                {pharmacySearch.trim() && !selectedPharmacy ? (
                   <div className="space-y-2">
                     {filteredPharmacyDirectory.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-7 text-left">
@@ -602,7 +647,8 @@ const Dashboard = () => {
                             key={name}
                             type="button"
                             onClick={() => {
-                              setSelectedPharmacy((prev) => (prev === name ? null : name));
+                              setSelectedPharmacy(name);
+                              setPharmacySearch('');
                             }}
                             className={`group flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
                               selected
@@ -676,8 +722,8 @@ const Dashboard = () => {
                 `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
               }
             >
-              <ShoppingCart className="h-5 w-5" color='white' />
-              Store
+              <LayoutDashboard className="h-5 w-5" color="white" />
+              Dashboard
             </NavLink>
             <NavLink
               to="/blog/1"
@@ -685,8 +731,8 @@ const Dashboard = () => {
                 `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
               }
             >
-              <Newspaper className="h-5 w-5" color='white' />
-              Read Articles
+              <BookOpen className="h-5 w-5" color="white" />
+              Articles
             </NavLink>
             <NavLink
               to="/podcast"
@@ -694,7 +740,7 @@ const Dashboard = () => {
                 `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
               }
             >
-              <Tv className="h-5 w-5" color='white' />
+              <Headphones className="h-5 w-5" color="white" />
               Podcast
             </NavLink>
           </div>

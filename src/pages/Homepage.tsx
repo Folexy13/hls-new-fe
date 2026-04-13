@@ -48,6 +48,7 @@ const Homepage: React.FC = () => {
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], minBudget: '', maxBudget: '' });
   const [validatedCode, setValidatedCode] = useState('');
+  const [expandedTestimonials, setExpandedTestimonials] = useState<Record<number, boolean>>({});
   const navigate = useNavigate();
   const handleQuizStart = () => {
     setShowReferralDialog(true);
@@ -227,6 +228,10 @@ const Homepage: React.FC = () => {
     },
   ];
 
+  const toggleTestimonial = (index: number) => {
+    setExpandedTestimonials((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
   const products = [
     {
       id: '1',
@@ -331,13 +336,13 @@ const Homepage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-[#e0f2fe] pb-20 min-h-[70svh] sm:pb-28 lg:pb-44 xl:pb-52 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative bg-[#e0f2fe] pb-20 min-h-[70svh] sm:pb-28 lg:pb-44 xl:pb-52 sm:px-6 lg:px-8 overflow-hidden">
         {/* Content Container */}
-        <div className="max-w-7xl mx-auto relative z-20 text-center">
+        <div className="relative z-20 text-center">
           {/* Text Content */}
           <div className="pt-6 sm:pt-12 lg:pt-16 pb-4 sm:pb-6">
-            <div className="inline-flex items-center justify-center rounded-full px-5 py-2 mb-4">
-              <p className="text-sm sm:text-base lg:text-lg text-blue-900 font-normal tracking-[0.08em]">
+            <div className="inline-flex items-center justify-center rounded-full py-2 mb-4">
+              <p className="text-sm sm:text-base font-medium lg:text-lg text-blue-900 tracking-[0.08em] w-[100vw]">
                 Food Extracts • Nutrients • Supplements
               </p>
             </div>
@@ -404,7 +409,7 @@ const Homepage: React.FC = () => {
                 key={index}
                 className="group h-full rounded-3xl border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/40 p-5 text-center transition-all hover:-translate-y-1 hover:border-emerald-200"
               >
-                <div className="mx-auto mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#005073] ring-1 ring-emerald-100 transition ">
+                <div className="mx-auto mb-1 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#005073] ">
                   <item.icon className="h-7 w-7" />
                 </div>
                 <p className="text-sm sm:text-base font-semibold text-gray-900 leading-snug">
@@ -483,15 +488,19 @@ const Homepage: React.FC = () => {
             </p>
           </div>
 
-          <div className="relative px-8 sm:px-10">
+          <div className="relative px-4 sm:px-7">
             <Carousel className="w-full overflow-hidden">
               <CarouselContent className="ml-0">
                 {testimonials.map((testimonial, index) => (
                   <CarouselItem
                     key={index}
-                    className="pl-0 basis-[80%] sm:basis-1/2 lg:basis-1/3 p-2"
+                    className="pl-0 basis-[100%] sm:basis-1/2 lg:basis-1/3 p-2"
                   >
-                    <article className="h-full rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-shadow hover:shadow-[0_24px_48px_-28px_rgba(15,23,42,0.45)]">
+                    <article
+                      className={`min-h-[200px] rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.35)] transition-shadow hover:shadow-[0_24px_48px_-28px_rgba(15,23,42,0.45)] flex flex-col ${
+                        expandedTestimonials[index] ? '' : 'h-[230px]'
+                      }`}
+                    >
                       <div className="mb-4 flex items-start justify-between gap-3">
                         <div className="flex items-center">
                           <img
@@ -520,9 +529,47 @@ const Homepage: React.FC = () => {
                         ))}
                       </div>
 
-                      <p className="text-sm leading-7 text-slate-600 sm:text-base">
-                        {testimonial.content}
-                      </p>
+                      {(() => {
+                        const isExpanded = !!expandedTestimonials[index];
+                        const showToggle = (testimonial.content?.length ?? 0) > 140;
+
+                        return (
+                          <div className="mt-1 flex-1 flex flex-col">
+                            <div className="relative">
+                              <p
+                                className="text-[13px] leading-6 text-slate-600 sm:text-sm sm:leading-7"
+                                style={
+                                  isExpanded
+                                    ? undefined
+                                    : ({
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 4,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden',
+                                      } as React.CSSProperties)
+                                }
+                              >
+                                {testimonial.content}
+                              </p>
+
+                              {!isExpanded && showToggle && (
+                                <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-white to-transparent" />
+                              )}
+                            </div>
+
+                            {showToggle && (
+                              <button
+                                type="button"
+                                onClick={() => toggleTestimonial(index)}
+                                className="mt-2 inline-flex w-fit items-center text-xs font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-4 hover:text-emerald-800"
+                                aria-expanded={isExpanded}
+                              >
+                                {isExpanded ? 'Show less' : 'Read more'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </article>
                   </CarouselItem>
                 ))}
@@ -623,7 +670,7 @@ const Homepage: React.FC = () => {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-6 sm:py-8 lg:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="sm:max-w-7xl sm:mx-auto px-2 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             <div className="col-span-2 md:col-span-1">
               <h3 className="text-base sm:text-xl lg:text-2xl font-bold mb-2 sm:mb-3">HLS</h3>
@@ -631,29 +678,31 @@ const Homepage: React.FC = () => {
                 Your trusted partner in personalized health and wellness.
               </p>
             </div>
-            <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Quick Links</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><Link to="/about" className="text-gray-400 hover:text-white text-xs sm:text-sm">About Us</Link></li>
-                <li><button onClick={handleQuizStart} className="text-gray-400 hover:text-white text-xs sm:text-sm">Take Quiz</button></li>
-                <li><Link to="/support" className="text-gray-400 hover:text-white text-xs sm:text-sm">Support</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Support</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Help Center</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Contact Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Privacy Policy</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Connect</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Newsletter</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Social Media</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Community</a></li>
-              </ul>
+            <div className="flex justify-between w-[calc(100vw-12px)]">
+              <div>
+                <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Quick Links</h4>
+                <ul className="space-y-1 sm:space-y-2">
+                  <li><Link to="/about" className="text-gray-400 hover:text-white text-xs sm:text-sm">About Us</Link></li>
+                  <li><button onClick={handleQuizStart} className="text-gray-400 hover:text-white text-xs sm:text-sm">Take Quiz</button></li>
+                  <li><Link to="/support" className="text-gray-400 hover:text-white text-xs sm:text-sm">Support</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Support</h4>
+                <ul className="space-y-1 sm:space-y-2">
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Help Center</a></li>
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Contact Us</a></li>
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Privacy Policy</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base lg:text-lg font-semibold mb-2 sm:mb-3">Connect</h4>
+                <ul className="space-y-1 sm:space-y-2">
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Newsletter</a></li>
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Social Media</a></li>
+                  <li><a href="#" className="text-gray-400 hover:text-white text-xs sm:text-sm">Community</a></li>
+                </ul>
+              </div>
             </div>
           </div>
           <div className="border-t border-gray-800 mt-4 sm:mt-6 pt-4 sm:pt-6 text-center">
