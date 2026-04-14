@@ -61,9 +61,10 @@ const ArticlesPage: React.FC = () => {
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [openArticleId, setOpenArticleId] = useState()
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Under Review' | 'Archived'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockArticles.length / itemsPerPage);
 
   // Simulate loading data
   useEffect(() => {
@@ -87,11 +88,18 @@ const ArticlesPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = articles.filter(article => 
-    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.author.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = articles.filter((article) => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.author.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' ? true : article.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Article] < b[sortField as keyof Article]) return sortDirection === 'asc' ? -1 : 1;
@@ -155,7 +163,7 @@ const ArticlesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
       {/* Fixed Header (Back + Title) */}
-      <div className="fixed left-0 right-0 top-[64px] z-50 bg-gray-50">
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
           <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           <div className="flex items-center justify-between gap-3">
@@ -184,15 +192,47 @@ const ArticlesPage: React.FC = () => {
               />
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Filter"
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'Published', value: 'Published' as const },
+                      { label: 'Draft', value: 'Draft' as const },
+                      { label: 'Under Review', value: 'Under Review' as const },
+                      { label: 'Archived', value: 'Archived' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setCurrentPage(1);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"

@@ -11,6 +11,8 @@ export const apiClient = axios.create({
   },
 });
 
+let refreshPromise: Promise<{ accessToken: string; refreshToken: string }> | null = null;
+
 // Request interceptor to add bearer token
 apiClient.interceptors.request.use(
   (config) => {
@@ -36,17 +38,26 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       const refreshToken = tokenManager.getRefreshToken();
-      console.log('Attempting to refresh token with:', refreshToken);
       if (refreshToken) {
         try {
-          const response = await axios.post(`${API_BASE_URL}/api/v2/auth/refresh`, {
-            refreshToken
-          });
-          console.log('Token refreshed successfully:', response.data);
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
-          tokenManager.setTokens(accessToken, newRefreshToken);
+          // Avoid multiple concurrent refreshes causing token invalidation.
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post(`${API_BASE_URL}/api/v2/auth/refresh`, { refreshToken })
+              .then((response) => {
+                const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+                tokenManager.setTokens(accessToken, newRefreshToken);
+                return { accessToken, refreshToken: newRefreshToken };
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+
+          const { accessToken } = await refreshPromise;
 
           // Retry original request with new token
+          originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
         } catch (refreshError) {

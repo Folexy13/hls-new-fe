@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,22 +74,23 @@ const AddBenfekPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [showSentModal, setShowSentModal] = useState(false);
   const [manualStep, setManualStep] = useState(0);
+  const navigate = useNavigate();
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: 'Test',
-      lastName: 'Benfek',
-      email: 'test.benfek@example.com',
-      phone: '+234 801 234 5678',
-      age: '32',
-      gender: 'female',
-      allergies: 'Peanuts',
-      scares: 'Hypertensive episode (2021)',
-      familyCondition: 'Diabetes',
-      medications: 'Vitamin D, Omega-3',
-      hasCurrentCondition: 'Yes - mild asthma',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      age: '',
+      gender: '',
+      allergies: '',
+      scares: '',
+      familyCondition: '',
+      medications: '',
+      hasCurrentCondition: '',
       // specialty: '',
       // licenseNumber: '',
       // address: '',
@@ -106,18 +108,53 @@ const AddBenfekPage: React.FC = () => {
     setIsSubmitting(true);
     setFormError(null);
     try {
+      const benfekName = `${values.firstName} ${values.lastName}`.trim();
+      const conditionDetails = (values.hasCurrentCondition ?? '').trim();
+      const scares = (values.scares ?? '').trim();
+
+      const payload = {
+        // API expects these names
+        benfekName,
+        benfekPhone: values.phone,
+        benfekAge: values.age,
+        benfekGender: values.gender,
+        allergies: values.allergies || undefined,
+        familyCondition: values.familyCondition || undefined,
+        medications: values.medications || undefined,
+        // API only stores boolean for this field; preserve the details inside scares for now.
+        hasCurrentCondition: conditionDetails.length > 0,
+        scares:
+          conditionDetails.length > 0
+            ? [scares, `Current condition: ${conditionDetails}`].filter(Boolean).join(' | ')
+            : (scares || undefined),
+      };
+      try {
+        await apiClient.post('/api/v2/quiz-code/create', payload);
+      } catch (err: any) {
+        // Some backends expose a different route name. Try a sensible fallback.
+        if (err?.response?.status === 404) {
+          await apiClient.post('/api/v2/quiz-code/generate', payload);
+        } else {
+          throw err;
+        }
+      }
+
       setIsSuccess(true);
       setShowSentModal(true);
+      sessionStorage.setItem('benfeksNeedsRefresh', '1');
 
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setIsSuccess(false);
-        form.reset();
-      }, 3000);
-    } catch (error) {
+      // Clear form immediately after a successful add
+      form.reset();
+      setManualStep(0);
+      setUploadedFile(null);
+    } catch (error: any) {
       console.error('Failed to create benfek:', error);
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        'Failed to add benfek.';
       setFormError('Failed to add benfek.');
-      toast.error('Failed to add benfek.');
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -222,9 +259,9 @@ const AddBenfekPage: React.FC = () => {
       </div> */}
 
       {/* Fixed header background so scrolling content never shows between the back button and the tabs. */}
-      <div className="fixed left-0 right-0 top-[65px] z-40 h-[92px] bg-gray-50" />
+      <div className="fixed left-0 right-0 top-[65px] z-30 h-[92px] bg-gray-50" />
 
-      <div className="fixed left-0 right-0 top-[65px] z-50 bg-transparent px-3 pt-2">
+      <div className="fixed left-0 right-0 top-[65px] z-30 bg-transparent px-3 pt-2">
         <BackToDashboardButton
           isDirty={isDirty}
           className="text-black/90 hover:text-black/80"
@@ -251,7 +288,7 @@ const AddBenfekPage: React.FC = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.location.href = '/principal/benfeks'}
+                  onClick={() => navigate('/principal/benfeks', { state: { refresh: true } })}
                 >
                   View All Benfeks
                 </Button>
@@ -267,7 +304,7 @@ const AddBenfekPage: React.FC = () => {
                 onValueChange={setActiveTab}
                 className="max-w-3xl mx-auto"
               >
-                <TabsList className="grid grid-cols-2 w-[92vw] bg-white shadow-sm border border-slate-200 fixed top-28 left-1/2 -translate-x-1/2 z-50">
+                <TabsList className="grid grid-cols-2 w-[92vw] bg-white shadow-sm border border-slate-200 fixed top-28 left-1/2 -translate-x-1/2 z-30">
                   <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                   <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
                 </TabsList>

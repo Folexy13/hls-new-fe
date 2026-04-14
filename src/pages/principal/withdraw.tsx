@@ -290,10 +290,10 @@ const WithdrawPage: React.FC = () => {
           <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full max-w-2xl mx-auto">
             <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
             {/* <TabsTrigger value="history">Withdrawal History</TabsTrigger> */}
-            <TabsTrigger value="unresolved" className="inline-flex items-center">
+            <TabsTrigger value="unresolved" className="inline-flex items-center relative">
               Unresolved Credits
               {unresolvedCredits.length > 0 && (
-                <span className="ml-2 h-2.5 w-2.5 rounded-full bg-red-500" />
+                <span className="h-2 w-2 rounded-full bg-red-500 absolute top-0 right-1" />
               )}
             </TabsTrigger>
             {/* <TabsTrigger value="support">Support</TabsTrigger> */}

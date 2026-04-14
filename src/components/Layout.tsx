@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Bell, Settings } from 'lucide-react';
+import { Home, ShoppingCart, BookOpen, Headphones, Menu, X, LogOut, Bell, Settings, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
 import { useRBAC } from '../context/useRBAC';
@@ -21,6 +21,29 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Only show common navigation items to unauthenticated users or if they match current role permission
   const navigation = isAuthenticated ? [] : commonNavigation.filter(item => item.href === '/');
   const privateNavigation = isAuthenticated ? getNavigationByRole(userRole) : [];
+  const mobilePrivateNavigation = useMemo(() => {
+    if (!isAuthenticated) return [];
+
+    // Benfek hamburger menu should stay lightweight (footer handles primary navigation).
+    if (userRole === UserRole.BENFEK) {
+      const excluded = new Set([
+        '/benfek', // benfek homepage
+        '/quiz',
+        '/form',
+        '/podcast',
+        '/marketplace',
+        '/cart',
+        '/',
+        '/about',
+      ]);
+      return privateNavigation.filter((item) => !excluded.has(item.href));
+    }
+
+    return privateNavigation;
+  }, [isAuthenticated, privateNavigation, userRole]);
+
+  const showAboutInMobileMenu =
+    userRole !== UserRole.BENFEK && !mobilePrivateNavigation.some((item) => item.href === '/about');
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifications = 3;
@@ -61,6 +84,12 @@ const onPointerDown = (event: PointerEvent) => {
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [mobileMenuOpen]);
+
+  // Scroll restoration: ensure new pages start at the top on navigation.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Mobile Header */}
@@ -108,18 +137,35 @@ const onPointerDown = (event: PointerEvent) => {
           >
             <nav className="px-4 py-3 space-y-1">
               {/* Always show Home link */}
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                  location.pathname === '/'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <Home className="h-5 w-5 mr-3" />
-                Home
-              </Link>
+              {!(isAuthenticated && userRole === UserRole.BENFEK) && (
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Home className="h-5 w-5 mr-3" />
+                  Home
+                </Link>
+              )}
+
+              {showAboutInMobileMenu && (
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/about'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <BookOpen className="h-5 w-5 mr-3" />
+                  About Us
+                </Link>
+              )}
               
               {/* Show other public navigation only for unauthenticated users */}
               {!isAuthenticated && navigation.slice(1).map((item) => (
@@ -140,8 +186,8 @@ const onPointerDown = (event: PointerEvent) => {
               
               {isAuthenticated && (
                 <>
-                  <hr className="my-2" />
-                  {privateNavigation.map((item) => (
+                  {userRole !== UserRole.BENFEK && <hr className="my-2" />}
+                  {mobilePrivateNavigation.map((item) => (
                     <Link
                       key={item.name}
                       to={item.href}
@@ -180,6 +226,7 @@ const onPointerDown = (event: PointerEvent) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50"
                   >
+                    <LogIn className="h-5 w-5 mr-3" />
                     Login
                   </Link>
                   <Link
@@ -187,6 +234,7 @@ const onPointerDown = (event: PointerEvent) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-emerald-700 hover:bg-emerald-50"
                   >
+                    <UserPlus className="h-5 w-5 mr-3" />
                     Join Us
                   </Link>
                 </>
@@ -311,8 +359,46 @@ const onPointerDown = (event: PointerEvent) => {
         </footer>
       )}
 
+      {/* Benfek Bottom Navigation */}
+      {isAuthenticated && userRole === UserRole.BENFEK && (
+        <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+          <div className="max-w-6xl mx-auto px-4 py-3">
+            <div className="grid grid-cols-3 text-center">
+              <NavLink
+                to="/benfek/dashboard"
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
+                }
+              >
+                <LayoutDashboard className="h-5 w-5 text-white" />
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/blog/1"
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
+                }
+              >
+                <BookOpen className="h-5 w-5 text-white" />
+                Articles
+              </NavLink>
+              <NavLink
+                to="/podcast"
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
+                }
+              >
+                <Headphones className="h-5 w-5 text-white" />
+                Podcast
+              </NavLink>
+            </div>
+          </div>
+        </nav>
+      )}
+
       {/* Bottom Navigation for Mobile (Private Routes) */}
       {isAuthenticated &&
+        userRole !== UserRole.BENFEK &&
         (userRole === UserRole.PRINCIPAL
           ? privateNavigation.filter((item) => item.name !== 'Dashboard')
           : privateNavigation

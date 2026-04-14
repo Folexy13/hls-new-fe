@@ -4,6 +4,7 @@ import { Menu, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, Arro
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NavLink } from 'react-router-dom';
+import { apiClient } from '@/config/axios';
 
 const Dashboard = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -17,13 +18,14 @@ const Dashboard = () => {
   const [showNutrientNotice, setShowNutrientNotice] = useState(false);
   const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
   const [nutrientReady, setNutrientReady] = useState(false);
+  const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
 
   const bannerImages = useMemo(() => ([
     'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1532009877282-3340270e0529?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1514996937319-344454492b37?q=80&w=1600&auto=format&fit=crop',
   ]), []);
-  const pharmacyItems = useMemo(
+  const fallbackPharmacyItems = useMemo(
     () => [
       {
         id: 'supp-1',
@@ -112,6 +114,44 @@ const Dashboard = () => {
     ],
     []
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchSupplements = async () => {
+      try {
+        const response = await apiClient.get('/api/v2/supplements');
+        const data = response.data?.data?.supplements || [];
+        const mapped = (data as Array<Record<string, unknown>>)
+          .map((item) => {
+            const stock = (item.stock as number) ?? 0;
+            return {
+              id: String(item.id ?? ''),
+              title: String(item.name ?? ''),
+              price: `₦${Number(item.price ?? 0).toLocaleString()}`,
+              image: (item.imageUrl as string) || (item.image as string) || '/placeholder.svg',
+              stock,
+            };
+          })
+          // Do not show out-of-stock items in benfek dashboard.
+          .filter((item) => item.id && item.title && item.stock > 0)
+          .map(({ stock, ...rest }) => rest);
+
+        if (mounted) setApiPharmacyItems(mapped);
+      } catch {
+        // Keep fallback list if API fails.
+      }
+    };
+
+    fetchSupplements();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const pharmacyItems = useMemo(() => {
+    return apiPharmacyItems.length > 0 ? apiPharmacyItems : fallbackPharmacyItems;
+  }, [apiPharmacyItems, fallbackPharmacyItems]);
   const filteredPharmacyItems = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
     if (!query) return pharmacyItems;
@@ -236,7 +276,7 @@ const Dashboard = () => {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md py-3">
+          <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md py-3">
             <div className="flex flex-col items-center px-2">
               <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
               <button
@@ -253,7 +293,9 @@ const Dashboard = () => {
                     activeTab === 'pharmacy' ? 'text-white' : 'text-emerald-800'
                   }`}
                 />
-                My Pharmacy
+                <span className="min-w-0 max-w-[10rem] truncate">
+                  {selectedPharmacy ?? 'My Pharmacy'}
+                </span>
               </button>
               <div
                 className={`relative flex-1 rounded-r-full rounded-l-none ${
@@ -300,33 +342,6 @@ const Dashboard = () => {
           <div >
             {activeTab === 'pharmacy' ? (
               <div className="space-y-4">
-                {selectedPharmacy && (
-                  <div className="w-full px-4">
-                    <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80">
-                        Selected pharmacy
-                      </p>
-                      <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-emerald-950">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        <span className="truncate">{selectedPharmacy}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <Input
-                        value={selectedPharmacy}
-                        readOnly
-                        onFocus={() => setShowPharmacyModal(true)}
-                        onClick={() => setShowPharmacyModal(true)}
-                        className="h-11"
-                        aria-label="Change pharmacy"
-                      />
-                      <p className="mt-1 text-xs text-slate-500">
-                        Tap to change pharmacy
-                      </p>
-                    </div>
-                  </div>
-                )}
                 <div className="w-full px-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className="relative flex-1 max-w-xl">
@@ -346,6 +361,15 @@ const Dashboard = () => {
                       <Menu className="h-7 w-7" />
                     </button>
                   </div>
+                  {selectedPharmacy && (
+                    <button
+                      type="button"
+                      onClick={() => setShowPharmacyModal(true)}
+                      className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
+                    >
+                      Change pharmacy
+                    </button>
+                  )}
                 </div>
                 {!selectedPharmacy ? (
                   <button
@@ -565,24 +589,23 @@ const Dashboard = () => {
             </div>
 
             {selectedPharmacy && (
-              <div className="rounded-[18px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700/80">
-                  Selected pharmacy
-                </p>
-                <div className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-emerald-950">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  <span>{selectedPharmacy}</span>
+              <div className="px-5 sm:px-6">
+                <div className="rounded-[18px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="truncate">{selectedPharmacy}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPharmacy(null);
+                      setPharmacySearch('');
+                    }}
+                    className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
+                  >
+                    Change pharmacy
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPharmacy(null);
-                    setPharmacySearch('');
-                  }}
-                  className="mt-2 text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
-                >
-                  Change pharmacy
-                </button>
               </div>
             )}
 
@@ -624,9 +647,9 @@ const Dashboard = () => {
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-sm font-semibold text-slate-900"></p>
                     <p className="text-xs text-slate-500">
-                    {!selectedPharmacy && pharmacySearch.trim()
-                      ? `${filteredPharmacyDirectory.length} result${filteredPharmacyDirectory.length === 1 ? '' : 's'}`
-                      : ''}
+                      {!selectedPharmacy && pharmacySearch.trim()
+                        ? `${filteredPharmacyDirectory.length} result${filteredPharmacyDirectory.length === 1 ? '' : 's'}`
+                        : ''}
                     </p>
                   </div>
 
@@ -713,39 +736,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="grid grid-cols-3 text-center">
-            <NavLink
-              to="/benfek/dashboard"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <LayoutDashboard className="h-5 w-5" color="white" />
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/blog/1"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <BookOpen className="h-5 w-5" color="white" />
-              Articles
-            </NavLink>
-            <NavLink
-              to="/podcast"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <Headphones className="h-5 w-5" color="white" />
-              Podcast
-            </NavLink>
-          </div>
-        </div>
-      </nav>
+      {/* Bottom nav is rendered in `src/components/Layout.tsx` for Benfeks */}
     </div>
   );
 };

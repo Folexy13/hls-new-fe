@@ -69,6 +69,44 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     initializeAuth();
   }, [setUser, logout, isAuthenticated, user, setCartFromBackend]);
 
+  // Proactively refresh access tokens so idle users don't get logged out when they return.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const tick = async () => {
+      const refreshToken = tokenManager.getRefreshToken();
+      if (!refreshToken) return;
+      if (tokenManager.isTokenExpired()) {
+        logout();
+        return;
+      }
+
+      const accessExp = tokenManager.getAccessTokenExpiresAt();
+      if (!accessExp) return;
+
+      // Refresh when the access token is within 60 seconds of expiring.
+      const msLeft = accessExp.getTime() - Date.now();
+      if (msLeft > 60_000) return;
+
+      try {
+        const response = await authService.refreshToken(refreshToken);
+        tokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+      } catch (error) {
+        console.error('Proactive token refresh failed:', error);
+        tokenManager.clearTokens();
+        logout();
+      }
+    };
+
+    // Run once quickly, then periodically.
+    const immediate = window.setTimeout(() => tick(), 500);
+    const interval = window.setInterval(() => tick(), 30_000);
+    return () => {
+      window.clearTimeout(immediate);
+      window.clearInterval(interval);
+    };
+  }, [isAuthenticated, logout]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
