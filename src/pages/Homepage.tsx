@@ -336,58 +336,51 @@ const Homepage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-[#e0f2fe] pb-20 min-h-[70svh] sm:pb-28 lg:pb-44 xl:pb-52 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Content Container */}
-        <div className="relative z-20 text-center">
-          {/* Text Content */}
-          <div className="pt-6 sm:pt-12 lg:pt-16 pb-4 sm:pb-6">
-            <div className="inline-flex items-center justify-center rounded-full py-2 mb-4">
-              <p className="text-sm sm:text-base font-medium lg:text-lg text-blue-900 tracking-[0.08em] w-[100vw]">
-                Food Extracts • Nutrients • Supplements
-              </p>
-            </div>
+      <section className="relative bg-[#e0f2fe] pt-4 pb-0 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-20 text-center">
+          <div className="pt-8 sm:pt-16 lg:pt-20 pb-4 sm:pb-8">
+            <p className="text-xs sm:text-sm lg:text-lg text-blue-900 font-semibold mb-2 sm:mb-4">
+              Food Extracts &bull; Nutrients &bull; Supplements
+            </p>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-blue-900 leading-[1.08] tracking-[-0.03em] mb-5 sm:mb-7">
-              Personalized Just
-              <br />
-              For YOU.
+            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold text-blue-900 mb-6 sm:mb-8">
+              Personalized Just For YOU.
             </h1>
 
-            <div className="flex justify-center mb-[5px] sm:mb-8">
+            <div className="flex justify-center mb-8 sm:mb-12">
               <button
                 onClick={handleQuizStart}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 sm:px-6 sm:py-2.5 rounded-none text-sm sm:text-base font-semibold transition-colors shadow-sm"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-semibold transition-colors"
               >
                 Take Quiz
               </button>
             </div>
           </div>
 
-          {/* Doctor Image - positioned above curve */}
-          <div className="absolute left-1/2 -translate-x-1/2 z-30 flex justify-center">
+          <div className="relative z-30 flex justify-center">
             <img
               src={doctor}
               alt="Health and wellness background"
-              className="w-40 sm:w-52 lg:w-64 h-auto object-contain"
+              className="w-32 sm:w-48 lg:w-64 h-auto object-contain"
             />
           </div>
         </div>
 
-        {/* Curved bottom background */}
-        <div className="absolute inset-x-0 bottom-2 -left-[15vw] h-20 sm:h-28 lg:h-44 xl:h-52 z-10">
-          <div className="h-[100vw] w-[130vw] rounded-t-full rounded-b-lg bg-[#00657e]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-16 sm:h-24 lg:h-32 z-10">
+          <svg viewBox="0 0 900 200" preserveAspectRatio="none" className="w-full h-full">
+            <path d="M0,200 A606.25,606.25 0 0 1 900,200 L900,200 L0,200 Z" fill="#00657e" />
+          </svg>
         </div>
 
-        {/* Pills Images */}
-        <img
-          src={rightPill}
-          alt="Green pill"
-          className="absolute bottom-7 left-7 sm:left-6 lg:left-10 w-14 sm:w-14 lg:w-20 h-auto z-20"
-        />
         <img
           src={leftPill}
           alt="Green pill"
-          className="absolute bottom-7 right-7 sm:right-6 lg:right-10 w-14 sm:w-14 lg:w-20 h-auto z-20"
+          className="absolute bottom-4 right-10 sm:right-8 lg:right-16 w-12 sm:w-14 lg:w-20 h-auto z-20"
+        />
+        <img
+          src={rightPill}
+          alt="Green pill"
+          className="absolute bottom-4 left-10 sm:left-8 lg:left-16 w-12 sm:w-14 lg:w-20 h-auto z-20"
         />
       </section>
 

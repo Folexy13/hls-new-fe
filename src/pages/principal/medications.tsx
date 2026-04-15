@@ -34,7 +34,9 @@ type Medication = {
   price: string;
   stock: number;
   manufacturer: string;
+  strength?: string;
   status: string;
+  expiryDate?: string;
   dateAdded: string;
   image: string;
   description?: string;
@@ -106,7 +108,9 @@ const MedicationsPage: React.FC = () => {
     price: '',
     stock: 0,
     manufacturer: '',
+    strength: '',
     status: 'In Stock',
+    expiryDate: '',
     description: '',
     image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med'
   });
@@ -114,6 +118,8 @@ const MedicationsPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'In Stock' | 'Low Stock' | 'Out of Stock'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -131,10 +137,12 @@ const MedicationsPage: React.FC = () => {
           category: (item.category as string) || 'Supplement',
           price: `₦${(item.price as number)?.toLocaleString() || '0'}`,
           stock: (item.stock as number) || 0,
-          manufacturer: (item.manufacturer as string) || 'Unknown',
+          manufacturer: (item.manufacturer as string) || (item.brand as string) || 'Unknown',
+          strength: (item.strength as string) || '',
           status: (item.stock as number) > 10 ? 'In Stock' : (item.stock as number) > 0 ? 'Low Stock' : 'Out of Stock',
           dateAdded: item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A',
-          image: (item.image as string) || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
+          expiryDate: (item.expiryDate as string) || '',
+          image: (item.imageUrl as string) || (item.image as string) || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
           description: item.description as string,
         }));
         setMedications(mappedMedications);
@@ -160,11 +168,17 @@ const MedicationsPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = medications.filter(medication =>
-    medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medication.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = medications.filter((medication) => {
+    const matchesSearch =
+      medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medication.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === 'all' ? true : medication.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
@@ -330,6 +344,9 @@ const MedicationsPage: React.FC = () => {
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
           category: newMedication.category,
+          manufacturer: newMedication.manufacturer || '',
+          strength: newMedication.strength || '',
+          expiryDate: newMedication.expiryDate || '',
         });
 
         if (response.data?.data?.supplement) {
@@ -344,6 +361,7 @@ const MedicationsPage: React.FC = () => {
                     price: `₦${updated.price?.toLocaleString() || '0'}`,
                     stock: updated.stock,
                     manufacturer: newMedication.manufacturer || medication.manufacturer,
+                    strength: newMedication.strength || medication.strength,
                     status: updated.stock > 10 ? 'In Stock' : updated.stock > 0 ? 'Low Stock' : 'Out of Stock',
                     description: updated.description,
                     image: updated.imageUrl || medication.image,
@@ -362,22 +380,27 @@ const MedicationsPage: React.FC = () => {
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
           category: newMedication.category || 'Supplement',
+          manufacturer: newMedication.manufacturer || '',
+          strength: newMedication.strength || '',
+          expiryDate: newMedication.expiryDate || '',
         });
 
         if (response.data?.data?.supplement) {
           const created = response.data.data.supplement;
-          const medicationToAdd: Medication = {
-            id: created.id,
-            name: created.name,
-            category: created.category || 'Supplement',
-            price: `₦${created.price?.toLocaleString() || '0'}`,
-            stock: created.stock || 0,
-            manufacturer: newMedication.manufacturer || 'Unknown',
-            status: created.stock > 10 ? 'In Stock' : created.stock > 0 ? 'Low Stock' : 'Out of Stock',
-            dateAdded: new Date(created.createdAt).toLocaleDateString(),
-            image: created.imageUrl || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
-            description: created.description,
-          };
+           const medicationToAdd: Medication = {
+             id: created.id,
+             name: created.name,
+             category: created.category || 'Supplement',
+             price: `₦${created.price?.toLocaleString() || '0'}`,
+             stock: created.stock || 0,
+             manufacturer: created.manufacturer || newMedication.manufacturer || 'Unknown',
+             strength: (created.strength as string) || newMedication.strength || '',
+             status: created.stock > 10 ? 'In Stock' : created.stock > 0 ? 'Low Stock' : 'Out of Stock',
+             dateAdded: new Date(created.createdAt).toLocaleDateString(),
+             expiryDate: created.expiryDate || newMedication.expiryDate || '',
+             image: created.imageUrl || created.image || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
+             description: created.description,
+           };
           setMedications(prev => [medicationToAdd, ...prev]);
           toast.success('Medication created successfully');
         }
@@ -394,7 +417,9 @@ const MedicationsPage: React.FC = () => {
         price: '',
         stock: 0,
         manufacturer: '',
+        strength: '',
         status: 'In Stock',
+        expiryDate: '',
         description: '',
         image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
       });
@@ -424,7 +449,9 @@ const MedicationsPage: React.FC = () => {
       price: medication.price,
       stock: medication.stock,
       manufacturer: medication.manufacturer,
+      strength: medication.strength || '',
       status: medication.status,
+      expiryDate: medication.expiryDate || '',
       description: medication.description || '',
       image: medication.image,
     });
@@ -449,7 +476,7 @@ const MedicationsPage: React.FC = () => {
   return (
     <div className="flex-1 min-h-screen bg-gray-50 pb-20 sm:pb-8 pt-[70px]">
       {/* Fixed Header (Back + Title) */}
-      <div className="fixed left-0 right-0 top-[64px] z-50 bg-gray-50">
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
           <BackToDashboardButton isDirty={isDirty} className="text-black/90 hover:text-black/80" />
           <div className="flex items-center justify-between gap-3">
@@ -466,7 +493,9 @@ const MedicationsPage: React.FC = () => {
                   price: '',
                   stock: 0,
                   manufacturer: '',
+                  strength: '',
                   status: 'In Stock',
+                  expiryDate: '',
                   description: '',
                   image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                 });
@@ -499,15 +528,45 @@ const MedicationsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Filter"
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'In Stock', value: 'In Stock' as const },
+                      { label: 'Low Stock', value: 'Low Stock' as const },
+                      { label: 'Out of Stock', value: 'Out of Stock' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -544,7 +603,9 @@ const MedicationsPage: React.FC = () => {
                   price: '',
                   stock: 0,
                   manufacturer: '',
+                  strength: '',
                   status: 'In Stock',
+                  expiryDate: '',
                   description: '',
                   image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                 });
@@ -713,7 +774,9 @@ const MedicationsPage: React.FC = () => {
                     price: '',
                     stock: 0,
                     manufacturer: '',
+                    strength: '',
                     status: 'In Stock',
+                    expiryDate: '',
                     description: '',
                     image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
                   });
@@ -912,6 +975,10 @@ const MedicationsPage: React.FC = () => {
                     <p className="font-semibold text-gray-900">{selectedMedication.manufacturer}</p>
                   </div>
                   <div>
+                    <p className="text-sm font-medium text-gray-500">Strength</p>
+                    <p className="font-semibold text-gray-900">{selectedMedication.strength || 'N/A'}</p>
+                  </div>
+                  <div>
                     <p className="text-sm font-medium text-gray-500">Status</p>
                     <div>{renderStatusBadge(selectedMedication.status)}</div>
                   </div>
@@ -924,7 +991,7 @@ const MedicationsPage: React.FC = () => {
               <p className="text-gray-700">{selectedMedication.description || "No description available."}</p>
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 flex justify-end z-10">
+            <div className="mt-6 flex justify-end border-t bg-white pt-4 pb-2">
               <Button
                 variant="outline"
                 className="w-full sm:w-auto rounded-full h-11"
@@ -949,6 +1016,28 @@ const MedicationsPage: React.FC = () => {
                       placeholder="e.g., Paracetamol 500mg"
                     />
                   </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="manufacturer">Manufacturer</Label>
+                      <Input
+                        id="manufacturer"
+                        name="manufacturer"
+                        value={newMedication.manufacturer}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Pfizer"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="strength">Strength</Label>
+                      <Input
+                        id="strength"
+                        name="strength"
+                        value={newMedication.strength || ''}
+                        onChange={handleInputChange}
+                        placeholder="mg"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <Label htmlFor="category">Category</Label>
                     <Input
@@ -957,6 +1046,16 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.category}
                       onChange={handleInputChange}
                       placeholder="e.g., Pain Relief"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="expiryDate">Expiry Date</Label>
+                    <Input
+                      id="expiryDate"
+                      name="expiryDate"
+                      type="date"
+                      value={newMedication.expiryDate || ''}
+                      onChange={handleInputChange}
                     />
                   </div>
                   <div>
@@ -981,16 +1080,6 @@ const MedicationsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="manufacturer">Manufacturer</Label>
-                    <Input
-                      id="manufacturer"
-                      name="manufacturer"
-                      value={newMedication.manufacturer}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Pfizer"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="status">Status</Label>
                     <select
                       id="status"
@@ -998,7 +1087,7 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.status}
                       onChange={handleInputChange}
                       title = "Medication status"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="In Stock">In Stock</option>
                       <option value="Low Stock">Low Stock</option>
@@ -1074,7 +1163,7 @@ const MedicationsPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 flex justify-end gap-2 z-10">
+            <div className="mt-6 flex justify-end gap-2 border-t bg-white pt-4 pb-2">
               <Button
                 variant="outline"
                 className="flex-1 sm:flex-none rounded-full"

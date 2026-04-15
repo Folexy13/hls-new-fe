@@ -63,9 +63,10 @@ const PodcastsPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [playingId, setPlayingId] = useState<number | null>(null);
   const [openPodcastId, setOpenPodcastId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Scheduled' | 'Archived'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockPodcasts.length / itemsPerPage);
 
   // Simulate loading data
   useEffect(() => {
@@ -98,11 +99,18 @@ const PodcastsPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = podcasts.filter(podcast => 
-    podcast.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    podcast.host.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    podcast.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = podcasts.filter((podcast) => {
+    const matchesSearch =
+      podcast.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      podcast.host.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      podcast.category.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' ? true : podcast.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Podcast] < b[sortField as keyof Podcast]) return sortDirection === 'asc' ? -1 : 1;
@@ -152,7 +160,7 @@ const PodcastsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
       {/* Fixed Header (Back + Title) */}
-      <div className="fixed left-0 right-0 top-[64px] z-50 bg-gray-50">
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
           <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           <div className="flex items-center justify-between gap-3">
@@ -181,15 +189,47 @@ const PodcastsPage: React.FC = () => {
               />
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label="Filter"
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
-              >
-                <Filter className="h-4 w-4" />
-              </Button>
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'Published', value: 'Published' as const },
+                      { label: 'Draft', value: 'Draft' as const },
+                      { label: 'Scheduled', value: 'Scheduled' as const },
+                      { label: 'Archived', value: 'Archived' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setCurrentPage(1);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -240,37 +280,34 @@ const PodcastsPage: React.FC = () => {
                     value={`podcast-${podcast.id}`}
                     className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
                   >
-                    <AccordionTrigger className="rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
-                      <div className="flex w-full flex-row items-start gap-2 text-left sm:items-center">
-                        <div className="flex w-1/3 items-center gap-2 justify-start">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-8 w-8 rounded-full ${playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100'}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePlay(podcast.id);
-                            }}
-                          >
-                            {playingId === podcast.id ? (
-                              <Pause className="h-4 w-4" />
-                            ) : (
-                              <Play className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <span className="text-sm font-semibold text-slate-900 truncate">{podcast.title}</span>
+                    <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
+                      <div className="flex w-full justify-between flex-row items-center gap-2 text-left sm:items-center">
+                        <div className="flex w-full items-center gap-2 justify-start min-w-0">
+                          <Mic className="h-5 w-5 text-slate-400" />
+                          <span className="text-sm font-semibold text-slate-900 truncate w-[90%]">
+                            {podcast.title}
+                          </span>
                         </div>
-                        <div className="w-1/3 text-center">{renderStatusBadge(podcast.status)}</div>
-                        <div className="w-1/3 text-right">
+                        <div className="ml-auto flex w-1/3 justify-end text-right">
                           <div className="inline-flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
-                              <Trash2 className="h-4 w-4" />
+                            {/* <Eye className="h-4 w-4 text-slate-500" /> */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-8 w-8 rounded-full ${
+                                playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-slate-700'
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePlay(podcast.id);
+                              }}
+                              aria-label={playingId === podcast.id ? 'Pause podcast' : 'Play podcast'}
+                            >
+                              {playingId === podcast.id ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -297,6 +334,10 @@ const PodcastsPage: React.FC = () => {
                         <div className="flex flex-col min-w-0">
                           <p className="text-xs font-bold text-slate-500 uppercase">Listens</p>
                           <p className="mt-1 text-slate-700 whitespace-nowrap">{podcast.listens.toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-end md:items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
+                          <div className="mt-1">{renderStatusBadge(podcast.status)}</div>
                         </div>
                       </div>
                     </AccordionContent>

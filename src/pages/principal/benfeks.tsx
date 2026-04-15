@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -102,31 +102,42 @@ const BenfeksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBenfek, setSelectedBenfek] = useState<BenfekRecord | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [registrationFilter, setRegistrationFilter] = useState<'all' | 'registered' | 'not_registered'>('all');
+  const [showRegistrationFilter, setShowRegistrationFilter] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const itemsPerPage = 10;
 
-  // Fetch benfeks from API
+  const fetchBenfeks = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await apiClient.get('/api/v2/quiz-code/benfeks');
+      const data = response.data?.data?.benfeks || [];
+      setBenfeks(data);
+    } catch (error) {
+      console.error('Failed to fetch benfeks:', error);
+      const message = 'Failed to load benfeks';
+      setLoadError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch benfeks from API (and refetch after returning from "Add Benfek")
   useEffect(() => {
-    const fetchBenfeks = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      try {
-        const response = await apiClient.get('/api/v2/quiz-code/benfeks');
-        const data = response.data?.data?.benfeks || [];
-        setBenfeks(data);
-      } catch (error) {
-        console.error('Failed to fetch benfeks:', error);
-        const message = 'Failed to load benfeks';
-        setLoadError(message);
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const needsRefresh =
+      (location.state as any)?.refresh ||
+      sessionStorage.getItem('benfeksNeedsRefresh') === '1';
+
+    if (needsRefresh) {
+      sessionStorage.removeItem('benfeksNeedsRefresh');
+    }
 
     fetchBenfeks();
-  }, []);
+  }, [fetchBenfeks, location.key, location.state]);
 
   console.log(benfeks)
 
@@ -159,11 +170,17 @@ const BenfeksPage: React.FC = () => {
     });
   }, [benfeks]);
 
-  const filteredData = uniqueBenfeks.filter(benfek =>
-    benfek.benfekName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    benfek.benfekPhone.includes(searchTerm) ||
-    benfek.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = uniqueBenfeks.filter((benfek) => {
+    const matchesSearch =
+      benfek.benfekName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      benfek.benfekPhone.includes(searchTerm) ||
+      benfek.code.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRegistration =
+      registrationFilter === 'all' ? true : benfek.registrationStatus === registrationFilter;
+
+    return matchesSearch && matchesRegistration;
+  });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
@@ -218,15 +235,45 @@ const BenfeksPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Filter"
-                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
-                >
-                  <Filter className="h-4 w-4" />
-                </Button>
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Filter"
+                    onClick={() => setShowRegistrationFilter((v) => !v)}
+                    className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+
+                  {showRegistrationFilter && (
+                    <div className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                      {[
+                        { label: 'All', value: 'all' as const },
+                        { label: 'Registered', value: 'registered' as const },
+                        { label: 'Pending', value: 'not_registered' as const },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setRegistrationFilter(opt.value);
+                            setCurrentPage(1);
+                            setShowRegistrationFilter(false);
+                          }}
+                          className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                            registrationFilter === opt.value
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button
                   type="button"
                   variant="outline"

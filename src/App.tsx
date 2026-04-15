@@ -15,7 +15,7 @@ import { UserRole } from "./context/roles";
 // Pages
 import Homepage from "./pages/Homepage";
 import BenfekHomepage from "./pages/benfek/Homepage";
-import AboutPage from "./pages/benfek/AboutPage";
+import AboutPage from "./pages/AboutPage";
 import QuizPage from "./pages/benfek/QuizPage";
 import AuthPage from "./pages/AuthPage";
 import SupportPage from "./pages/benfek/SupportPage";
@@ -27,6 +27,8 @@ import NotFound from "./pages/benfek/NotFound";
 import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
 import QuizFormPage from "./pages/benfek/QuizFormPage";
+import BenfekMyProfilePage from "./pages/benfek/MyProfilePage";
+import BenfekBonusPage from "./pages/benfek/BonusPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
@@ -49,7 +51,6 @@ import WholesalerEarningsPage from "./pages/wholesaler/earnings";
 import WholesalerAddProductPage from "./pages/wholesaler/add-product";
 import WholesalerProductsPage from "./pages/wholesaler/products";
 import WholesalerOrdersPage from "./pages/wholesaler/orders";
-import SettingsPage from "./pages/principal/settings";
 import AddProductPage from "./pages/wholesaler/add-product";
 import OrdersPage from "./pages/wholesaler/orders";
 import ProductsPage from "./pages/wholesaler/products";
@@ -117,12 +118,7 @@ const App = () => (
                 <Route
                   path="/about"
                   element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <AboutPage />
-                    </RoleBasedRoute>
+                    <AboutPage />
                   }
                 />
                 
@@ -134,6 +130,30 @@ const App = () => (
                       fallbackPath="/"
                     >
                       <SupportPage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
+                  path="/benfek/my-profile"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekMyProfilePage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
+                  path="/benfek/bonus"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekBonusPage />
                     </RoleBasedRoute>
                   }
                 />
@@ -252,7 +272,7 @@ const App = () => (
                   path="/principal/settings"
                   element={
                     // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
-                      <SettingsPage />
+                      <MyProfilePage defaultTab="settings" />
                     // </RoleBasedRoute>
                   }
                 />
