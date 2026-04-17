@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Eye, EyeOff, Briefcase, Loader2 } from "lucide-react";
 import { apiClient } from "../../config/axios";
 import { toast } from "react-toastify";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 interface FormData {
   firstName: string;
@@ -121,13 +122,7 @@ const PrincipalSignupPage = () => {
         toast.error(response.data.message || "Failed to create account");
       }
     } catch (error: unknown) {
-      console.error("Signup error:", error);
-      const axiosError = error as { response?: { data?: { message?: string; error?: { details?: { message?: string } } } } };
-      const errorMessage =
-        axiosError.response?.data?.message ||
-        axiosError.response?.data?.error?.details?.message ||
-        "Failed to create account. Please try again.";
-      toast.error(errorMessage);
+      toast.error(getApiErrorMessage(error, "Failed to create account. Please try again."));
     } finally {
       setIsLoading(false);
     }

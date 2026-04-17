@@ -90,6 +90,12 @@ const onPointerDown = (event: PointerEvent) => {
     if (typeof window === 'undefined') return;
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // The researcher app is a self-contained UI (ported from `hls-researcher-app`).
+  // Keep it unguarded and render it without the global layout chrome.
+  if (location.pathname.startsWith('/researcher')) {
+    return <>{children}</>;
+  }
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Mobile Header */}
