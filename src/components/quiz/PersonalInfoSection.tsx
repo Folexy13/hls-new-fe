@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'react-toastify';
 
 interface PersonalInfoData {
   name: string;
@@ -77,7 +78,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
     if (validateForm()) {
       onComplete(formData);
     } else {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
     }
   };
 

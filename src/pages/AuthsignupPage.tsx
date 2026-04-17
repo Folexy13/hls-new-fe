@@ -54,7 +54,7 @@ const AuthSignupPage = () => {
           </Link>
 
           {/* Wholesaler */}
-          <Link to="/auth/signup/wholesaler">
+          {/* <Link to="/auth/signup/wholesaler">
             <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:bg-purple-50">
 
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center text-2xl">
@@ -70,7 +70,7 @@ const AuthSignupPage = () => {
               </p>
 
             </div>
-          </Link>
+          </Link> */}
 
         </div>
 

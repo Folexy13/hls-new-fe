@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { useStore } from '../store/useStore';
 import { toast } from 'react-toastify';
 import { authService } from '../services/authService';
-import { apiClient } from '../config/axios';
+import { tokenManager } from '@/utils/tokenManager';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const SignInPage = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,16 @@ const SignInPage = () => {
   // Redirect authenticated users to their dashboard
   React.useEffect(() => {
     if (isAuthenticated && user) {
+      // Check if there's a callback redirect for an external app (like Researcher App)
+      const queryParams = new URLSearchParams(location.search);
+      const callback = queryParams.get('callback');
+      const token = tokenManager.getAccessToken();
+
+      if (callback && token) {
+        window.location.href = `${callback}?token=${token}`;
+        return;
+      }
+
       const role = String(user.role ?? '').toLowerCase();
       let redirectPath = '/dashboard';
       switch (role) {
@@ -31,6 +42,9 @@ const SignInPage = () => {
           break;
         case 'wholesaler':
           redirectPath = '/wholesaler';
+          break;
+        case 'researcher':
+          redirectPath = '/researcher';
           break;
         default:
           redirectPath = '/benfek/dashboard';
@@ -62,6 +76,14 @@ const SignInPage = () => {
       login(user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Successfully signed in!');
       
+      // Handle external app callback after successful login
+      const queryParams = new URLSearchParams(location.search);
+      const callback = queryParams.get('callback');
+      if (callback) {
+        window.location.href = `${callback}?token=${response.tokens.accessToken}`;
+        return;
+      }
+
       // Role-based routing
       const role = String(response.user.role ?? '').toLowerCase();
       let redirectPath = '/dashboard'; // default fallback
@@ -75,6 +97,9 @@ const SignInPage = () => {
         case 'wholesaler':
           redirectPath = '/wholesaler';
           break;
+        case 'researcher':
+          redirectPath = '/researcher';
+          break;
         default:
           redirectPath = '/benfek/dashboard';
       }
@@ -82,8 +107,7 @@ const SignInPage = () => {
       const from = location.state?.from?.pathname || redirectPath;
       navigate(from, { replace: true });
     } catch (error) {
-      console.log(error)
-      toast.error('Invalid email or password');
+      toast.error(getApiErrorMessage(error, 'Unable to sign in. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +199,7 @@ const SignUpPage = () => {
       toast.success('Account created successfully! Please sign in.');
       navigate('/auth/signin');
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      toast.error(getApiErrorMessage(error, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }

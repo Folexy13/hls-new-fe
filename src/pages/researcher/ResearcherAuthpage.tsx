@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { authService } from "@/services/authService";
+import { tokenManager } from "@/utils/tokenManager";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 const ResearcherAuthPage = () => {
   const navigate = useNavigate();
@@ -10,6 +14,7 @@ const ResearcherAuthPage = () => {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -19,7 +24,7 @@ const ResearcherAuthPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -28,18 +33,40 @@ const ResearcherAuthPage = () => {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      alert("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
-    // Temporary flow
-    // Later this is where backend signup logic will go
-    navigate("/researcher");
+    const [firstName = "", ...rest] = formData.fullName.trim().split(/\s+/);
+
+    setIsLoading(true);
+    try {
+      const result = await authService.register({
+        firstName,
+        lastName: rest.join(" ") || firstName,
+        email: formData.email,
+        password: formData.password,
+        role: "researcher",
+      });
+
+      if (result.tokens?.accessToken && result.tokens?.refreshToken) {
+        tokenManager.setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+      }
+
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("user", JSON.stringify(result.user));
+      toast.success("Researcher account created successfully!");
+      navigate("/researcher");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to create researcher account."));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +98,7 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Enter your full name"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
@@ -85,6 +113,7 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Enter your email"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
@@ -99,6 +128,7 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Enter your password"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
@@ -113,14 +143,16 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Confirm your password"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full h-11 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
           >
-            Create Researcher Account
+            {isLoading ? "Creating Account..." : "Create Researcher Account"}
           </button>
         </form>
 

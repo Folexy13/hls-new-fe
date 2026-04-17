@@ -7,6 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-toastify';
 import { quizService } from '@/services/quizService';
+import { apiClient } from '@/config/axios';
+import { tokenManager } from '@/utils/tokenManager';
+import { getApiErrorMessage } from '@/utils/apiError';
 import {
   Sparkles,
   Flower,
@@ -239,7 +242,7 @@ const QuizFormPage: React.FC = () => {
   const [showCustomDrugForm, setShowCustomDrugForm] = useState(false);
   const [customDrugForm, setCustomDrugForm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [finalLogin, setFinalLogin] = useState({ phone: '', password: '', confirmPassword: '' });
+  const [finalLogin, setFinalLogin] = useState({ email: '', phone: '', password: '', confirmPassword: '' });
   const [showGame, setShowGame] = useState(false);
   const [gameScore, setGameScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -813,9 +816,9 @@ const QuizFormPage: React.FC = () => {
     setNextStepAfterGame(null);
   };
 
-  const handleFinalLoginSubmit = (e: React.FormEvent) => {
+  const handleFinalLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!finalLogin.phone || !finalLogin.password || !finalLogin.confirmPassword) {
+    if (!finalLogin.email || !finalLogin.phone || !finalLogin.password || !finalLogin.confirmPassword) {
       toast.error('Please fill all fields.');
       return;
     }
@@ -823,8 +826,43 @@ const QuizFormPage: React.FC = () => {
       toast.error('Passwords do not match.');
       return;
     }
-    toast.success('Login details saved for demo.');
-    navigate('/benfek/dashboard');
+    const [firstName = 'Benfek', ...restName] = (validatedBenfekName || 'Benfek User').trim().split(/\s+/);
+    const lastName = restName.join(' ') || 'User';
+
+    try {
+      setIsSubmitting(true);
+      const registerResponse = await apiClient.post('/api/v2/auth/register-benfek-unreferred', {
+        firstName,
+        lastName,
+        email: finalLogin.email,
+        phone: finalLogin.phone,
+        password: finalLogin.password,
+        confirmPassword: finalLogin.confirmPassword,
+      });
+
+      const tokens = registerResponse.data?.data?.tokens;
+      if (tokens?.accessToken && tokens?.refreshToken) {
+        tokenManager.setTokens(tokens.accessToken, tokens.refreshToken);
+      }
+
+      await apiClient.post('/api/v2/benfek/game-points', {
+        points: totalScore,
+        quizCode: validatedQuizCode || undefined,
+        email: finalLogin.email,
+        phone: finalLogin.phone,
+        metadata: {
+          source: 'quiz-form',
+          completedAt: new Date().toISOString(),
+        },
+      });
+
+      toast.success('Login details and game points saved.');
+      navigate('/benfek/dashboard');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to save login details. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReplayGame = () => {
@@ -901,6 +939,15 @@ const QuizFormPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 gap-4">
                 <div>
+                  <Label>Email address</Label>
+                  <Input
+                    type="email"
+                    value={finalLogin.email}
+                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="Enter your email address"
+                  />
+                </div>
+                <div>
                   <Label>WhatsApp Phone number</Label>
                   <Input
                     value={finalLogin.phone}
@@ -927,8 +974,8 @@ const QuizFormPage: React.FC = () => {
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full">
-                Submit
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit'}
               </Button>
             </form>
           ) : (
