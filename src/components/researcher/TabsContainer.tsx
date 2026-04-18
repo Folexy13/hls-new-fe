@@ -14,30 +14,33 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLocation } from "react-router-dom";
 
 export function TabsContainer() {
-  const PACK_STORAGE_KEY = "researcher.pack.supplements";
   const location = useLocation();
   const defaultTab =
     (location.state as { defaultTab?: string } | null | undefined)?.defaultTab || "profile";
 
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [, setUserVerified] = useState(false);
-  const initialSelected = useMemo(() => {
-    const fallback = Object.fromEntries(packCategories.map((p) => [p.id, [] as Supplement[]]));
-    try {
-      const raw = localStorage.getItem(PACK_STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-      if (!parsed || typeof parsed !== "object") return fallback;
+  const [verifiedCode, setVerifiedCode] = useState<string>(() => {
+    return sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
+  });
+  const [userVerified, setUserVerified] = useState<boolean>(() => {
+    return !!sessionStorage.getItem("researcherVerifiedBenfekCode");
+  });
 
-      return {
-        ...fallback,
-        ...(parsed as Record<string, Supplement[]>),
-      };
-    } catch {
-      return fallback;
+  const packStorageKey = useMemo(() => {
+    return verifiedCode ? `researcher.pack.supplements.${verifiedCode}` : "researcher.pack.supplements";
+  }, [verifiedCode]);
+  const [activeTab, setActiveTab] = useState(() => {
+    if (!sessionStorage.getItem("researcherVerifiedBenfekCode") && defaultTab === "supplements") {
+      return "profile";
     }
-  }, []);
+    return defaultTab;
+  });
+  const emptySelected = useMemo(
+    () => Object.fromEntries(packCategories.map((p) => [p.id, [] as Supplement[]])),
+    []
+  );
   const [selectedSupplements, setSelectedSupplements] =
-    useState<Record<string, Supplement[]>>(initialSelected);
+    useState<Record<string, Supplement[]>>(emptySelected);
+  const [packsHydrated, setPacksHydrated] = useState(false);
   const [galleryAddRequest, setGalleryAddRequest] = useState(0);
   const [budgetExceeded, setBudgetExceeded] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(packCategories.map((p) => [p.id, false]))
@@ -48,36 +51,108 @@ export function TabsContainer() {
   const packBudgets = userBudget ? calculatePackBudget(userBudget) : null;
 
   useEffect(() => {
+    if (!userVerified && defaultTab === "supplements") {
+      setActiveTab("profile");
+      return;
+    }
+    setActiveTab(defaultTab);
+  }, [defaultTab, userVerified]);
+
+  useEffect(() => {
+    if (!userVerified && activeTab === "supplements") {
+      setActiveTab("profile");
+    }
+  }, [activeTab, userVerified]);
+
+  useEffect(() => {
+    if (!userVerified && defaultTab === "supplements") {
+      toast({
+        title: "Verify code first",
+        description: "Please verify a benefek code before selecting supplements.",
+        variant: "destructive",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTab, userVerified]);
+
+  useEffect(() => {
+    const syncVerified = () => {
+      const code = sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
+      setVerifiedCode(code);
+      setUserVerified(!!code);
+    };
+    window.addEventListener("researcher-benfek-verified", syncVerified);
+    window.addEventListener("researcher-benfek-cleared", syncVerified);
+    window.addEventListener("storage", syncVerified);
+    return () => {
+      window.removeEventListener("researcher-benfek-verified", syncVerified);
+      window.removeEventListener("researcher-benfek-cleared", syncVerified);
+      window.removeEventListener("storage", syncVerified);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userVerified) return;
+    if (!packsHydrated) return;
     try {
-      localStorage.setItem(PACK_STORAGE_KEY, JSON.stringify(selectedSupplements));
+      localStorage.setItem(packStorageKey, JSON.stringify(selectedSupplements));
     } catch {
       // ignore
     }
-  }, [selectedSupplements]);
+  }, [packStorageKey, packsHydrated, selectedSupplements, userVerified]);
 
   useEffect(() => {
     const loadPackSupplements = () => {
+      if (!userVerified) return;
       try {
-        const raw = localStorage.getItem(PACK_STORAGE_KEY);
+        const raw = localStorage.getItem(packStorageKey);
         const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-        if (!parsed || typeof parsed !== "object") return;
+        if (!parsed || typeof parsed !== "object") {
+          setSelectedSupplements(emptySelected);
+          setPacksHydrated(true);
+          return;
+        }
 
         setSelectedSupplements({
-          ...initialSelected,
+          ...emptySelected,
           ...(parsed as Record<string, Supplement[]>),
         });
+        setPacksHydrated(true);
       } catch {
-        // ignore
+        setSelectedSupplements(emptySelected);
+        setPacksHydrated(true);
       }
     };
 
     window.addEventListener("researcher-pack-updated", loadPackSupplements);
     window.addEventListener("storage", loadPackSupplements);
+    setPacksHydrated(false);
+    loadPackSupplements();
     return () => {
       window.removeEventListener("researcher-pack-updated", loadPackSupplements);
       window.removeEventListener("storage", loadPackSupplements);
     };
-  }, [initialSelected]);
+  }, [emptySelected, packStorageKey, userVerified]);
+
+  useEffect(() => {
+    if (userVerified) return;
+
+    // Ensure packs are not accessible/persisted across logout or unverified state.
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("researcher.pack.supplements.")) localStorage.removeItem(key);
+      });
+      localStorage.removeItem("researcher.pack.supplements");
+    } catch {
+      // ignore
+    }
+    setSelectedSupplements(emptySelected);
+    setBudgetExceeded(Object.fromEntries(packCategories.map((p) => [p.id, false])));
+    setUserBudget(null);
+    setPacksHydrated(false);
+    if (activeTab === "supplements") setActiveTab("profile");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userVerified]);
 
   const handleAddSupplement = (packId: string, supplement: Supplement) => {
     const updated = {
@@ -145,10 +220,30 @@ export function TabsContainer() {
   };
 
   const handleTabChange = (value: string) => {
+    if (value === "supplements" && !userVerified) {
+      toast({
+        title: "Verify code first",
+        description: "Please verify a benefek code before selecting supplements.",
+        variant: "destructive",
+      });
+      setActiveTab("profile");
+      return;
+    }
     setActiveTab(value);
   };
 
   const handleAddNewFromGallery = () => {
+    if (!userVerified) {
+      toast({
+        title: "Verify code first",
+        description: "Please verify a benefek code before selecting supplements.",
+        variant: "destructive",
+      });
+      setActiveTab("profile");
+      return;
+    }
+    sessionStorage.setItem("researcher.gallery.add_origin", "supplements");
+    sessionStorage.setItem("researcher.gallery.return_tab", "supplements");
     setActiveTab("gallery");
     setGalleryAddRequest((value) => value + 1);
   };
@@ -164,7 +259,9 @@ export function TabsContainer() {
         <div className="container h-[60px] flex items-center px-2 sm:px-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">User Profile</TabsTrigger>
-            <TabsTrigger value="supplements">Select Supplements</TabsTrigger>
+            <TabsTrigger value="supplements" disabled={!userVerified} aria-disabled={!userVerified}>
+              Select Supplements
+            </TabsTrigger>
             <TabsTrigger value="gallery">Gallery</TabsTrigger>
           </TabsList>
         </div>

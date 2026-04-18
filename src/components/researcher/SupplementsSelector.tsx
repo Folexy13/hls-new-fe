@@ -102,10 +102,19 @@ export function SupplementsSelector({
                             className="p-3 border rounded-md flex items-center justify-between bg-white shadow-sm hover:shadow transition-shadow"
                           >
                             <div className="flex items-center">
-                              <div className="h-8 w-8 bg-researcher-primary rounded-md flex items-center justify-center mr-2">
-                                <span className="text-white text-xs font-bold">
-                                  {supplement.name.substring(0, 2).toUpperCase()}
-                                </span>
+                              <div className="h-8 w-8 rounded-md overflow-hidden flex items-center justify-center mr-2 bg-researcher-muted border border-researcher-border">
+                                {supplement.imageUrl ? (
+                                  <img
+                                    src={supplement.imageUrl}
+                                    alt={supplement.name}
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <span className="text-researcher-primary text-xs font-bold">
+                                    {supplement.name.substring(0, 2).toUpperCase()}
+                                  </span>
+                                )}
                               </div>
                               <div>
                                 <p className="font-medium">{supplement.name}</p>

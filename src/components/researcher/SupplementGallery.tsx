@@ -40,11 +40,16 @@ import {
   type AppliedClassFilters,
 } from "@/components/researcher/ClassFilterPopover";
 import { researcherService } from "@/services/researcherService";
+import { canViewWholesaleDetails } from "@/utils/authClaims";
 
 export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: number }) {
   const SHEET_STORAGE_KEY = "researcher.sheet.supplements";
   const GALLERY_STORAGE_KEY = "researcher.gallery.supplements";
   const RECENT_TAGS_KEY = "researcher.filter.recent_tags";
+  const LAST_ADD_REQUEST_KEY = "researcher.gallery.last_add_request";
+  const RETURN_TAB_KEY = "researcher.gallery.return_tab";
+  const SHEET_RETURN_TAB_KEY = "researcher.sheet.return_tab";
+  const ADD_ORIGIN_KEY = "researcher.gallery.add_origin";
   const ITEMS_PER_PAGE = 20;
 
   const [gallerySupplements, setGallerySupplements] = useState(() => supplements);
@@ -55,20 +60,35 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newManufacturer, setNewManufacturer] = useState("");
+  const [newStrength, setNewStrength] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPrice, setNewPrice] = useState<string>("");
   const [newDosageForm, setNewDosageForm] = useState<string>("");
   const [newBudgetRange, setNewBudgetRange] = useState<string>("");
   const [newTags, setNewTags] = useState<Record<string, string[]>>({});
   const [newImageUrl, setNewImageUrl] = useState<string>("");
+  const [newWholesalers, setNewWholesalers] = useState<
+    Array<{ name: string; price: number; contact: string; address: string }>
+  >([]);
+  const [wholesalerName, setWholesalerName] = useState("");
+  const [wholesalerPrice, setWholesalerPrice] = useState<string>("");
+  const [wholesalerContact, setWholesalerContact] = useState("");
+  const [wholesalerAddress, setWholesalerAddress] = useState("");
   const [tagCategory, setTagCategory] = useState<TagCategory>("hls_factors");
   const [tagValue, setTagValue] = useState<string>("");
   const [tagValueMode, setTagValueMode] = useState<"select" | "custom">("select");
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const canEditWholesale = useMemo(() => canViewWholesaleDetails(), []);
+
   const [sheetSupplements, setSheetSupplements] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [verifiedCode, setVerifiedCode] = useState<string>(() => {
+    return sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
+  });
+  const isVerified = !!verifiedCode;
+  const sheetStorageKey = verifiedCode ? `${SHEET_STORAGE_KEY}.${verifiedCode}` : SHEET_STORAGE_KEY;
 
   const inferCategoryFromName = (name: string) => {
     const value = (name || "").toLowerCase();
@@ -100,64 +120,154 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setEditingId(null);
     setNewName("");
     setNewManufacturer("");
+    setNewStrength("");
     setNewDescription("");
     setNewPrice("");
     setNewDosageForm("");
     setNewBudgetRange("");
     setNewTags({});
     setNewImageUrl("");
+    setNewWholesalers([]);
+    setWholesalerName("");
+    setWholesalerPrice("");
+    setWholesalerContact("");
+    setWholesalerAddress("");
     setTagCategory("hls_factors");
     setTagValue("");
     setTagValueMode("select");
   };
 
-  useEffect(() => {
-    researcherService.getSupplements()
-      .then((items) => {
-        if (Array.isArray(items) && items.length) {
-          setGallerySupplements(items.map((item: any) => ({
-            ...item,
-            id: String(item.id),
-            category: normalizeLoadedCategory(item),
-            tags: item.tags || {},
-          })) as any);
-        }
-      })
-      .catch(() => {
-        // Keep local/demo data available when the researcher API is not signed in yet.
-      });
+  const addWholesaler = () => {
+    const name = wholesalerName.trim();
+    const contact = wholesalerContact.trim();
+    const address = wholesalerAddress.trim();
+    const price = Number(wholesalerPrice);
 
+    if (!name || !contact || !address || !Number.isFinite(price) || price <= 0) {
+      toast({
+        title: "Missing wholesaler fields",
+        description: "Enter wholesaler name, price, contact, and address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setNewWholesalers((prev) => [...prev, { name, price, contact, address }]);
+    setWholesalerName("");
+    setWholesalerPrice("");
+    setWholesalerContact("");
+    setWholesalerAddress("");
+  };
+
+  const removeWholesaler = (index: number) => {
+    setNewWholesalers((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    const syncVerified = () => {
+      setVerifiedCode(sessionStorage.getItem("researcherVerifiedBenfekCode") || "");
+    };
+    window.addEventListener("researcher-benfek-verified", syncVerified);
+    window.addEventListener("researcher-benfek-cleared", syncVerified);
+    window.addEventListener("storage", syncVerified);
+    return () => {
+      window.removeEventListener("researcher-benfek-verified", syncVerified);
+      window.removeEventListener("researcher-benfek-cleared", syncVerified);
+      window.removeEventListener("storage", syncVerified);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 1. Load from local storage first to provide immediate content
     try {
       const raw = localStorage.getItem(GALLERY_STORAGE_KEY);
       const parsed = raw ? (JSON.parse(raw) as unknown) : null;
       if (Array.isArray(parsed) && parsed.length) {
         const migrated = (parsed as any[]).map((item) => ({
           ...item,
+          id: String(item.id), // Ensure ID is string for consistency
           category: normalizeLoadedCategory(item),
+          tags: item.tags || {},
+          source: item.source,
         }));
         setGallerySupplements(migrated as any);
+      } else {
+        // If local storage is empty, initialize with dummy data
+        setGallerySupplements(supplements);
       }
     } catch {
-      // ignore
+      setGallerySupplements(supplements); // Fallback to dummy data on error
     }
 
+    // 2. Then, fetch from the backend to get the latest data
+    const fetchSupplements = async () => {
+      try {
+        const items = await researcherService.getSupplements({ code: verifiedCode || undefined });
+        if (Array.isArray(items) && items.length) {
+          const fetchedSupplements = items.map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            category: normalizeLoadedCategory(item),
+            tags: item.tags || {},
+            source: item.source,
+          })) as any;
+          setGallerySupplements(fetchedSupplements);
+          localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(fetchedSupplements)); // Update local storage with fresh data
+        } else if (verifiedCode) {
+          // If verified, and backend returns empty, it means no supplements for this code.
+          // Clear local storage to reflect backend state.
+          setGallerySupplements([]);
+          localStorage.removeItem(GALLERY_STORAGE_KEY);
+        }
+      } catch (error) {
+        console.error("Failed to fetch supplements from backend:", error);
+        // If backend fetch fails, rely on what's already loaded from local storage or dummy data.
+        // No need to clear gallerySupplements here, as local data might be valid.
+      }
+    };
+
+    fetchSupplements();
+
+    // 3. Also load sheet supplements (this part is fine as is)
     try {
-      const raw = localStorage.getItem(SHEET_STORAGE_KEY);
+      const raw = localStorage.getItem(sheetStorageKey);
       const parsed = raw ? (JSON.parse(raw) as unknown) : null;
       if (Array.isArray(parsed)) setSheetSupplements(parsed as any);
     } catch {
       setSheetSupplements([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [verifiedCode]);
 
   useEffect(() => {
     if (!openAddRequest) return;
+    const lastHandled = Number(sessionStorage.getItem(LAST_ADD_REQUEST_KEY) || "0");
+    if (openAddRequest <= lastHandled) return;
+    sessionStorage.setItem(LAST_ADD_REQUEST_KEY, String(openAddRequest));
+
+    // Preserve where the add-flow was triggered from (Select Supplements vs Gallery).
+    if (!sessionStorage.getItem(ADD_ORIGIN_KEY)) {
+      const hint = sessionStorage.getItem(RETURN_TAB_KEY) || "";
+      if (hint) sessionStorage.setItem(ADD_ORIGIN_KEY, hint);
+    }
+
     resetForm();
     setIsAddOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openAddRequest]);
+
+  const handleCloseAdd = () => {
+    setIsAddOpen(false);
+    resetForm();
+
+    const returnTab = sessionStorage.getItem(ADD_ORIGIN_KEY) || sessionStorage.getItem(RETURN_TAB_KEY) || "";
+    sessionStorage.removeItem(ADD_ORIGIN_KEY);
+    sessionStorage.removeItem(RETURN_TAB_KEY);
+
+    const nextTab = returnTab === "supplements" ? "supplements" : "gallery";
+    navigate("/researcher", { state: { defaultTab: nextTab }, replace: true });
+  };
 
   useEffect(() => {
     try {
@@ -214,6 +324,14 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   }, [gallerySupplements, selectedSupplements]);
 
   const handleToggleSelect = (id: string) => {
+    if (!isVerified) {
+      toast({
+        title: "Verify code first",
+        description: "Verify a benefek code before selecting supplements for a pack.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedSupplements((prev) => ({
       ...prev,
       [id]: !prev[id],
@@ -225,6 +343,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
 
     const name = newName.trim();
     const manufacturer = newManufacturer.trim();
+    const strength = newStrength.trim();
     const description = newDescription.trim();
     const price = Number(newPrice);
 
@@ -242,11 +361,15 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         name,
         description,
         manufacturer,
+        strength,
         imageUrl: newImageUrl || undefined,
         dosageForm: newDosageForm,
         budgetRange: newBudgetRange,
         tags: newTags,
         price,
+        type: "supplement",
+        code: verifiedCode,
+        ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
       };
       try {
         const updated = await researcherService.updateSupplement(editingId, updatePayload);
@@ -274,6 +397,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         name,
         description,
         manufacturer,
+        strength,
         category: inferCategoryFromName(name),
         imageUrl: `https://placehold.co/100x100/6E59A5/FFFFFF?text=${encodeURIComponent(
           name.substring(0, 5)
@@ -283,12 +407,16 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         budgetRange: newBudgetRange,
         tags: newTags,
         price,
+        type: "supplement",
+        code: verifiedCode,
+        ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
       };
       try {
         const created = await researcherService.createSupplement({
           name,
           description,
           manufacturer,
+          strength,
           imageUrl: newSupplement.imageUrl,
           category: newSupplement.category,
           dosageForm: newDosageForm,
@@ -296,6 +424,9 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           tags: newTags,
           price,
           stock: 0,
+          type: "supplement",
+          code: verifiedCode,
+          ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
         });
         setGallerySupplements((prev) => [created || newSupplement, ...prev]);
       } catch {
@@ -303,8 +434,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       }
     }
 
-    setIsAddOpen(false);
-    resetForm();
+    handleCloseAdd();
 
     toast({
       title: editingId ? "Supplement updated" : "Supplement added",
@@ -358,21 +488,36 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     const item = gallerySupplements.find((s) => s.id === supplementId);
     if (!item) return;
 
+    sessionStorage.setItem(ADD_ORIGIN_KEY, "gallery");
     setEditingId(item.id);
     setNewName(item.name);
     setNewManufacturer(item.manufacturer || "");
+    setNewStrength(String((item as any).strength || ""));
     setNewDescription(item.description);
     setNewPrice(String(item.price));
     setNewDosageForm(item.dosageForm || "");
     setNewBudgetRange(item.budgetRange || "");
     setNewTags(item.tags || {});
     setNewImageUrl(item.imageUrl || "");
+    setNewWholesalers(Array.isArray((item as any).wholesalers) ? (item as any).wholesalers : []);
+    setWholesalerName("");
+    setWholesalerPrice("");
+    setWholesalerContact("");
+    setWholesalerAddress("");
     setTagValue("");
     setTagValueMode("select");
     setIsAddOpen(true);
   };
 
   const handleOpenSelected = () => {
+    if (!isVerified) {
+      toast({
+        title: "Verify code first",
+        description: "Verify a benefek code before opening the worksheet.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (selectedItems.length === 0 && sheetSupplements.length === 0) {
       toast({
         title: "No supplements selected",
@@ -389,7 +534,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
 
     setSheetSupplements(nextSheet);
     try {
-      localStorage.setItem(SHEET_STORAGE_KEY, JSON.stringify(nextSheet));
+      localStorage.setItem(sheetStorageKey, JSON.stringify(nextSheet));
     } catch {
       // ignore
     }
@@ -397,9 +542,11 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     // Clear the current gallery selection now that it's in the sheet.
     if (selectedItems.length) setSelectedSupplements({});
 
+    sessionStorage.setItem(SHEET_RETURN_TAB_KEY, "gallery");
     navigate("/researcher/gallery/selected", {
       state: {
         selectedSupplements: nextSheet,
+        returnTab: "gallery",
       },
     });
   };
@@ -415,6 +562,11 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       <div className="fixed left-0 right-0 top-[132px] z-30 bg-researcher-background border-b border-researcher-border/70">
         <div className="container px-2 sm:px-4 py-3">
           <div className="flex flex-row items-center gap-2 w-full sm:max-w-3xl mx-auto">
+            <ClassFilterPopover
+              items={gallerySupplements as any}
+              appliedFilters={appliedClassFilters}
+              onChangeAppliedFilters={setAppliedClassFilters}
+            />
             <div className="relative flex-1 min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -432,16 +584,11 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 size="icon"
                 aria-label="Open selected supplements"
                 onClick={handleOpenSelected}
-                disabled={selectedCount === 0 && sheetSupplements.length === 0}
+                disabled={!isVerified || (selectedCount === 0 && sheetSupplements.length === 0)}
                 className="border-researcher-border bg-white"
               >
                 <FileSpreadsheet className="h-4 w-4 text-researcher-primary" />
               </Button>
-              <ClassFilterPopover
-                items={gallerySupplements as any}
-                appliedFilters={appliedClassFilters}
-                onChangeAppliedFilters={setAppliedClassFilters}
-              />
 
               <Button
                 type="button"
@@ -449,6 +596,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 size="icon"
                 aria-label="Add new supplement"
                 onClick={() => {
+                  sessionStorage.setItem(ADD_ORIGIN_KEY, "gallery");
+                  sessionStorage.setItem(RETURN_TAB_KEY, "gallery");
                   resetForm();
                   setIsAddOpen(true);
                 }}
@@ -591,7 +740,16 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         ) : null}
       </div>
 
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      <Dialog
+        open={isAddOpen}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            handleCloseAdd();
+            return;
+          }
+          setIsAddOpen(true);
+        }}
+      >
         <DialogContent className="sm:max-w-[520px] p-0">
           <div className="flex max-h-[min(80vh,42rem)] flex-col overflow-hidden">
             <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-3">
@@ -600,8 +758,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setIsAddOpen(false);
-                  resetForm();
+                  handleCloseAdd();
                 }}
                 className="gap-2"
               >
@@ -636,6 +793,16 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                     value={newManufacturer}
                     onChange={(e) => setNewManufacturer(e.target.value)}
                     placeholder="e.g. NatureMade"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-supplement-strength">Strength</Label>
+                  <Input
+                    id="new-supplement-strength"
+                    value={newStrength}
+                    onChange={(e) => setNewStrength(e.target.value)}
+                    placeholder="mg"
                   />
                 </div>
 
@@ -823,6 +990,120 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                     inputMode="numeric"
                   />
                 </div>
+
+                {(
+                  <div className="space-y-2 rounded-lg border bg-white p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label>Wholesaler details</Label>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                        Checker only
+                      </span>
+                    </div>
+
+                    {!canEditWholesale ? (
+                      <p className="text-xs text-muted-foreground">
+                        Sign in as a checker to add/view wholesaler details.
+                      </p>
+                    ) : null}
+
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wholesaler-name" className="text-xs text-slate-600">
+                          Wholesaler name
+                        </Label>
+                        <Input
+                          id="wholesaler-name"
+                          value={wholesalerName}
+                          onChange={(e) => setWholesalerName(e.target.value)}
+                          placeholder="e.g. ACME Pharma"
+                          disabled={!canEditWholesale}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wholesaler-price" className="text-xs text-slate-600">
+                          Wholesale price (₦)
+                        </Label>
+                        <Input
+                          id="wholesaler-price"
+                          value={wholesalerPrice}
+                          onChange={(e) => setWholesalerPrice(e.target.value)}
+                          placeholder="e.g. 1800"
+                          inputMode="numeric"
+                          disabled={!canEditWholesale}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wholesaler-contact" className="text-xs text-slate-600">
+                          Contact details
+                        </Label>
+                        <Input
+                          id="wholesaler-contact"
+                          value={wholesalerContact}
+                          onChange={(e) => setWholesalerContact(e.target.value)}
+                          placeholder="Phone / email"
+                          disabled={!canEditWholesale}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="wholesaler-address" className="text-xs text-slate-600">
+                          Address
+                        </Label>
+                        <Input
+                          id="wholesaler-address"
+                          value={wholesalerAddress}
+                          onChange={(e) => setWholesalerAddress(e.target.value)}
+                          placeholder="Wholesaler address"
+                          disabled={!canEditWholesale}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addWholesaler}
+                        disabled={!canEditWholesale}
+                      >
+                        Add wholesaler
+                      </Button>
+                    </div>
+
+                    {newWholesalers.length ? (
+                      <div className="space-y-2 pt-1">
+                        {newWholesalers.map((w, idx) => (
+                          <div key={`${w.name}-${idx}`} className="rounded-md border bg-slate-50 px-3 py-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900 truncate">{w.name}</p>
+                                <p className="text-xs text-slate-600 truncate">{w.contact}</p>
+                                <p className="text-xs text-slate-600 truncate">{w.address}</p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <p className="text-sm font-bold text-slate-900 tabular-nums">
+                                  ₦{Number(w.price || 0).toLocaleString()}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="mt-1 h-7 px-2 text-rose-600 hover:text-rose-700"
+                                  onClick={() => removeWholesaler(idx)}
+                                  disabled={!canEditWholesale}
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No wholesalers added yet.</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="border-t bg-white px-4 py-3 flex justify-end gap-2">
@@ -830,8 +1111,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    setIsAddOpen(false);
-                    resetForm();
+                    handleCloseAdd();
                   }}
                 >
                   Cancel

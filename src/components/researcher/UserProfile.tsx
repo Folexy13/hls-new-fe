@@ -26,6 +26,7 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
 
       if (data?.benfek) {
         sessionStorage.setItem("researcherVerifiedBenfekCode", data.benfek.code);
+        sessionStorage.setItem("researcherVerifiedBenfek", JSON.stringify(data.benfek));
         setUserDetails({
           ...dummyUser,
           name: data.benfek.name || dummyUser.name,
@@ -35,6 +36,26 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
             ? { min: 0, max: Number(data.benfek.quiz.preferences.budget) }
             : dummyUser.budget,
         });
+
+        // Fetch existing packs for this user from the backend to ensure local state is synced on load/refresh
+        try {
+          const packsData = await researcherService.getBenfekPacks(data.benfek.code);
+          if (packsData && Array.isArray(packsData)) {
+            const mappedPacks: Record<string, any[]> = {};
+            packsData.forEach((p: any) => {
+              mappedPacks[p.packId] = (p.items || []).map((i: any) => ({
+                ...i.supplement,
+                id: String(i.supplement.id)
+              }));
+            });
+            localStorage.setItem("researcher.pack.supplements", JSON.stringify(mappedPacks));
+            // Notify other components (like TabsContainer or SupplementsSelector) that packs are updated
+            window.dispatchEvent(new Event("researcher-pack-updated"));
+          }
+        } catch (e) {
+          console.error("Failed to sync researcher packs from backend:", e);
+        }
+
         toast({
           title: "Code verified",
           description: "User details retrieved successfully.",

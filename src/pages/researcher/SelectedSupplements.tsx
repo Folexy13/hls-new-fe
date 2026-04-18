@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { canViewWholesaleDetails } from "@/utils/authClaims";
 
 type SelectedSupplement = {
   id: string;
@@ -27,8 +28,12 @@ type SelectedSupplement = {
   description: string;
   category: string;
   manufacturer?: string;
+  strength?: string;
   dosageForm?: string;
   budgetRange?: string;
+  stock?: number;
+  status?: string;
+  wholesalers?: Array<{ name: string; price: number; contact: string; address: string }> | null;
   tags?: Record<string, string[]>;
   imageUrl: string;
   price: number;
@@ -36,22 +41,34 @@ type SelectedSupplement = {
 
 type LocationState = {
   selectedSupplements?: SelectedSupplement[];
+  returnTab?: string;
 };
 
 export default function ResearcherSelectedSupplementsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const state = (location.state || {}) as LocationState;
-  const SHEET_STORAGE_KEY = "researcher.sheet.supplements";
-  const PACK_STORAGE_KEY = "researcher.pack.supplements";
+  const SHEET_RETURN_TAB_KEY = "researcher.sheet.return_tab";
   const { toast } = useToast();
+
+  const verifiedCode = useMemo(() => sessionStorage.getItem("researcherVerifiedBenfekCode") || "", []);
+  const sheetStorageKey = useMemo(
+    () => (verifiedCode ? `researcher.sheet.supplements.${verifiedCode}` : "researcher.sheet.supplements"),
+    [verifiedCode]
+  );
+  const packStorageKey = useMemo(
+    () => (verifiedCode ? `researcher.pack.supplements.${verifiedCode}` : "researcher.pack.supplements"),
+    [verifiedCode]
+  );
+
+  const canViewWholesale = useMemo(() => canViewWholesaleDetails(), []);
 
   const [selected, setSelected] = useState<SelectedSupplement[]>(() => {
     const fromState = state.selectedSupplements || [];
     if (fromState.length) return fromState;
 
     try {
-      const raw = localStorage.getItem(SHEET_STORAGE_KEY);
+      const raw = localStorage.getItem(sheetStorageKey);
       const parsed = raw ? (JSON.parse(raw) as unknown) : null;
       return Array.isArray(parsed) ? (parsed as SelectedSupplement[]) : [];
     } catch {
@@ -64,13 +81,31 @@ export default function ResearcherSelectedSupplementsPage() {
   const [appliedClassFilters, setAppliedClassFilters] = useState<AppliedClassFilters>({});
   const [viewingSupplement, setViewingSupplement] = useState<SelectedSupplement | null>(null);
 
+  useEffect(() => {
+    if (verifiedCode) return;
+    toast({
+      title: "Verify code first",
+      description: "Verify a benefek code before using the worksheet.",
+      variant: "destructive",
+    });
+    navigate("/researcher", { state: { defaultTab: "gallery" }, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // --- Budget Extraction ---
-  const maxBudget = useMemo(() => {
-    const pack = packCategories.find((p) => p.id === selectedPackId);
-    if (!pack || !pack.budgetRange) return 0;
-    const prices = pack.budgetRange.replace(/,/g, "").match(/\d+/g);
-    return prices ? Math.max(...prices.map(Number)) : 0;
-  }, [selectedPackId]);
+  const benfekMaxBudget = useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem("researcherVerifiedBenfek");
+      const parsed = raw ? (JSON.parse(raw) as any) : null;
+      const quizBudget = Number(parsed?.quiz?.preferences?.budget);
+      if (Number.isFinite(quizBudget) && quizBudget > 0) return quizBudget;
+      const max = Number(parsed?.budget?.max);
+      if (Number.isFinite(max) && max > 0) return max;
+      return 0;
+    } catch {
+      return 0;
+    }
+  }, [verifiedCode]);
 
   const selectedPackName = useMemo(() => {
     return packCategories.find((p) => p.id === selectedPackId)?.name || "";
@@ -78,11 +113,11 @@ export default function ResearcherSelectedSupplementsPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(SHEET_STORAGE_KEY, JSON.stringify(selected));
+      localStorage.setItem(sheetStorageKey, JSON.stringify(selected));
     } catch {
       // ignore
     }
-  }, [selected]);
+  }, [selected, sheetStorageKey]);
 
   const filteredSelected = useMemo(() => {
     return applyClassFilters(selected, appliedClassFilters) as SelectedSupplement[];
@@ -98,7 +133,7 @@ export default function ResearcherSelectedSupplementsPage() {
     [selectedForDispatch]
   );
 
-  const isOverBudget = maxBudget > 0 && selectedDispatchTotal > maxBudget;
+  const isOverBudget = benfekMaxBudget > 0 && selectedDispatchTotal > benfekMaxBudget;
 
   const toggleSheetSelection = (id: string) => {
     setSelectedSheetIds((prev) => ({
@@ -119,30 +154,56 @@ export default function ResearcherSelectedSupplementsPage() {
   const handleDispatchSelected = async () => {
     if (!selectedPackId || selectedForDispatch.length === 0) return;
 
-    const numericSupplementIds = selectedForDispatch
-      .map((item) => Number(item.id))
-      .filter((id) => Number.isFinite(id) && id > 0);
+    // Always update the local pack store so the Select Supplements tab reflects changes instantly,
+    // even if some items don't exist in the backend yet (e.g. local-only ids like `sup-...`).
+    try {
+      const raw = localStorage.getItem(packStorageKey);
+      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      const store: Record<string, any[]> = parsed && typeof parsed === "object" ? (parsed as any) : {};
+      const existing = Array.isArray(store[selectedPackId]) ? store[selectedPackId] : [];
+      const existingIds = new Set(existing.map((s: any) => String(s?.id)));
+      const nextForPack = [
+        ...existing,
+        ...selectedForDispatch.filter((s) => !existingIds.has(String(s.id))),
+      ];
+      store[selectedPackId] = nextForPack;
+      localStorage.setItem(packStorageKey, JSON.stringify(store));
+      window.dispatchEvent(new Event("researcher-pack-updated"));
+    } catch {
+      // ignore local storage failures
+    }
+
+    // Extract supplement IDs for backend sync (handling potential string-to-number conversion)
+    const supplementIds = selectedForDispatch.map((item) => Number(item.id)).filter((id) => !isNaN(id));
 
     const code = sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
-    if (code && numericSupplementIds.length) {
+
+    // Best-effort backend sync
+    if (code && supplementIds.length) {
       try {
         await researcherService.dispatchPack({
           code,
           packId: selectedPackId,
           packName: selectedPackName,
-          supplementIds: numericSupplementIds,
-          status: "dispatched",
+          supplementIds: supplementIds,
+          status: "draft",
         });
-        
-        toast({
-          title: "Added to pack",
-          description: `${selectedForDispatch.length} supplements added to ${selectedPackName}.`,
-        });
-        setSelectedSheetIds({}); // Clear selection after dispatch
       } catch {
-        toast({ title: "Error", description: "Failed to dispatch", variant: "destructive" });
+        // Ignore backend sync failures so the local UX stays reliable.
       }
     }
+
+    const localOnlyCount = selectedForDispatch.filter(s => s.id.startsWith('sup-')).length;
+    toast({
+      title: "Added to pack",
+      description: localOnlyCount
+        ? `${selectedForDispatch.length} supplements added to ${selectedPackName}. (${localOnlyCount} are local-only and won't sync to server yet)`
+        : `${selectedForDispatch.length} supplements added to ${selectedPackName}.`,
+    });
+    
+    // Remove successfully dispatched items from the sheet view
+    setSelected((prev) => prev.filter((item) => !selectedSheetIds[item.id]));
+    setSelectedSheetIds({}); 
   };
 
   return (
@@ -150,15 +211,18 @@ export default function ResearcherSelectedSupplementsPage() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
         <div className="container py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="shrink-0"
-              onClick={() => navigate("/researcher", { state: { defaultTab: "gallery" } })}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => {
+                  sessionStorage.removeItem(SHEET_RETURN_TAB_KEY);
+                  navigate("/researcher", { state: { defaultTab: "gallery" }, replace: true });
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-researcher-primary truncate">
                 Selected Supplements
@@ -216,7 +280,7 @@ export default function ResearcherSelectedSupplementsPage() {
                       isOverBudget ? "text-red-600" : "text-green-600"
                     }`}
                   >
-                    Max: ₦{maxBudget.toLocaleString()}
+                    Max: ₦{benfekMaxBudget.toLocaleString()}
                   </span>
                 {/* )} */}
               {/* </div> */}
@@ -279,6 +343,14 @@ export default function ResearcherSelectedSupplementsPage() {
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate w-full text-center">
                     {item.manufacturer || "Manufacturer"}
                   </p>
+
+                  <p className="mt-0.5 text-xs font-semibold text-slate-900 truncate w-full text-center">
+                    {item.name}
+                  </p>
+
+                  <p className="mt-0.5 text-[11px] font-bold text-researcher-primary tabular-nums">
+                    ₦{(item.price || 0).toLocaleString()}
+                  </p>
                 </CardContent>
               </Card>
             ))}
@@ -321,10 +393,77 @@ export default function ResearcherSelectedSupplementsPage() {
                   <span className="text-xs font-semibold">{viewingSupplement.dosageForm || "Not Specified"}</span>
                 </div>
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100 text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Category</span>
-                  <span className="text-xs font-semibold truncate block">{viewingSupplement.category}</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Strength</span>
+                  <span className="text-xs font-semibold truncate block">
+                    {viewingSupplement.strength || "Not Specified"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-md border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Budget range</span>
+                  <span className="text-xs font-semibold">{viewingSupplement.budgetRange || "Not Specified"}</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-md border border-slate-100 text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Status</span>
+                  <span className="text-xs font-semibold truncate block">
+                    {viewingSupplement.status ? String(viewingSupplement.status).replace(/_/g, " ") : "Not Specified"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-md border border-slate-100 col-span-2">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Stock</span>
+                  <span className="text-xs font-semibold">
+                    {typeof viewingSupplement.stock === "number" ? viewingSupplement.stock.toLocaleString() : "Not Specified"}
+                  </span>
                 </div>
               </div>
+
+              <div className="space-y-2 pt-1">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(viewingSupplement.tags || {}).flatMap(([tagKey, values]) =>
+                    (values || []).map((value) => (
+                      <Badge
+                        key={`${tagKey}:${value}`}
+                        variant="outline"
+                        title={`${tagKey}: ${value}`}
+                        className="bg-researcher-muted max-w-full whitespace-normal break-words"
+                      >
+                        {value}
+                      </Badge>
+                    ))
+                  )}
+                  {Object.keys(viewingSupplement.tags || {}).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No tags.</p>
+                  ) : null}
+                </div>
+              </div>
+
+              {canViewWholesale ? (
+                <div className="space-y-2 pt-1">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">
+                    Wholesalers
+                  </p>
+                  {Array.isArray(viewingSupplement.wholesalers) && viewingSupplement.wholesalers.length ? (
+                    <div className="space-y-2">
+                      {viewingSupplement.wholesalers.map((w, idx) => (
+                        <div key={`${w.name}-${idx}`} className="rounded-md border bg-slate-50 px-3 py-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900 truncate">{w.name}</p>
+                              <p className="text-xs text-slate-600 truncate">{w.contact}</p>
+                              <p className="text-xs text-slate-600 truncate">{w.address}</p>
+                            </div>
+                            <p className="shrink-0 text-sm font-bold text-slate-900 tabular-nums">
+                              â‚¦{Number(w.price || 0).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No wholesalers added.</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </DialogContent>
         )}
