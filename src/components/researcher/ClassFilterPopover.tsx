@@ -17,6 +17,7 @@ import {
 } from "@/lib/researcher/taxonomy";
 
 export type FilterClassId =
+  | "principal_shop"
   | "age"
   | "gender"
   | "health_condition"
@@ -32,6 +33,7 @@ export type FilterClassId =
 export type AppliedClassFilters = Partial<Record<FilterClassId, string[]>>;
 
 type ItemLike = {
+  source?: string;
   dosageForm?: string;
   budgetRange?: string;
   tags?: Record<string, string[]>;
@@ -57,6 +59,8 @@ const matchesAny = (values: string[], selected: string[]) =>
 
 const matchesClass = (item: ItemLike, classId: FilterClassId, selected: string[]) => {
   if (!selected.length) return true;
+
+  if (classId === "principal_shop") return String(item.source || "").toLowerCase() === "principal";
 
   const tags = item.tags || {};
 
@@ -107,10 +111,41 @@ export function ClassFilterPopover({
     } catch {
       setRecentTags([]);
     }
-  }, [appliedFilters, open]);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    // Prevent background scroll (wheel/touch) while still allowing scrolling inside the popover.
+    const preventIfOutside = (event: Event) => {
+      const target = event.target as Node | null;
+      if (target && popoverBodyRef.current?.contains(target)) return;
+      event.preventDefault();
+    };
+
+    window.addEventListener("wheel", preventIfOutside, { passive: false });
+    window.addEventListener("touchmove", preventIfOutside, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", preventIfOutside as any);
+      window.removeEventListener("touchmove", preventIfOutside as any);
+    };
+  }, [open]);
 
   const classes = useMemo(() => {
     const base = [
+      { id: "principal_shop" as const, label: "Principal's shop" },
       { id: "age" as const, label: "Age" },
       { id: "gender" as const, label: "Gender" },
       { id: "health_condition" as const, label: "Health condition" },
@@ -139,6 +174,7 @@ export function ClassFilterPopover({
     };
 
     return {
+      principal_shop: ["Principal's shop"],
       age: uniq([...ageBandOptions]),
       gender: uniq([...genderOptions]),
       health_condition: uniq([...bmiBandOptions]),
@@ -179,9 +215,6 @@ export function ClassFilterPopover({
       delete out[classId];
       return out;
     });
-    const outApplied = { ...(appliedFilters || {}) };
-    delete outApplied[classId];
-    onChangeAppliedFilters(outApplied);
   };
 
   const applyDraft = () => {

@@ -44,8 +44,27 @@ const ResearcherHomepage = () => {
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");
     localStorage.removeItem("user");
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("researcher.pack.supplements")) localStorage.removeItem(key);
+        if (key.startsWith("researcher.sheet.supplements")) localStorage.removeItem(key);
+      });
+    } catch {
+      localStorage.removeItem("researcher.pack.supplements");
+      localStorage.removeItem("researcher.sheet.supplements");
+    }
     tokenManager.clearTokens();
     if (typeof logout === 'function') logout();
+
+    // Clear verified benfek context so users must verify again after logout.
+    sessionStorage.removeItem("researcherVerifiedBenfekCode");
+    sessionStorage.removeItem("researcherVerifiedBenfek");
+    sessionStorage.removeItem("researcher.gallery.return_tab");
+    sessionStorage.removeItem("researcher.gallery.last_add_request");
+    sessionStorage.removeItem("researcher.gallery.add_origin");
+    sessionStorage.removeItem("researcher.sheet.return_tab");
+    window.dispatchEvent(new Event("researcher-benfek-cleared"));
+    window.dispatchEvent(new Event("researcher-pack-updated"));
     
     setIsAuthenticated(false);
     toast({

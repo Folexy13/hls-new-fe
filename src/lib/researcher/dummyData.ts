@@ -18,6 +18,7 @@ export interface Supplement {
   // Kept for display/search parity with the original researcher app.
   category: string;
   manufacturer?: string;
+  strength?: string;
   dosageForm?: string;
   budgetRange?: string;
   tags?: Record<string, string[]>;
