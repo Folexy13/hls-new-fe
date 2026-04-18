@@ -27,6 +27,7 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
       if (data?.benfek) {
         sessionStorage.setItem("researcherVerifiedBenfekCode", data.benfek.code);
         sessionStorage.setItem("researcherVerifiedBenfek", JSON.stringify(data.benfek));
+        window.dispatchEvent(new Event("researcher-benfek-verified"));
         setUserDetails({
           ...dummyUser,
           name: data.benfek.name || dummyUser.name,
@@ -48,7 +49,10 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
                 id: String(i.supplement.id)
               }));
             });
-            localStorage.setItem("researcher.pack.supplements", JSON.stringify(mappedPacks));
+            localStorage.setItem(
+              `researcher.pack.supplements.${data.benfek.code}`,
+              JSON.stringify(mappedPacks)
+            );
             // Notify other components (like TabsContainer or SupplementsSelector) that packs are updated
             window.dispatchEvent(new Event("researcher-pack-updated"));
           }
