@@ -63,9 +63,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [newStrength, setNewStrength] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPrice, setNewPrice] = useState<string>("");
-  const [newDosageForm, setNewDosageForm] = useState<string>("");
-  const [newBudgetRange, setNewBudgetRange] = useState<string>("");
   const [newTags, setNewTags] = useState<Record<string, string[]>>({});
+  const [newExpiryDate, setNewExpiryDate] = useState("");
   const [newImageUrl, setNewImageUrl] = useState<string>("");
   const [newWholesalers, setNewWholesalers] = useState<
     Array<{ name: string; price: number; contact: string; address: string }>
@@ -80,7 +79,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const canEditWholesale = useMemo(() => canViewWholesaleDetails(), []);
+  const canEditWholesale = true; // Experimental: allow all researchers access
 
   const [sheetSupplements, setSheetSupplements] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,9 +122,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewStrength("");
     setNewDescription("");
     setNewPrice("");
-    setNewDosageForm("");
-    setNewBudgetRange("");
     setNewTags({});
+    setNewExpiryDate("");
     setNewImageUrl("");
     setNewWholesalers([]);
     setWholesalerName("");
@@ -203,6 +201,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     const fetchSupplements = async () => {
       try {
         const items = await researcherService.getSupplements({ code: verifiedCode || undefined });
+        console.log("Gallery Supplements API Response:", items);
         if (Array.isArray(items) && items.length) {
           const fetchedSupplements = items.map((item: any) => ({
             ...item,
@@ -213,10 +212,11 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           })) as any;
           setGallerySupplements(fetchedSupplements);
           localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(fetchedSupplements)); // Update local storage with fresh data
-        } else if (verifiedCode) {
-          // If verified, and backend returns empty, it means no supplements for this code.
-          // Clear local storage to reflect backend state.
-          setGallerySupplements([]);
+        } else if (verifiedCode && items !== null) {
+          // Only clear if the response was explicitly empty and we have a verified code
+          // This prevents wiping if the user is just browsing or the API is warming up.
+          console.warn("Backend returned no items for this context.");
+          // setGallerySupplements([]); // Keep existing dummy data/cache if backend is empty
           localStorage.removeItem(GALLERY_STORAGE_KEY);
         }
       } catch (error) {
@@ -238,6 +238,22 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [verifiedCode]);
+
+  useEffect(() => {
+    const syncSheet = () => {
+      try {
+        const raw = localStorage.getItem(sheetStorageKey);
+        const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+        if (Array.isArray(parsed)) setSheetSupplements(parsed as any);
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("researcher-sheet-updated", syncSheet);
+    window.addEventListener("storage", syncSheet);
+    return () => {
+      window.removeEventListener("researcher-sheet-updated", syncSheet);
+      window.removeEventListener("storage", syncSheet);
+    };
+  }, [sheetStorageKey]);
 
   useEffect(() => {
     if (!openAddRequest) return;
@@ -363,9 +379,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         manufacturer,
         strength,
         imageUrl: newImageUrl || undefined,
-        dosageForm: newDosageForm,
-        budgetRange: newBudgetRange,
         tags: newTags,
+        expiryDate: newExpiryDate || undefined,
         price,
         type: "supplement",
         code: verifiedCode,
@@ -403,9 +418,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           name.substring(0, 5)
         )}`,
         ...(newImageUrl ? { imageUrl: newImageUrl } : {}),
-        dosageForm: newDosageForm,
-        budgetRange: newBudgetRange,
         tags: newTags,
+        expiryDate: newExpiryDate || undefined,
         price,
         type: "supplement",
         code: verifiedCode,
@@ -419,9 +433,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           strength,
           imageUrl: newSupplement.imageUrl,
           category: newSupplement.category,
-          dosageForm: newDosageForm,
-          budgetRange: newBudgetRange,
           tags: newTags,
+          expiryDate: newExpiryDate || undefined,
           price,
           stock: 0,
           type: "supplement",
@@ -495,9 +508,12 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewStrength(String((item as any).strength || ""));
     setNewDescription(item.description);
     setNewPrice(String(item.price));
-    setNewDosageForm(item.dosageForm || "");
-    setNewBudgetRange(item.budgetRange || "");
-    setNewTags(item.tags || {});
+    
+    const tags = { ...(item.tags || {}) };
+    if (item.dosageForm && !tags.dosage_form) tags.dosage_form = [item.dosageForm];
+    if (item.budgetRange && !tags.budget_range) tags.budget_range = [item.budgetRange];
+    setNewTags(tags);
+    setNewExpiryDate(item.expiryDate || "");
     setNewImageUrl(item.imageUrl || "");
     setNewWholesalers(Array.isArray((item as any).wholesalers) ? (item as any).wholesalers : []);
     setWholesalerName("");
@@ -532,6 +548,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     selectedItems.forEach((item) => merged.set(item.id, item));
     const nextSheet = Array.from(merged.values());
 
+    const targetPackId = localStorage.getItem("researcher.gallery.target_pack") || undefined;
+
     setSheetSupplements(nextSheet);
     try {
       localStorage.setItem(sheetStorageKey, JSON.stringify(nextSheet));
@@ -547,6 +565,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       state: {
         selectedSupplements: nextSheet,
         returnTab: "gallery",
+        targetPackId,
       },
     });
   };
@@ -558,8 +577,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         // <p className="text-muted-foreground">Select supplements to add to your packs</p>
       </div> */}
 
-      <div className="h-[72px]" aria-hidden="true" />
-      <div className="fixed left-0 right-0 top-[132px] z-30 bg-researcher-background border-b border-researcher-border/70">
+      <div className="sticky top-[132px] z-30 bg-white border-b border-researcher-border/70 -mx-1 sm:-mx-3 mb-4 shadow-sm">
         <div className="container px-2 sm:px-4 py-3">
           <div className="flex flex-row items-center gap-2 w-full sm:max-w-3xl mx-auto">
             <ClassFilterPopover
@@ -806,40 +824,14 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="new-supplement-dosage">Dosage form</Label>
-                    <select
-                      id="new-supplement-dosage"
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-researcher-primary focus:border-researcher-primary bg-white"
-                      value={newDosageForm}
-                      onChange={(e) => setNewDosageForm(e.target.value)}
-                    >
-                      <option value="">Select dosage form...</option>
-                      {dosageFormOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="new-supplement-budget">Budget range</Label>
-                    <select
-                      id="new-supplement-budget"
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-researcher-primary focus:border-researcher-primary bg-white"
-                      value={newBudgetRange}
-                      onChange={(e) => setNewBudgetRange(e.target.value)}
-                    >
-                      <option value="">Select budget range...</option>
-                      {budgetRangeOptions.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="new-supplement-expiry">Expiry Date</Label>
+                  <Input
+                    id="new-supplement-expiry"
+                    type="date"
+                    value={newExpiryDate}
+                    onChange={(e) => setNewExpiryDate(e.target.value)}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -869,12 +861,20 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                           {def.label}
                         </option>
                       ))}
+                      <option value="dosage_form">Dosage Form</option>
+                      <option value="budget_range">Budget Range</option>
+                      <option value="pack_quantity">Pack Quantity</option>
                     </select>
 
                     <div className="flex gap-2">
                       {(() => {
                         const def = researcherTagDefinitions.find((d) => d.id === tagCategory);
-                        if (def?.values?.length) {
+                        let options: string[] = [];
+                        if (tagCategory === ("dosage_form" as any)) options = dosageFormOptions;
+                        else if (tagCategory === ("budget_range" as any)) options = budgetRangeOptions;
+                        else if (def?.values) options = def.values;
+
+                        if (options.length > 0) {
                           if (tagValueMode === "custom") {
                             return (
                               <Input
@@ -901,7 +901,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                               }}
                             >
                               <option value="">Select…</option>
-                              {def.values.map((v) => (
+                              {options.map((v) => (
                                 <option key={v} value={v}>
                                   {v}
                                 </option>

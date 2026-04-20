@@ -17,7 +17,6 @@ import {
 } from "@/lib/researcher/taxonomy";
 
 export type FilterClassId =
-  | "principal_shop"
   | "age"
   | "gender"
   | "health_condition"
@@ -26,6 +25,7 @@ export type FilterClassId =
   | "current_medications"
   | "lifestyle_factors"
   | "hls_factors"
+  | "principal_shop"
   | "recent_tags"
   | "dosage_form"
   | "budget_range";
@@ -78,8 +78,8 @@ const matchesClass = (item: ItemLike, classId: FilterClassId, selected: string[]
     return matchesAny(allValues, selected);
   }
 
-  if (classId === "dosage_form") return selected.includes(item.dosageForm || "");
-  if (classId === "budget_range") return selected.includes(item.budgetRange || "");
+  if (classId === "dosage_form") return matchesAny(tags["dosage_form"] || [], selected);
+  if (classId === "budget_range") return matchesAny(tags["budget_range"] || [], selected);
 
   return true;
 };
@@ -145,7 +145,6 @@ export function ClassFilterPopover({
 
   const classes = useMemo(() => {
     const base = [
-      { id: "principal_shop" as const, label: "Principal's shop" },
       { id: "age" as const, label: "Age" },
       { id: "gender" as const, label: "Gender" },
       { id: "health_condition" as const, label: "Health condition" },
@@ -154,6 +153,7 @@ export function ClassFilterPopover({
       { id: "current_medications" as const, label: "Current medications" },
       { id: "lifestyle_factors" as const, label: "Lifestyle factors" },
       { id: "hls_factors" as const, label: "HLS factors" },
+      { id: "principal_shop" as const, label: "Principal's shop" },
       { id: "recent_tags" as const, label: "Recent tags" },
     ];
     if (!includeDosageBudget) return base;

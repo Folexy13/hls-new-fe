@@ -5,6 +5,8 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Input } from '@/components/ui/input';
 import { NavLink } from 'react-router-dom';
 import { apiClient } from '@/config/axios';
+import { PackCatalogue } from '@/components/researcher/PackCatalogue';
+import { packCategories } from '@/lib/researcher/dummyData';
 
 const Dashboard = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -19,6 +21,8 @@ const Dashboard = () => {
   const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
   const [nutrientReady, setNutrientReady] = useState(false);
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
+  const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
+  const [packItems, setPackItems] = useState<Record<string, any[]>>({});
 
   const bannerImages = useMemo(() => ([
     'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
@@ -148,6 +152,27 @@ const Dashboard = () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const fetchPacks = async () => {
+      try {
+        const response = await apiClient.get('/api/v2/benfek/packs');
+        const packs = response.data?.data || [];
+        const mapped: Record<string, any[]> = {};
+        packs.forEach((p: any) => {
+          mapped[p.packId] = (p.items || []).map((i: any) => ({
+            ...i.supplement,
+            qty: i.quantity
+          }));
+        });
+        setPackItems(mapped);
+      } catch (error) {
+        console.error('Failed to fetch packs:', error);
+      }
+    };
+
+    if (activeTab === 'nutrient') fetchPacks();
+  }, [activeTab]);
 
   const pharmacyItems = useMemo(() => {
     return apiPharmacyItems.length > 0 ? apiPharmacyItems : fallbackPharmacyItems;
@@ -502,7 +527,13 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {!nutrientReady ? (
+                {activeCatalogueId ? (
+                  <PackCatalogue 
+                    packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
+                    items={packItems[activeCatalogueId === 'promo-1' ? 'economic' : activeCatalogueId === 'promo-2' ? 'doctors_choice' : 'premium_offer'] || []}
+                    onBack={() => setActiveCatalogueId(null)}
+                  />
+                ) : !nutrientReady ? (
                   <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-6 text-center text-sm text-emerald-800">
                     <p>Our researchers are working. An alert with a link will be sent to your number.</p>
                     <button
@@ -541,6 +572,7 @@ const Dashboard = () => {
                         <div className="flex items-end justify-between">
                           <span className="text-[11px] text-white/80">Explore packs</span>
                           <button
+                            onClick={() => setActiveCatalogueId(card.id)}
                             type="button"
                             className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center"
                             aria-label={`Open ${card.title}`}

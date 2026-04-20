@@ -49,6 +49,7 @@ const ResearcherHomepage = () => {
         if (key.startsWith("researcher.pack.supplements")) localStorage.removeItem(key);
         if (key.startsWith("researcher.sheet.supplements")) localStorage.removeItem(key);
       });
+      localStorage.removeItem("researcher.gallery.target_pack");
     } catch {
       localStorage.removeItem("researcher.pack.supplements");
       localStorage.removeItem("researcher.sheet.supplements");

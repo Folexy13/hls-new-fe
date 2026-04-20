@@ -6,13 +6,13 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Plus, GalleryHorizontal, AlertTriangle, Package, Trash2 } from "lucide-react";
-import { packCategories, type Supplement, calculateTotalPrice } from "@/lib/researcher/dummyData";
+import { packCategories, type Supplement } from "@/lib/researcher/dummyData";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface SupplementsSelectorProps {
-  onNavigateToGallery: () => void;
-  onAddNewFromGallery: () => void;
+  onNavigateToGallery: (packId: string) => void;
+  onAddNewFromGallery: (packId: string) => void;
   selectedSupplements: Record<string, Supplement[]>;
   onRemoveSupplement: (packId: string, supplementId: string) => void;
   budgetExceeded: Record<string, boolean>;
@@ -40,7 +40,7 @@ export function SupplementsSelector({
         {packCategories.map((pack) => {
           const packItems = selectedSupplements[pack.id] || [];
           const hasSupplements = packItems.length > 0;
-          const totalPackPrice = hasSupplements ? calculateTotalPrice(packItems) : 0;
+          const totalPackPrice = packItems.reduce((sum, item) => sum + (item.price * ((item as any).qty || 1)), 0);
           const maxBudget = packBudgets ? packBudgets[pack.id]?.max : 0;
           const minBudget = packBudgets ? packBudgets[pack.id]?.min : 0;
 
@@ -78,7 +78,7 @@ export function SupplementsSelector({
 
                   <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
                     <Button
-                      onClick={onAddNewFromGallery}
+                      onClick={() => onAddNewFromGallery(pack.id)}
                       className="bg-researcher-primary hover:bg-researcher-secondary flex items-center"
                     >
                       <Plus className="mr-2 h-4 w-4" /> Add New
@@ -86,7 +86,7 @@ export function SupplementsSelector({
 
                     <Button
                       variant="outline"
-                      onClick={onNavigateToGallery}
+                      onClick={() => onNavigateToGallery(pack.id)}
                       className="border-researcher-primary text-researcher-primary hover:bg-researcher-muted flex items-center"
                     >
                       <GalleryHorizontal className="mr-2 h-4 w-4" /> Add from Gallery
@@ -117,7 +117,10 @@ export function SupplementsSelector({
                                 )}
                               </div>
                               <div>
-                                <p className="font-medium">{supplement.name}</p>
+                                <p className="font-medium">
+                                  {(supplement as any).qty > 1 && <span className="text-researcher-primary font-bold mr-1">{(supplement as any).qty}x</span>}
+                                  {supplement.name}
+                                </p>
                                 <p className="text-xs text-muted-foreground">
                                   {supplement.description.substring(0, 50)}
                                 </p>
@@ -129,7 +132,7 @@ export function SupplementsSelector({
                                   {pack.name}
                                 </Badge>
                                 <span className="text-sm font-medium">
-                                  ₦{supplement.price.toLocaleString()}
+                                  ₦{(supplement.price * ((supplement as any).qty || 1)).toLocaleString()}
                                 </span>
                               </div>
                               <Button

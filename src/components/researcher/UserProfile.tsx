@@ -25,6 +25,10 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
       const data = await researcherService.verifyBenfekCode(benefekCode);
 
       if (data?.benfek) {
+        // Clear previous session data to ensure fresh fetch from backend
+        localStorage.removeItem(`researcher.sheet.supplements.${data.benfek.code}`);
+        localStorage.removeItem("researcher.gallery.supplements");
+
         sessionStorage.setItem("researcherVerifiedBenfekCode", data.benfek.code);
         sessionStorage.setItem("researcherVerifiedBenfek", JSON.stringify(data.benfek));
         window.dispatchEvent(new Event("researcher-benfek-verified"));
@@ -33,6 +37,7 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
           name: data.benfek.name || dummyUser.name,
           gender: data.benfek.gender || dummyUser.gender,
           benefekCode: data.benfek.code,
+          health: data.benfek.health,
           budget: data.benfek.quiz?.preferences?.budget
             ? { min: 0, max: Number(data.benfek.quiz.preferences.budget) }
             : dummyUser.budget,
@@ -195,6 +200,26 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
                       <p className="font-medium">
                         ₦{userDetails.budget.min.toLocaleString()} - ₦{userDetails.budget.max.toLocaleString()}
                       </p>
+                    </div>
+                  )}
+                  {userDetails.health && (
+                    <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 pt-4 border-t">
+                      <div className="col-span-2 sm:col-span-1">
+                        <Label className="text-muted-foreground text-xs">Allergies</Label>
+                        <p className="text-sm font-medium">{userDetails.health.allergies || "None"}</p>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <Label className="text-muted-foreground text-xs">Medications</Label>
+                        <p className="text-sm font-medium">{userDetails.health.medications || "None"}</p>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <Label className="text-muted-foreground text-xs">Scars / Surgery</Label>
+                        <p className="text-sm font-medium">{userDetails.health.scares || "None"}</p>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <Label className="text-muted-foreground text-xs">Family Condition</Label>
+                        <p className="text-sm font-medium">{userDetails.health.familyCondition || "None"}</p>
+                      </div>
                     </div>
                   )}
                 </div>

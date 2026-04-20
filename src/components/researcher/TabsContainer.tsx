@@ -3,6 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProfile } from "@/components/researcher/UserProfile";
 import { SupplementsSelector } from "@/components/researcher/SupplementsSelector";
 import { SupplementGallery } from "@/components/researcher/SupplementGallery";
+import { MyNutrientPacks } from "@/components/researcher/MyNutrientPacks";
+import { PackCatalogue } from "@/components/researcher/PackCatalogue";
+import { researcherService } from "@/services/researcherService";
 import {
   calculatePackBudget,
   calculateTotalPrice,
@@ -28,6 +31,11 @@ export function TabsContainer() {
   const packStorageKey = useMemo(() => {
     return verifiedCode ? `researcher.pack.supplements.${verifiedCode}` : "researcher.pack.supplements";
   }, [verifiedCode]);
+
+  const dispatchedStorageKey = useMemo(() => {
+    return verifiedCode ? `researcher.dispatched.packs.${verifiedCode}` : "researcher.dispatched.packs";
+  }, [verifiedCode]);
+
   const [activeTab, setActiveTab] = useState(() => {
     if (!sessionStorage.getItem("researcherVerifiedBenfekCode") && defaultTab === "supplements") {
       return "profile";
@@ -46,6 +54,9 @@ export function TabsContainer() {
     Object.fromEntries(packCategories.map((p) => [p.id, false]))
   );
   const [userBudget, setUserBudget] = useState<{ min: number; max: number } | null>(null);
+  const [dispatchedPacks, setDispatchedPacks] = useState<Record<string, boolean>>({});
+  const [activeCataloguePack, setActiveCataloguePack] = useState<string | null>(null);
+
   const { toast } = useToast();
 
   const packBudgets = userBudget ? calculatePackBudget(userBudget) : null;
@@ -96,10 +107,11 @@ export function TabsContainer() {
     if (!packsHydrated) return;
     try {
       localStorage.setItem(packStorageKey, JSON.stringify(selectedSupplements));
+      localStorage.setItem(dispatchedStorageKey, JSON.stringify(dispatchedPacks));
     } catch {
       // ignore
     }
-  }, [packStorageKey, packsHydrated, selectedSupplements, userVerified]);
+  }, [packStorageKey, dispatchedStorageKey, packsHydrated, selectedSupplements, dispatchedPacks, userVerified]);
 
   useEffect(() => {
     const loadPackSupplements = () => {
@@ -117,11 +129,17 @@ export function TabsContainer() {
           ...emptySelected,
           ...(parsed as Record<string, Supplement[]>),
         });
-        setPacksHydrated(true);
+
+        try {
+          const rawDispatched = localStorage.getItem(dispatchedStorageKey);
+          setDispatchedPacks(rawDispatched ? JSON.parse(rawDispatched) : {});
+        } catch {
+          setDispatchedPacks({});
+        }
       } catch {
         setSelectedSupplements(emptySelected);
-        setPacksHydrated(true);
       }
+      setPacksHydrated(true);
     };
 
     window.addEventListener("researcher-pack-updated", loadPackSupplements);
@@ -132,7 +150,7 @@ export function TabsContainer() {
       window.removeEventListener("researcher-pack-updated", loadPackSupplements);
       window.removeEventListener("storage", loadPackSupplements);
     };
-  }, [emptySelected, packStorageKey, userVerified]);
+  }, [emptySelected, packStorageKey, dispatchedStorageKey, userVerified]);
 
   useEffect(() => {
     if (userVerified) return;
@@ -207,19 +225,49 @@ export function TabsContainer() {
     });
   };
 
-  const handleDispatchPack = (packId: string) => {
+  const handleDispatchPack = async (packId: string) => {
     const packName = packCategories.find((p) => p.id === packId)?.name || packId;
-    toast({
-      title: "Pack Dispatched",
-      description: `The ${packName} has been dispatched successfully.`,
-    });
+
+    if (verifiedCode) {
+      const items = (selectedSupplements[packId] || []).map(i => ({
+        id: i.id, // Keep as string, as Supplement.id is string
+        quantity: (i as any).qty || 1
+      })); // Removed filter as id is now string and !isNaN(string) is incorrect
+
+      try {
+        await researcherService.dispatchPack({
+          code: verifiedCode,
+          packId,
+          packName,
+          items,
+          status: "dispatched"
+        });
+
+        setDispatchedPacks((prev) => ({ ...prev, [packId]: true }));
+        toast({
+          title: "Pack Dispatched",
+          description: `The ${packName} is now live in the beneficiary's catalogue.`,
+        });
+        setActiveTab("catalogue");
+      } catch (e) {
+        toast({
+          title: "Dispatch failed",
+          description: "Could not sync with the server.",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
-  const navigateToGallery = () => {
+  const navigateToGallery = (packId: string) => {
+    localStorage.setItem("researcher.gallery.target_pack", packId);
     setActiveTab("gallery");
   };
 
   const handleTabChange = (value: string) => {
+    if (value === "gallery") {
+      localStorage.removeItem("researcher.gallery.target_pack");
+    }
     if (value === "supplements" && !userVerified) {
       toast({
         title: "Verify code first",
@@ -232,7 +280,7 @@ export function TabsContainer() {
     setActiveTab(value);
   };
 
-  const handleAddNewFromGallery = () => {
+  const handleAddNewFromGallery = (packId: string) => {
     if (!userVerified) {
       toast({
         title: "Verify code first",
@@ -244,6 +292,7 @@ export function TabsContainer() {
     }
     sessionStorage.setItem("researcher.gallery.add_origin", "supplements");
     sessionStorage.setItem("researcher.gallery.return_tab", "supplements");
+    localStorage.setItem("researcher.gallery.target_pack", packId);
     setActiveTab("gallery");
     setGalleryAddRequest((value) => value + 1);
   };
@@ -255,14 +304,15 @@ export function TabsContainer() {
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <div className="fixed left-0 right-0 top-[72px] z-40 bg-researcher-background border-b border-researcher-border/70">
+      <div className="fixed left-0 right-0 top-[72px] z-40 bg-white border-b border-researcher-border/70">
         <div className="container h-[60px] flex items-center px-2 sm:px-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile">User Profile</TabsTrigger>
-            <TabsTrigger value="supplements" disabled={!userVerified} aria-disabled={!userVerified}>
+          <TabsList className="flex w-full">
+            <TabsTrigger className="w-full" value="profile">User Profile</TabsTrigger>
+            <TabsTrigger className="w-full" value="supplements" disabled={!userVerified} aria-disabled={!userVerified}>
               Select Supplements
             </TabsTrigger>
-            <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            <TabsTrigger className="w-full" value="gallery">Gallery</TabsTrigger>
+            {/* <TabsTrigger className="w-full" value="catalogue">My Nutrient Packs</TabsTrigger> */}
           </TabsList>
         </div>
       </div>
@@ -286,6 +336,22 @@ export function TabsContainer() {
 
       <TabsContent value="gallery" className="animate-fade-in">
         <SupplementGallery openAddRequest={galleryAddRequest} />
+      </TabsContent>
+
+      <TabsContent value="catalogue" className="animate-fade-in p-1 sm:p-3">
+        {activeCataloguePack ? (
+          <PackCatalogue 
+            packName={packCategories.find(p => p.id === activeCataloguePack)?.name || ""}
+            items={selectedSupplements[activeCataloguePack] || []}
+            onBack={() => setActiveCataloguePack(null)}
+          />
+        ) : (
+          <MyNutrientPacks 
+            dispatchedPacks={dispatchedPacks}
+            selectedSupplements={selectedSupplements}
+            onViewCatalogue={setActiveCataloguePack}
+          />
+        )}
       </TabsContent>
     </Tabs>
   );
