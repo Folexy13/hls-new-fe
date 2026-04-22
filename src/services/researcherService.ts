@@ -54,7 +54,7 @@ export const researcherService = {
     code: string;
     packId: string;
     packName: string;
-    supplementIds: number[];
+    items: Array<{ id: string | number; quantity: number }>;
     status?: string;
   }) {
     const response = await apiClient.post("/api/v2/researcher/packs/dispatch", payload);

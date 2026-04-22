@@ -10,13 +10,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { researcherService } from "@/services/researcherService";
 
 interface UserProfileProps {
-  onUserVerified?: (verified: boolean, budget: { min: number; max: number } | null) => void;
+  onUserVerified?: (verified: boolean, data: any) => void;
+  benfekData?: any;
 }
 
-export function UserProfile({ onUserVerified }: UserProfileProps) {
+export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
   const [benefekCode, setBenefekCode] = useState<string>("");
-  const [userDetails, setUserDetails] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
+
+  const formatValue = (value: unknown, fallback = "Not specified") => {
+    if (value === null || value === undefined) return fallback;
+    const text = String(value).trim();
+    return text ? text : fallback;
+  };
+  
+  // Use the prop data if available (persists across tab switches), otherwise local state
+  const userDetails = benfekData ? {
+    ...benfekData,
+    displayName: benfekData.fullName || benfekData.name || "Unnamed Benefek",
+    phone: benfekData.phone || "",
+    family: benfekData.principal ? `${benfekData.principal.firstName} ${benfekData.principal.lastName}` : "Not specified",
+    health: {
+      ...benfekData.health,
+      scares: benfekData.health?.scares,
+    },
+    budget: benfekData.quiz?.preferences?.budget
+      ? { min: 0, max: Number(benfekData.quiz.preferences.budget) || 0 } // Ensure max is a number, default to 0 if NaN
+      : dummyUser.budget
+  } : null;
+
   const { toast } = useToast();
 
   const handleVerifyCode = async () => {
@@ -32,18 +54,8 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
         sessionStorage.setItem("researcherVerifiedBenfekCode", data.benfek.code);
         sessionStorage.setItem("researcherVerifiedBenfek", JSON.stringify(data.benfek));
         window.dispatchEvent(new Event("researcher-benfek-verified"));
-        setUserDetails({
-          ...dummyUser,
-          name: data.benfek.name || dummyUser.name,
-          gender: data.benfek.gender || dummyUser.gender,
-          benefekCode: data.benfek.code,
-          health: data.benfek.health,
-          budget: data.benfek.quiz?.preferences?.budget
-            ? { min: 0, max: Number(data.benfek.quiz.preferences.budget) }
-            : dummyUser.budget,
-        });
 
-        // Fetch existing packs for this user from the backend to ensure local state is synced on load/refresh
+        // Fetch existing packs for this user from the backend to ensure local state is synced on load/refresh.
         try {
           const packsData = await researcherService.getBenfekPacks(data.benfek.code);
           if (packsData && Array.isArray(packsData)) {
@@ -71,15 +83,9 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
         });
 
         if (onUserVerified) {
-          onUserVerified(
-            true,
-            data.benfek.quiz?.preferences?.budget
-              ? { min: 0, max: Number(data.benfek.quiz.preferences.budget) }
-              : dummyUser.budget || null
-          );
+          onUserVerified(true, data.benfek); // Pass the full benfek object
         }
       } else {
-        setUserDetails(null);
         toast({
           title: "Invalid code",
           description: "The benefek code you entered is invalid.",
@@ -175,8 +181,8 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
                     <User className="text-white h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle>{userDetails.name}</CardTitle>
-                    <CardDescription>{userDetails.email}</CardDescription>
+                    <CardTitle>{userDetails.displayName}</CardTitle>
+                    <CardDescription>{formatValue(userDetails.phone, "Phone not provided")}</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -190,9 +196,17 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
                     <Label className="text-muted-foreground">Family</Label>
                     <p className="font-medium">{userDetails.family || "Not specified"}</p>
                   </div>
+                  <div>
+                    <Label className="text-muted-foreground">Age</Label>
+                    <p className="font-medium">{formatValue(userDetails.age)}</p>
+                  </div>
                   <div className="col-span-2">
                     <Label className="text-muted-foreground">Benefek Code</Label>
-                    <p className="font-medium">{userDetails.benefekCode}</p>
+                    <p className="font-medium">{formatValue(userDetails.code)}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Principal</Label>
+                    <p className="font-medium">{formatValue(userDetails.family)}</p>
                   </div>
                   {userDetails.budget && (
                     <div className="col-span-2">
@@ -206,19 +220,63 @@ export function UserProfile({ onUserVerified }: UserProfileProps) {
                     <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 pt-4 border-t">
                       <div className="col-span-2 sm:col-span-1">
                         <Label className="text-muted-foreground text-xs">Allergies</Label>
-                        <p className="text-sm font-medium">{userDetails.health.allergies || "None"}</p>
+                        <p className="text-sm font-medium">{formatValue(userDetails.health.allergies, "None")}</p>
                       </div>
                       <div className="col-span-2 sm:col-span-1">
                         <Label className="text-muted-foreground text-xs">Medications</Label>
-                        <p className="text-sm font-medium">{userDetails.health.medications || "None"}</p>
+                        <p className="text-sm font-medium">{formatValue(userDetails.health.medications, "None")}</p>
                       </div>
                       <div className="col-span-2 sm:col-span-1">
-                        <Label className="text-muted-foreground text-xs">Scars / Surgery</Label>
-                        <p className="text-sm font-medium">{userDetails.health.scares || "None"}</p>
+                        <Label className="text-muted-foreground text-xs">Scares / Health Concerns</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.health.scares, "None")}</p>
                       </div>
                       <div className="col-span-2 sm:col-span-1">
                         <Label className="text-muted-foreground text-xs">Family Condition</Label>
-                        <p className="text-sm font-medium">{userDetails.health.familyCondition || "None"}</p>
+                        <p className="text-sm font-medium">{formatValue(userDetails.health.familyCondition, "None")}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground text-xs">Current Condition Declared</Label>
+                        <p className="text-sm font-medium">{userDetails.health.hasCurrentCondition ? "Yes" : "No"}</p>
+                      </div>
+                    </div>
+                  )}
+                  {userDetails.quiz && (
+                    <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 pt-4 border-t">
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground text-xs">Nickname</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.basics?.nickname)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Weight</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.basics?.weight)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Height</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.basics?.height)}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground text-xs">Lifestyle Habits</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.lifestyle?.habits)}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground text-xs">Fun Activities</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.lifestyle?.funActivities)}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground text-xs">Lifestyle Priority</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.lifestyle?.priority)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Preferred Drug Form</Label>
+                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.preferences?.drugForm)}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground text-xs">Quiz Budget</Label>
+                        <p className="text-sm font-medium">
+                          {userDetails.quiz.preferences?.budget !== null && userDetails.quiz.preferences?.budget !== undefined
+                            ? `NGN ${Number(userDetails.quiz.preferences.budget).toLocaleString()}`
+                            : "Not specified"}
+                        </p>
                       </div>
                     </div>
                   )}

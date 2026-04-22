@@ -36,22 +36,28 @@ export function SupplementsSelector({
         <p className="text-muted-foreground">Choose supplements for your packs</p>
       </div>
 
-      <Accordion type="multiple" className="w-full max-w-3xl mx-auto">
+      <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
         {packCategories.map((pack) => {
           const packItems = selectedSupplements[pack.id] || [];
           const hasSupplements = packItems.length > 0;
-          const totalPackPrice = packItems.reduce((sum, item) => sum + (item.price * ((item as any).qty || 1)), 0);
-          const maxBudget = packBudgets ? packBudgets[pack.id]?.max : 0;
-          const minBudget = packBudgets ? packBudgets[pack.id]?.min : 0;
+          const totalPackPrice = packItems.reduce((sum, item) => sum + ((Number(item.price) || 0) * ((item as any).qty || 1)), 0);
+          const maxBudget = Number(packBudgets?.[pack.id]?.max) || 0;
+          const minBudget = Number(packBudgets?.[pack.id]?.min) || 0;
+          const displayName = pack.name === "Economic pack" ? "Economy pack" : pack.name;
 
           return (
             <AccordionItem
               key={pack.id}
               value={pack.id}
-              className={budgetExceeded[pack.id] ? "border-red-500" : ""}
+              className={`
+                group relative rounded-lg border border-slate-200 shadow-sm mb-4 overflow-hidden
+                ${budgetExceeded[pack.id] ? "border-red-500" : ""}
+                data-[state=open]:border-researcher-primary data-[state=open]:shadow-md
+                data-[state=closed]:bg-slate-200/60 data-[state=closed]:text-slate-500 data-[state=closed]:grayscale-[0.3]
+              `}
             >
               <AccordionTrigger className="text-lg font-medium">
-                {pack.name}
+                {displayName}
                 {hasSupplements && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
                     ({packItems.length} items)
@@ -76,20 +82,20 @@ export function SupplementsSelector({
                     </div>
                   )}
 
-                  <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:space-x-2">
+                  <div className="flex flex-row justify-between items-center w-full gap-2">
                     <Button
                       onClick={() => onAddNewFromGallery(pack.id)}
-                      className="bg-researcher-primary hover:bg-researcher-secondary flex items-center"
+                      className="bg-researcher-primary hover:bg-researcher-secondary flex items-center h-8 py-0 px-3 text-xs w-auto"
                     >
-                      <Plus className="mr-2 h-4 w-4" /> Add New
+                      <Plus className="mr-1.5 h-3.5 w-3.5" /> Add New
                     </Button>
 
                     <Button
                       variant="outline"
                       onClick={() => onNavigateToGallery(pack.id)}
-                      className="border-researcher-primary text-researcher-primary hover:bg-researcher-muted flex items-center"
+                      className="border-researcher-primary text-researcher-primary hover:bg-researcher-muted flex items-center h-8 py-0 px-3 text-xs w-auto"
                     >
-                      <GalleryHorizontal className="mr-2 h-4 w-4" /> Add from Gallery
+                      <GalleryHorizontal className="mr-1.5 h-3.5 w-3.5" /> Add from Gallery
                     </Button>
                   </div>
 
@@ -121,18 +127,12 @@ export function SupplementsSelector({
                                   {(supplement as any).qty > 1 && <span className="text-researcher-primary font-bold mr-1">{(supplement as any).qty}x</span>}
                                   {supplement.name}
                                 </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {supplement.description.substring(0, 50)}
-                                </p>
                               </div>
                             </div>
                             <div className="flex items-center">
                               <div className="flex flex-col items-end mr-3">
-                                <Badge variant="outline" className="bg-researcher-muted mb-1">
-                                  {pack.name}
-                                </Badge>
                                 <span className="text-sm font-medium">
-                                  ₦{(supplement.price * ((supplement as any).qty || 1)).toLocaleString()}
+                              ₦{((supplement.price || 0) * ((supplement as any).qty || 1)).toLocaleString()}
                                 </span>
                               </div>
                               <Button
@@ -160,10 +160,10 @@ export function SupplementsSelector({
 
                           <Button
                             onClick={() => onDispatchPack(pack.id)}
-                            className="bg-researcher-primary hover:bg-researcher-secondary"
+                            className="bg-researcher-primary/80 hover:bg-researcher-secondary w-fit h-fit"
                             disabled={!hasSupplements}
                           >
-                            <Package className="mr-2 h-4 w-4" /> Dispatch
+                           Dispatch
                           </Button>
                         </div>
                       </>

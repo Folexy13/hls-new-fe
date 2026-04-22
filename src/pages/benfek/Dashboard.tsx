@@ -166,8 +166,13 @@ const Dashboard = () => {
           }));
         });
         setPackItems(mapped);
+        setNutrientReady(
+          packs.some((pack: any) => Array.isArray(pack?.items) && pack.items.length > 0)
+        );
       } catch (error) {
         console.error('Failed to fetch packs:', error);
+        setPackItems({});
+        setNutrientReady(false);
       }
     };
 

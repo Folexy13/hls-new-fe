@@ -580,11 +580,6 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       <div className="sticky top-[132px] z-30 bg-white border-b border-researcher-border/70 -mx-1 sm:-mx-3 mb-4 shadow-sm">
         <div className="container px-2 sm:px-4 py-3">
           <div className="flex flex-row items-center gap-2 w-full sm:max-w-3xl mx-auto">
-            <ClassFilterPopover
-              items={gallerySupplements as any}
-              appliedFilters={appliedClassFilters}
-              onChangeAppliedFilters={setAppliedClassFilters}
-            />
             <div className="relative flex-1 min-w-0">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
@@ -607,6 +602,12 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
               >
                 <FileSpreadsheet className="h-4 w-4 text-researcher-primary" />
               </Button>
+
+              <ClassFilterPopover
+                items={gallerySupplements as any}
+                appliedFilters={appliedClassFilters}
+                onChangeAppliedFilters={setAppliedClassFilters}
+              />
 
               <Button
                 type="button"
@@ -657,7 +658,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   onCheckedChange={() => handleToggleSelect(supplement.id)}
                 />
               </div>
-              <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
+          bbbbbb    <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
               <div className="mt-0.5 flex items-center justify-center gap-2">
                 <p className="text-xs font-medium">₦{supplement.price.toLocaleString()}</p>
                 <Button
