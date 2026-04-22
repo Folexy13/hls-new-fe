@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, PackagePlus, Trash2 } from "lucide-react";
+import { ArrowLeft, Minus, PackagePlus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,10 +31,12 @@ type SelectedSupplement = {
   strength?: string;
   dosageForm?: string;
   budgetRange?: string;
+  expiryDate?: string;
   stock?: number;
   status?: string;
   wholesalers?: Array<{ name: string; price: number; contact: string; address: string }> | null;
   tags?: Record<string, string[]>;
+  qty?: number;
   imageUrl: string;
   price: number;
 };
@@ -42,6 +44,7 @@ type SelectedSupplement = {
 type LocationState = {
   selectedSupplements?: SelectedSupplement[];
   returnTab?: string;
+  targetPackId?: string;
 };
 
 export default function ResearcherSelectedSupplementsPage() {
@@ -61,7 +64,7 @@ export default function ResearcherSelectedSupplementsPage() {
     [verifiedCode]
   );
 
-  const canViewWholesale = useMemo(() => canViewWholesaleDetails(), []);
+  const canViewWholesale = true; // Experimental: allow all researchers access
 
   const [selected, setSelected] = useState<SelectedSupplement[]>(() => {
     const fromState = state.selectedSupplements || [];
@@ -76,7 +79,7 @@ export default function ResearcherSelectedSupplementsPage() {
     }
   });
 
-  const [selectedPackId, setSelectedPackId] = useState<string>("");
+  const [selectedPackId, setSelectedPackId] = useState<string>(state.targetPackId || localStorage.getItem("researcher.gallery.target_pack") || "");
   const [selectedSheetIds, setSelectedSheetIds] = useState<Record<string, boolean>>({});
   const [appliedClassFilters, setAppliedClassFilters] = useState<AppliedClassFilters>({});
   const [viewingSupplement, setViewingSupplement] = useState<SelectedSupplement | null>(null);
@@ -129,7 +132,7 @@ export default function ResearcherSelectedSupplementsPage() {
   }, [selected, selectedSheetIds]);
 
   const selectedDispatchTotal = useMemo(
-    () => selectedForDispatch.reduce((sum, item) => sum + (item.price || 0), 0),
+    () => selectedForDispatch.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0),
     [selectedForDispatch]
   );
 
@@ -140,6 +143,18 @@ export default function ResearcherSelectedSupplementsPage() {
       ...prev,
       [id]: !prev[id],
     }));
+  };
+
+  const handleUpdateQty = (id: string, delta: number) => {
+    setSelected((prev) =>
+      prev.map((item) => {
+        if (item.id === id) {
+          const nextQty = Math.max(1, (item.qty || 1) + delta);
+          return { ...item, qty: nextQty };
+        }
+        return item;
+      })
+    );
   };
 
   const handleRemoveFromSheet = (id: string) => {
@@ -169,23 +184,26 @@ export default function ResearcherSelectedSupplementsPage() {
       store[selectedPackId] = nextForPack;
       localStorage.setItem(packStorageKey, JSON.stringify(store));
       window.dispatchEvent(new Event("researcher-pack-updated"));
+      window.dispatchEvent(new Event("researcher-sheet-updated"));
     } catch {
       // ignore local storage failures
     }
 
     // Extract supplement IDs for backend sync (handling potential string-to-number conversion)
-    const supplementIds = selectedForDispatch.map((item) => Number(item.id)).filter((id) => !isNaN(id));
+    const items = selectedForDispatch
+      .map((item) => ({ id: Number(item.id), quantity: item.qty || 1 }))
+      .filter((item) => !isNaN(item.id));
 
     const code = sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
 
     // Best-effort backend sync
-    if (code && supplementIds.length) {
+    if (code && items.length) {
       try {
         await researcherService.dispatchPack({
           code,
           packId: selectedPackId,
           packName: selectedPackName,
-          supplementIds: supplementIds,
+          items: items, // Passing objects with quantity instead of just IDs
           status: "draft",
         });
       } catch {
@@ -240,9 +258,10 @@ export default function ResearcherSelectedSupplementsPage() {
         <div className="mx-auto w-[90vw] py-3 flex items-center gap-3">
           <div className="flex-1 flex items-center gap-2">
             <select
-              className="w-full max-w-[50vw] px-3 py-2 border rounded-md bg-white text-sm"
+              className="w-full max-w-[50vw] px-3 py-2 border rounded-md bg-white text-sm disabled:opacity-50 disabled:bg-slate-50"
               value={selectedPackId}
               onChange={(e) => setSelectedPackId(e.target.value)}
+              disabled={!!state.targetPackId || !!localStorage.getItem("researcher.gallery.target_pack") || selectedForDispatch.length > 0}
             >
               <option value="">Select a pack...</option>
               {packCategories.map((pack) => (
@@ -289,7 +308,7 @@ export default function ResearcherSelectedSupplementsPage() {
         </div>
       </div>
 
-      <main className="container py-6 pt-[160px]">
+      <main className="container px-1 py-6 pt-[160px]">
         {filteredSelected.length === 0 ? (
           <div className="text-center text-muted-foreground py-16">
             No supplements match your filters.
@@ -305,7 +324,7 @@ export default function ResearcherSelectedSupplementsPage() {
                 }`}
                 onClick={() => setViewingSupplement(item)}
               >
-                <CardContent className="p-2 flex flex-col items-center">
+                <CardContent className="p-2 flex flex-col items-start">
                   {/* Selection Checkbox (Restored) */}
                   <div className="absolute top-1 left-1 z-20">
                     <Checkbox
@@ -330,7 +349,34 @@ export default function ResearcherSelectedSupplementsPage() {
                     <Trash2 className="h-4 w-4" />
                   </Button>
 
-                  {/* Supplement Image */}
+                  {/* Quantity Badge (Top Center of Image) */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-white/95 text-researcher-primary border border-researcher-primary/20 text-[11px] font-bold px-2 rounded-full shadow-sm pointer-events-none">
+                    {item.qty || 1}
+                  </div>
+
+                  {/* Control Buttons (Bottom Right) */}
+                  <div 
+                    className="absolute bottom-1 right-1 z-20 flex items-center bg-white/90 rounded-md border border-slate-200 shadow-sm overflow-hidden" 
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="p-1.5 hover:bg-slate-100 text-rose-600 transition-colors border-r border-slate-100"
+                      onClick={() => handleUpdateQty(item.id, -1)}
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-1.5 hover:bg-slate-100 text-emerald-600 transition-colors"
+                      onClick={() => handleUpdateQty(item.id, 1)}
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+
                   <div className="aspect-square w-full mb-1 overflow-hidden rounded-md bg-white border flex items-center justify-center">
                     <img
                       src={item.imageUrl}
@@ -340,16 +386,16 @@ export default function ResearcherSelectedSupplementsPage() {
                   </div>
 
                   {/* Manufacturer Name */}
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate w-full text-center">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate w-full text-left">
                     {item.manufacturer || "Manufacturer"}
                   </p>
 
-                  <p className="mt-0.5 text-xs font-semibold text-slate-900 truncate w-full text-center">
+                  <p className="mt-0.5 text-xs font-semibold text-slate-900 truncate w-full text-left">
                     {item.name}
                   </p>
 
                   <p className="mt-0.5 text-[11px] font-bold text-researcher-primary tabular-nums">
-                    ₦{(item.price || 0).toLocaleString()}
+                    ₦{(item.price * (item.qty || 1)).toLocaleString()}
                   </p>
                 </CardContent>
               </Card>
@@ -361,14 +407,14 @@ export default function ResearcherSelectedSupplementsPage() {
       {/* Details Dialog (Mimics Gallery Page Details) */}
       <Dialog open={!!viewingSupplement} onOpenChange={() => setViewingSupplement(null)}>
         {viewingSupplement && (
-          <DialogContent className="max-w-md w-[95vw] rounded-xl">
-            <DialogHeader>
+          <DialogContent className="max-w-md w-[95vw] rounded-xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-2 shrink-0">
               <DialogTitle className="text-xl">{viewingSupplement.name}</DialogTitle>
               <DialogDescription className="text-researcher-primary font-medium">
                 {viewingSupplement.manufacturer}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-4">
               <div className="aspect-video w-full rounded-lg border bg-white flex items-center justify-center p-4">
                 <img 
                   src={viewingSupplement.imageUrl} 
@@ -390,7 +436,9 @@ export default function ResearcherSelectedSupplementsPage() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100">
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Dosage</span>
-                  <span className="text-xs font-semibold">{viewingSupplement.dosageForm || "Not Specified"}</span>
+                  <span className="text-xs font-semibold">
+                    {viewingSupplement.tags?.dosage_form?.[0] || viewingSupplement.dosageForm || "Not Specified"}
+                  </span>
                 </div>
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100 text-right">
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Strength</span>
@@ -400,7 +448,21 @@ export default function ResearcherSelectedSupplementsPage() {
                 </div>
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100">
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Budget range</span>
-                  <span className="text-xs font-semibold">{viewingSupplement.budgetRange || "Not Specified"}</span>
+                  <span className="text-xs font-semibold">
+                    {viewingSupplement.tags?.budget_range?.[0] || viewingSupplement.budgetRange || "Not Specified"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-md border border-slate-100 text-right">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Expiry Date</span>
+                  <span className="text-xs font-semibold truncate block">
+                    {viewingSupplement.expiryDate || "Not Specified"}
+                  </span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-md border border-slate-100">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Pack Qty</span>
+                  <span className="text-xs font-semibold">
+                    {viewingSupplement.tags?.pack_quantity?.[0] || "Not Specified"}
+                  </span>
                 </div>
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100 text-right">
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Status</span>
@@ -453,7 +515,7 @@ export default function ResearcherSelectedSupplementsPage() {
                               <p className="text-xs text-slate-600 truncate">{w.address}</p>
                             </div>
                             <p className="shrink-0 text-sm font-bold text-slate-900 tabular-nums">
-                              â‚¦{Number(w.price || 0).toLocaleString()}
+                              ₦{Number(w.price || 0).toLocaleString()}
                             </p>
                           </div>
                         </div>
