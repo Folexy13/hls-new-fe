@@ -1,4 +1,4 @@
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Shield, Users, Package, Briefcase, LifeBuoy, Gift } from 'lucide-react';
+import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Shield, Users, Package, Briefcase, LifeBuoy, Gift, CreditCard } from 'lucide-react';
 import { UserRole } from '../context/roles';
 
 // Common navigation items for all users (public routes)
@@ -26,6 +26,7 @@ export const roleNavigation = {
   ],
   [UserRole.BENFEK]: [
     { name: 'My Profile', href: '/benfek/my-profile', icon: User },
+    { name: 'Account', href: '/benfek/account', icon: CreditCard },
     { name: 'Bonus', href: '/benfek/bonus', icon: Gift },
     { name: 'Support', href: '/support', icon: LifeBuoy },
 

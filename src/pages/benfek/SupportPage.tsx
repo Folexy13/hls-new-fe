@@ -1,206 +1,191 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { benfekService } from '@/services/benfekService';
+import { LifeBuoy, MessageSquareMore, PhoneCall, ShieldAlert } from 'lucide-react';
 
 const SupportPage = () => {
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
     category: '',
-    message: ''
+    subject: '',
+    message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (Object.values(formData).every(value => value)) {
-      toast.success('Support ticket submitted successfully! We\'ll get back to you soon.');
-      setFormData({ name: '', email: '', subject: '', category: '', message: '' });
-    } else {
-      toast.error('Please fill in all fields');
+  const loadTickets = async () => {
+    try {
+      const result = await benfekService.getSupportTickets();
+      setTickets(result);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to load support requests');
     }
   };
 
-  const faqs = [
-    {
-      question: "How do I start my health assessment?",
-      answer: "To start your health assessment, navigate to the Quiz page and enter your unique quiz code. If you don't have a code, please contact our support team."
-    },
-    {
-      question: "What supplements do you recommend?",
-      answer: "Our supplement recommendations are personalized based on your health assessment results. After completing your quiz, you'll receive tailored recommendations in your dashboard."
-    },
-    {
-      question: "How do I track my progress?",
-      answer: "You can track your progress through your personal dashboard, which shows your health metrics, supplement intake, and progress over time."
-    },
-    {
-      question: "Is my health data secure?",
-      answer: "Yes, we take data security very seriously. All your health information is encrypted and stored securely in compliance with healthcare privacy regulations."
-    },
-    {
-      question: "How often should I update my health information?",
-      answer: "We recommend updating your health information monthly or whenever there are significant changes in your health status, activity level, or goals."
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await benfekService.createSupportTicket(formData);
+      toast.success('Support request submitted successfully');
+      setFormData({ category: '', subject: '', message: '' });
+      await loadTickets();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to submit support request');
+    } finally {
+      setSubmitting(false);
     }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Support Center</h1>
-          <p className="text-lg text-gray-600">We're here to help you on your health journey</p>
+    <div className="min-h-screen bg-slate-50 pb-28 pt-6 px-4">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="rounded-[28px] bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-800 p-6 text-white shadow-xl">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/60">Support</p>
+          <h1 className="mt-2 text-3xl font-bold">Support & Customer Care</h1>
+          <p className="mt-2 max-w-2xl text-sm text-white/80">
+            Raise complaints, follow your previous requests, or reach the customer care team quickly.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          {/* Contact Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Support</CardTitle>
-              <CardDescription>Send us a message and we'll get back to you as soon as possible</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="Your email address"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="technical">Technical Support</SelectItem>
-                      <SelectItem value="billing">Billing</SelectItem>
-                      <SelectItem value="health">Health Questions</SelectItem>
-                      <SelectItem value="general">General Inquiry</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                    placeholder="Brief description of your issue"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    value={formData.message}
-                    onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    placeholder="Describe your issue in detail"
-                    rows={4}
-                  />
-                </div>
-                <Button type="submit" className="w-full">
-                  Send Message
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="complaints" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="complaints">Complaints</TabsTrigger>
+            <TabsTrigger value="chat">Chat / Care</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+          </TabsList>
 
-          {/* Contact Information */}
-          <div className="space-y-6">
-            <Card>
+          <TabsContent value="complaints">
+            <Card className="rounded-[24px] border-0 shadow-sm">
               <CardHeader>
-                <CardTitle>Get in Touch</CardTitle>
-                <CardDescription>Multiple ways to reach our support team</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium">Email</p>
-                    <p className="text-gray-600">support@hls.com</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium">Phone</p>
-                    <p className="text-gray-600">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium">Address</p>
-                    <p className="text-gray-600">123 Health Street, Wellness City, WC 12345</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Clock className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-medium">Support Hours</p>
-                    <p className="text-gray-600">Mon-Fri: 9AM-6PM EST</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Emergency Support</CardTitle>
-                <CardDescription>For urgent health-related concerns</CardDescription>
+                <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-rose-500" /> Make a Complaint</CardTitle>
+                <CardDescription>Tell us what went wrong and our team will respond.</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600 mb-4">
-                  If you're experiencing a medical emergency, please contact your healthcare provider or emergency services immediately. Our support team cannot provide emergency medical assistance.
-                </p>
-                <Button variant="outline" className="w-full">
-                  Find Healthcare Providers
-                </Button>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label>Category</Label>
+                    <Input
+                      value={formData.category}
+                      onChange={(e) => setFormData((s) => ({ ...s, category: e.target.value }))}
+                      placeholder="Billing, delivery, account, technical..."
+                    />
+                  </div>
+                  <div>
+                    <Label>Subject</Label>
+                    <Input
+                      value={formData.subject}
+                      onChange={(e) => setFormData((s) => ({ ...s, subject: e.target.value }))}
+                      placeholder="Short summary of your issue"
+                    />
+                  </div>
+                  <div>
+                    <Label>Message</Label>
+                    <Textarea
+                      rows={6}
+                      value={formData.message}
+                      onChange={(e) => setFormData((s) => ({ ...s, message: e.target.value }))}
+                      placeholder="Describe the issue in detail"
+                    />
+                  </div>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? 'Submitting...' : 'Submit Complaint'}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
 
-        {/* FAQ Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Frequently Asked Questions</CardTitle>
-            <CardDescription>Find quick answers to common questions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger>{faq.question}</AccordionTrigger>
-                  <AccordionContent>{faq.answer}</AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </CardContent>
-        </Card>
+          <TabsContent value="chat">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="rounded-[24px] border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><MessageSquareMore className="h-5 w-5 text-emerald-600" /> Chat With Customer Care</CardTitle>
+                  <CardDescription>Use the fastest support channels when you need direct help.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-2xl bg-emerald-50 p-4">
+                    <p className="font-medium text-slate-900">WhatsApp Care</p>
+                    <p className="mt-1 text-sm text-slate-600">Tap through to continue the conversation with customer care.</p>
+                    <a
+                      href="https://wa.me/2340000000000"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Open WhatsApp Chat
+                    </a>
+                  </div>
+                  <div className="rounded-2xl bg-slate-100 p-4">
+                    <p className="font-medium text-slate-900">Email Care</p>
+                    <p className="mt-1 text-sm text-slate-600">support@hls.com</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-[24px] border-0 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><PhoneCall className="h-5 w-5 text-sky-600" /> Fast Help</CardTitle>
+                  <CardDescription>Useful channels for urgent follow-up.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-slate-600">
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="font-medium text-slate-900">Support Hours</p>
+                    <p className="mt-1">Monday - Friday, 9:00 AM to 6:00 PM</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <p className="font-medium text-slate-900">Emergency Guidance</p>
+                    <p className="mt-1">
+                      If this is a medical emergency, please contact your doctor or emergency services immediately.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card className="rounded-[24px] border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><LifeBuoy className="h-5 w-5 text-amber-500" /> Previous Requests</CardTitle>
+                <CardDescription>Track complaints and support requests you have already submitted.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {tickets.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
+                    No support requests yet.
+                  </div>
+                ) : (
+                  tickets.map((ticket) => (
+                    <div key={ticket.id} className="rounded-2xl border border-slate-200 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-900">{ticket.subject}</p>
+                          <p className="text-xs text-slate-500">{ticket.category}</p>
+                        </div>
+                        <Badge variant="outline">{ticket.status}</Badge>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-600">{ticket.message}</p>
+                      <p className="mt-3 text-xs text-slate-400">
+                        {new Date(ticket.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
