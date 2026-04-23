@@ -54,6 +54,7 @@ export function TabsContainer() {
     Object.fromEntries(packCategories.map((p) => [p.id, false]))
   );
   const [userBudget, setUserBudget] = useState<{ min: number; max: number } | null>(null);
+  const [benfekData, setBenfekData] = useState<any | null>(null);
   const [dispatchedPacks, setDispatchedPacks] = useState<Record<string, boolean>>({});
   const [activeCataloguePack, setActiveCataloguePack] = useState<string | null>(null);
 
@@ -151,6 +152,23 @@ export function TabsContainer() {
       window.removeEventListener("storage", loadPackSupplements);
     };
   }, [emptySelected, packStorageKey, dispatchedStorageKey, userVerified]);
+
+  useEffect(() => {
+    const fetchBenfekDetails = async () => {
+      if (userVerified && verifiedCode && !benfekData) {
+        try {
+          const response = await researcherService.verifyBenfekCode(verifiedCode);
+          // Capture full benfek object including principal and quiz details
+          const fullData = response.benfek;
+          setBenfekData(fullData);
+          setUserBudget(Number.isFinite(Number(fullData.quiz?.preferences?.budget)) ? { min: 0, max: Number(fullData.quiz?.preferences?.budget) } : dummyUser.budget);
+        } catch (error) {
+          console.error("Failed to restore benfek data", error);
+        }
+      }
+    };
+    fetchBenfekDetails();
+  }, [userVerified, verifiedCode, benfekData]);
 
   useEffect(() => {
     if (userVerified) return;
@@ -297,9 +315,18 @@ export function TabsContainer() {
     setGalleryAddRequest((value) => value + 1);
   };
 
-  const handleUserVerified = (verified: boolean, budget: { min: number; max: number } | null) => {
+  const handleUserVerified = (verified: boolean, data: any) => {
     setUserVerified(verified);
-    setUserBudget(budget || dummyUser.budget || null);
+    setBenfekData(data);
+    
+    // Extract budget from the nested quiz preferences if available
+    const budgetValue = Number(data?.quiz?.preferences?.budget);
+    setUserBudget(Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : dummyUser.budget);
+
+    toast({
+      title: "Beneficiary Verified",
+      description: `Now designing packs for ${data.firstName} ${data.lastName}`,
+    });
   };
 
   return (
@@ -319,7 +346,7 @@ export function TabsContainer() {
       <div className="h-[60px]" aria-hidden="true" />
 
       <TabsContent value="profile" className="animate-fade-in">
-        <UserProfile onUserVerified={handleUserVerified} />
+        <UserProfile onUserVerified={handleUserVerified} benfekData={benfekData} />
       </TabsContent>
 
       <TabsContent value="supplements" className="animate-fade-in">
