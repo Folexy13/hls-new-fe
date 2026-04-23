@@ -380,7 +380,7 @@ const onPointerDown = (event: PointerEvent) => {
                 Dashboard
               </NavLink>
               <NavLink
-                to="/blog/1"
+                to="/blog"
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
                 }

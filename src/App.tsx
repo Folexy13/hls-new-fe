@@ -23,12 +23,14 @@ import Dashboard from "./pages/benfek/Dashboard";
 import CartPage from "./pages/benfek/CartPage";
 import PodcastPage from "./pages/benfek/PodcastPage";
 import BlogPage from "./pages/benfek/BlogPage";
+import BenfekArticlesPage from "./pages/benfek/ArticlesPage";
 import NotFound from "./pages/benfek/NotFound";
 import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
 import QuizFormPage from "./pages/benfek/QuizFormPage";
 import BenfekMyProfilePage from "./pages/benfek/MyProfilePage";
 import BenfekBonusPage from "./pages/benfek/BonusPage";
+import BenfekAccountPage from "./pages/benfek/AccountPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
@@ -156,6 +158,18 @@ const App = () => (
                 />
 
                 <Route
+                  path="/benfek/account"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekAccountPage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
                   path="/benfek/bonus"
                   element={
                     <RoleBasedRoute
@@ -163,6 +177,17 @@ const App = () => (
                       fallbackPath="/"
                     >
                       <BenfekBonusPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/blog"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekArticlesPage />
                     </RoleBasedRoute>
                   }
                 />

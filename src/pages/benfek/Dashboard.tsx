@@ -1,14 +1,18 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { apiClient } from '@/config/axios';
 import { PackCatalogue } from '@/components/researcher/PackCatalogue';
 import { packCategories } from '@/lib/researcher/dummyData';
+import { toast } from 'react-toastify';
+import { paystackService } from '@/services/paystackService';
 
 const Dashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'pharmacy' | 'nutrient'>('pharmacy');
@@ -23,6 +27,8 @@ const Dashboard = () => {
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
+  const [isPayingForPack, setIsPayingForPack] = useState(false);
+  const tabMenuRef = useRef<HTMLDivElement | null>(null);
 
   const bannerImages = useMemo(() => ([
     'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
@@ -267,6 +273,24 @@ const Dashboard = () => {
     []
   );
 
+  const promoIdToPackId = useMemo(
+    () => ({
+      'promo-1': 'economic',
+      'promo-2': 'doctors_choice',
+      'promo-3': 'premium_offer',
+    }),
+    []
+  );
+
+  const packIdToPromoId = useMemo(
+    () => ({
+      economic: 'promo-1',
+      doctors_choice: 'promo-2',
+      premium_offer: 'promo-3',
+    }),
+    []
+  );
+
   useEffect(() => {
     if (showPharmacyModal) return;
     const timer = window.setInterval(() => {
@@ -274,6 +298,76 @@ const Dashboard = () => {
     }, 4500);
     return () => window.clearInterval(timer);
   }, [bannerImages.length, showPharmacyModal]);
+
+  useEffect(() => {
+    if (activeTab !== 'nutrient' || !activeCatalogueId) return;
+
+    window.requestAnimationFrame(() => {
+      tabMenuRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }, [activeTab, activeCatalogueId]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const paymentMode = searchParams.get('payment');
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    const packId = searchParams.get('packId');
+
+    if (paymentMode !== 'pack' || !reference) return;
+
+    let cancelled = false;
+
+    const verifyPackPayment = async () => {
+      try {
+        setIsPayingForPack(true);
+        const result = await paystackService.verifyCheckout(reference);
+        if (cancelled) return;
+
+        toast.success(`Payment successful for ${result?.packName || 'your nutrient pack'}.`);
+        setActiveTab('nutrient');
+        if (packId && packIdToPromoId[packId as keyof typeof packIdToPromoId]) {
+          setActiveCatalogueId(packIdToPromoId[packId as keyof typeof packIdToPromoId]);
+        }
+      } catch (error: any) {
+        if (cancelled) return;
+        toast.error(error?.response?.data?.message || 'Could not verify pack payment.');
+      } finally {
+        if (!cancelled) {
+          setIsPayingForPack(false);
+          navigate('/benfek/dashboard', { replace: true });
+        }
+      }
+    };
+
+    verifyPackPayment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.search, navigate, packIdToPromoId]);
+
+  const handlePackCheckout = async (packId: string) => {
+    try {
+      setIsPayingForPack(true);
+      const callbackUrl = `${window.location.origin}/benfek/dashboard?payment=pack&packId=${encodeURIComponent(packId)}`;
+      const result = await paystackService.initializePackCheckout(packId, callbackUrl);
+      const authorizationUrl = result?.authorization_url;
+
+      if (!authorizationUrl) {
+        toast.error('Could not initialize pack payment.');
+        setIsPayingForPack(false);
+        return;
+      }
+
+      window.location.href = authorizationUrl;
+    } catch (error: any) {
+      setIsPayingForPack(false);
+      toast.error(error?.response?.data?.message || 'Could not initialize pack payment.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -306,7 +400,7 @@ const Dashboard = () => {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md py-3">
+          <div ref={tabMenuRef} className="sticky top-0 z-30 bg-white/80 backdrop-blur-md py-3">
             <div className="flex flex-col items-center px-2">
               <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
               <button
@@ -535,8 +629,10 @@ const Dashboard = () => {
                 {activeCatalogueId ? (
                   <PackCatalogue 
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
-                    items={packItems[activeCatalogueId === 'promo-1' ? 'economic' : activeCatalogueId === 'promo-2' ? 'doctors_choice' : 'premium_offer'] || []}
+                    items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
                     onBack={() => setActiveCatalogueId(null)}
+                    onPay={() => handlePackCheckout(promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId])}
+                    isPaying={isPayingForPack}
                   />
                 ) : !nutrientReady ? (
                   <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-6 text-center text-sm text-emerald-800">
