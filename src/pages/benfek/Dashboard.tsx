@@ -9,6 +9,12 @@ import { PackCatalogue } from '@/components/researcher/PackCatalogue';
 import { packCategories } from '@/lib/researcher/dummyData';
 import { toast } from 'react-toastify';
 import { paystackService } from '@/services/paystackService';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+type SavedPharmacy = {
+  name: string;
+  phone: string;
+};
 
 const Dashboard = () => {
   const location = useLocation();
@@ -18,6 +24,22 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<'pharmacy' | 'nutrient'>('pharmacy');
   const [pharmacySearch, setPharmacySearch] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
+  const [selectedPharmacyPhone, setSelectedPharmacyPhone] = useState<string | null>(null);
+  const [customPharmacyPhone, setCustomPharmacyPhone] = useState('');
+  const [savedPharmacies, setSavedPharmacies] = useState<SavedPharmacy[]>(() => {
+    try {
+      const raw = localStorage.getItem('benfek.saved.pharmacies');
+      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is SavedPharmacy => {
+            const value = item as SavedPharmacy;
+            return !!value?.name && !!value?.phone;
+          })
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
   const [pharmacyModalDismissed, setPharmacyModalDismissed] = useState(false);
   const [hasShownPharmacyModal, setHasShownPharmacyModal] = useState(false);
@@ -28,6 +50,8 @@ const Dashboard = () => {
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
   const [isPayingForPack, setIsPayingForPack] = useState(false);
+  const [isLoadingPacks, setIsLoadingPacks] = useState(false);
+  const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
   const tabMenuRef = useRef<HTMLDivElement | null>(null);
 
   const bannerImages = useMemo(() => ([
@@ -162,6 +186,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchPacks = async () => {
       try {
+        setIsLoadingPacks(true);
         const response = await apiClient.get('/api/v2/benfek/packs');
         const packs = response.data?.data || [];
         const mapped: Record<string, any[]> = {};
@@ -179,6 +204,8 @@ const Dashboard = () => {
         console.error('Failed to fetch packs:', error);
         setPackItems({});
         setNutrientReady(false);
+      } finally {
+        setIsLoadingPacks(false);
       }
     };
 
@@ -193,7 +220,7 @@ const Dashboard = () => {
     if (!query) return pharmacyItems;
     return pharmacyItems.filter((item) => item.title.toLowerCase().includes(query));
   }, [pharmacyItems, searchValue]);
-  const pharmacyDirectory = useMemo(
+  const defaultPharmacyDirectory = useMemo(
     () => [
       'Greenleaf Pharmacy',
       'Sunrise Health Pharmacy',
@@ -210,11 +237,59 @@ const Dashboard = () => {
     ],
     []
   );
+  const pharmacyDirectory = useMemo(() => {
+    const savedNames = savedPharmacies.map((pharmacy) => pharmacy.name);
+    return Array.from(new Set([...defaultPharmacyDirectory, ...savedNames]));
+  }, [defaultPharmacyDirectory, savedPharmacies]);
   const filteredPharmacyDirectory = useMemo(() => {
     const query = pharmacySearch.trim().toLowerCase();
     if (!query) return pharmacyDirectory;
     return pharmacyDirectory.filter((name) => name.toLowerCase().includes(query));
   }, [pharmacyDirectory, pharmacySearch]);
+  const savedPharmacyByName = useMemo(() => {
+    return new Map(savedPharmacies.map((pharmacy) => [pharmacy.name.toLowerCase(), pharmacy]));
+  }, [savedPharmacies]);
+  const pharmacySearchName = pharmacySearch.trim();
+  const isExistingPharmacyOption = useMemo(() => {
+    const normalized = pharmacySearchName.toLowerCase();
+    if (!normalized) return false;
+    return pharmacyDirectory.some((name) => name.toLowerCase() === normalized);
+  }, [pharmacyDirectory, pharmacySearchName]);
+  const shouldShowCustomPharmacyPhone =
+    pharmacySearchName.length > 0 && filteredPharmacyDirectory.length === 0 && !isExistingPharmacyOption && !selectedPharmacy;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('benfek.saved.pharmacies', JSON.stringify(savedPharmacies));
+    } catch {
+      // ignore storage failures
+    }
+  }, [savedPharmacies]);
+
+  const selectPharmacy = (name: string) => {
+    const saved = savedPharmacyByName.get(name.toLowerCase());
+    setSelectedPharmacy(name);
+    setSelectedPharmacyPhone(saved?.phone || null);
+    setPharmacySearch('');
+    setCustomPharmacyPhone('');
+  };
+
+  const handleSelectCustomPharmacy = () => {
+    const name = pharmacySearchName;
+    const phone = customPharmacyPhone.trim();
+    if (!name || !phone) return;
+
+    setIsSavingPharmacy(true);
+    setSavedPharmacies((prev) => {
+      const withoutDuplicate = prev.filter((pharmacy) => pharmacy.name.toLowerCase() !== name.toLowerCase());
+      return [...withoutDuplicate, { name, phone }];
+    });
+    setSelectedPharmacy(name);
+    setSelectedPharmacyPhone(phone);
+    setPharmacySearch('');
+    setCustomPharmacyPhone('');
+    window.setTimeout(() => setIsSavingPharmacy(false), 200);
+  };
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredPharmacyItems.length / itemsPerPage));
   const [currentPage, setCurrentPage] = useState(1);
@@ -626,7 +701,12 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {activeCatalogueId ? (
+                {isLoadingPacks ? (
+                  <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-6 text-center text-sm text-emerald-800 inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner className="text-emerald-600" />
+                    Loading nutrient packs...
+                  </div>
+                ) : activeCatalogueId ? (
                   <PackCatalogue 
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
@@ -728,11 +808,18 @@ const Dashboard = () => {
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span className="truncate">{selectedPharmacy}</span>
                   </div>
+                  {selectedPharmacyPhone && (
+                    <p className="mt-1 text-xs font-medium text-emerald-700">
+                      Office phone: {selectedPharmacyPhone}
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedPharmacy(null);
+                      setSelectedPharmacyPhone(null);
                       setPharmacySearch('');
+                      setCustomPharmacyPhone('');
                     }}
                     className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
                   >
@@ -764,7 +851,10 @@ const Dashboard = () => {
                       {pharmacySearch && (
                         <button
                           type="button"
-                          onClick={() => setPharmacySearch('')}
+                          onClick={() => {
+                            setPharmacySearch('');
+                            setCustomPharmacyPhone('');
+                          }}
                           className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                           aria-label="Clear pharmacy search"
                         >
@@ -789,23 +879,48 @@ const Dashboard = () => {
                 {pharmacySearch.trim() && !selectedPharmacy ? (
                   <div className="space-y-2">
                     {filteredPharmacyDirectory.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-slate-200 bg-white px-4 py-7 text-left">
-                        <p className="text-sm font-semibold text-slate-700">No pharmacies found</p>
+                      <div className="rounded-lg border border-dashed border-emerald-200 bg-white px-4 py-4 text-left">
+                        <p className="text-sm font-semibold text-slate-700">Add this pharmacy</p>
                         <p className="mt-1 text-sm leading-6 text-slate-500">
-                          Try a different pharmacy name to see matching locations.
+                          Enter the pharmacy office telephone number to save it.
                         </p>
+                        {shouldShowCustomPharmacyPhone && (
+                          <div className="mt-3 space-y-2">
+                            <label
+                              htmlFor="custom-pharmacy-phone"
+                              className="text-sm font-medium text-slate-800"
+                            >
+                              Office telephone number
+                            </label>
+                            <Input
+                              id="custom-pharmacy-phone"
+                              value={customPharmacyPhone}
+                              onChange={(event) => setCustomPharmacyPhone(event.target.value)}
+                              inputMode="tel"
+                              placeholder="e.g. 08012345678"
+                              className="h-11"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleSelectCustomPharmacy}
+                              disabled={!customPharmacyPhone.trim() || isSavingPharmacy}
+                              className="h-10 w-full rounded-xl bg-green-800 text-sm font-semibold text-white hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60"
+                            >
+                              {isSavingPharmacy && <LoadingSpinner className="mr-2" />}
+                              {isSavingPharmacy ? 'Saving...' : 'Save pharmacy'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       filteredPharmacyDirectory.map((name) => {
                         const selected = selectedPharmacy === name;
+                        const saved = savedPharmacyByName.get(name.toLowerCase());
                         return (
                           <button
                             key={name}
                             type="button"
-                            onClick={() => {
-                              setSelectedPharmacy(name);
-                              setPharmacySearch('');
-                            }}
+                            onClick={() => selectPharmacy(name)}
                             className={`group flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
                               selected
                                 ? 'border-green-800 bg-green-50 text-green-900'
@@ -815,6 +930,11 @@ const Dashboard = () => {
                           >
                             <div className="min-w-0">
                               <p className="truncate">{name}</p>
+                              {saved?.phone && (
+                                <p className="truncate text-xs font-normal text-slate-500">
+                                  {saved.phone}
+                                </p>
+                              )}
                             </div>
                             <span
                               className={`ml-4 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
@@ -837,9 +957,10 @@ const Dashboard = () => {
             <DialogFooter className="flex-col gap-2 border-t border-slate-100 bg-white px-5 py-2 sm:flex-col sm:px-6">
               <Button
                 onClick={() => setShowPharmacyModal(false)}
-                disabled={!selectedPharmacy}
+                disabled={!selectedPharmacy || isSavingPharmacy}
                 className="h-11 w-full self-stretch rounded-xl bg-green-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
               >
+                {isSavingPharmacy && <LoadingSpinner className="mr-2" />}
                 Continue
               </Button>
               <Button

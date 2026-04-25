@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'react-toastify';
 import { apiClient } from '@/config/axios';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const QuizPage = () => {
   const navigate = useNavigate();
@@ -87,6 +88,7 @@ const QuizPage = () => {
               disabled={isValidating}
               className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white"
             >
+              {isValidating && <LoadingSpinner className="mr-2" />}
               {isValidating ? 'Validating...' : 'Validate Code'}
               {!isValidating && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
 import { apiClient } from '@/config/axios';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 type Product = {
   id: string;
@@ -97,7 +98,8 @@ const MarketplacePage: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center text-gray-500">
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center text-gray-500 flex items-center justify-center gap-2">
+            <LoadingSpinner className="text-emerald-600" />
             Loading products...
           </div>
         ) : filteredProducts.length === 0 ? (
@@ -155,7 +157,12 @@ const MarketplacePage: React.FC = () => {
                         }
                       }}
                     >
-                      {addingId === product.id ? 'Adding...' : 'Add to Cart'}
+                      {addingId === product.id ? (
+                        <span className="inline-flex items-center justify-center gap-2">
+                          <LoadingSpinner />
+                          Adding...
+                        </span>
+                      ) : 'Add to Cart'}
                     </button>
                   </CardContent>
                 </Card>

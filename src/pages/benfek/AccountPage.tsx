@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { benfekService } from '@/services/benfekService';
 import { CreditCard, MapPin, Package2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const formatAmount = (amount: number) => `₦${Number(amount || 0).toLocaleString()}`;
 
@@ -106,7 +107,10 @@ const AccountPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {loading ? (
-                    <p className="text-sm text-slate-500">Loading purchases...</p>
+                    <p className="text-sm text-slate-500 inline-flex items-center gap-2">
+                      <LoadingSpinner className="text-emerald-600" />
+                      Loading purchases...
+                    </p>
                   ) : orders.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-500">
                       No purchases yet. When you pay for a nutrient pack or pharmacy item, it will show here.
@@ -166,6 +170,7 @@ const AccountPage: React.FC = () => {
                   />
                 </div>
                 <Button onClick={saveAddresses} disabled={saving}>
+                  {saving && <LoadingSpinner className="mr-2" />}
                   {saving ? 'Saving...' : 'Save Address Details'}
                 </Button>
               </CardContent>

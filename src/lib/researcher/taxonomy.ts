@@ -202,7 +202,8 @@ export const dosageFormOptions = [
 
 export const budgetRangeOptions = [
   "1000 - 5000",
-  "5000 - 20000",
+  "5000 - 10000",
+  "10000 - 20000",
   "20000 - 50000",
   "50000 - 100000",
   "100000 - 500000",

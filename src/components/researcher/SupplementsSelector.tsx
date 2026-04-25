@@ -9,6 +9,7 @@ import { Plus, GalleryHorizontal, AlertTriangle, Package, Trash2 } from "lucide-
 import { packCategories, type Supplement } from "@/lib/researcher/dummyData";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface SupplementsSelectorProps {
   onNavigateToGallery: (packId: string) => void;
@@ -18,6 +19,10 @@ interface SupplementsSelectorProps {
   budgetExceeded: Record<string, boolean>;
   packBudgets: Record<string, { min: number; max: number }> | null;
   onDispatchPack: (packId: string) => void;
+  onDispatchAllPacks: () => void;
+  dispatchedPacks: Record<string, boolean>;
+  dispatchingPackId?: string | null;
+  dispatchingAll?: boolean;
 }
 
 export function SupplementsSelector({
@@ -28,12 +33,26 @@ export function SupplementsSelector({
   budgetExceeded,
   packBudgets,
   onDispatchPack,
+  onDispatchAllPacks,
+  dispatchedPacks,
+  dispatchingPackId,
+  dispatchingAll = false,
 }: SupplementsSelectorProps) {
   return (
     <div className="animate-fade-in space-y-6 p-1 sm:p-3">
-      <div className="text-center mb-6">
-        <h2 className="text-3xl font-bold text-researcher-primary">Select Supplements</h2>
-        <p className="text-muted-foreground">Choose supplements for your packs</p>
+      <div className="flex flex-col items-center justify-between gap-3 text-center mb-6 sm:flex-row sm:text-left">
+        <div>
+          <h2 className="text-3xl font-bold text-researcher-primary">Select Supplements</h2>
+          <p className="text-muted-foreground">Choose supplements for your packs</p>
+        </div>
+        <Button
+          onClick={onDispatchAllPacks}
+          disabled={dispatchingAll || Object.values(selectedSupplements).every((items) => items.length === 0)}
+          className="bg-researcher-primary hover:bg-researcher-secondary text-xs h-9 px-4"
+        >
+          {dispatchingAll && <LoadingSpinner className="mr-2" />}
+          {dispatchingAll ? "Dispatching..." : "Dispatch All Packs"}
+        </Button>
       </div>
 
       <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
@@ -161,9 +180,10 @@ export function SupplementsSelector({
                           <Button
                             onClick={() => onDispatchPack(pack.id)}
                             className="bg-researcher-primary/80 hover:bg-researcher-secondary w-fit h-fit"
-                            disabled={!hasSupplements}
+                            disabled={!hasSupplements || dispatchingPackId === pack.id || dispatchingAll}
                           >
-                           Dispatch
+                            {dispatchingPackId === pack.id && <LoadingSpinner className="mr-2" />}
+                            {dispatchingPackId === pack.id ? "Dispatching..." : "Dispatch"}
                           </Button>
                         </div>
                       </>

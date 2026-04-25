@@ -8,6 +8,7 @@ import { useCart } from '../../hooks/useCart';
 import { Minus, Plus, Trash2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { apiClient } from '@/config/axios';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const CartPage = () => {
   const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend, user } = useStore();
@@ -16,6 +17,9 @@ const CartPage = () => {
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [clearingCart, setClearingCart] = useState(false);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
     if (newQuantity > 0) {
@@ -29,6 +33,7 @@ const CartPage = () => {
       return;
     }
     try {
+      setCheckingOut(true);
       const response = await apiClient.post('/api/v2/paystack/checkout', {});
       const url = response.data?.data?.authorization_url;
       if (url) {
@@ -38,6 +43,7 @@ const CartPage = () => {
       }
     } catch (error) {
       toast.error('Failed to initialize payment.');
+      setCheckingOut(false);
     }
   };
 
@@ -170,25 +176,31 @@ const CartPage = () => {
                       variant="ghost"
                       size="icon"
                       className="ml-2 text-red-600 hover:bg-red-50"
+                      disabled={removingItemId === item.id.toString()}
                       onClick={async () => {
-                        await removeFromCart(item.id.toString());
-                        await refetch();
-                        if (apiCart && apiCart.items) {
-                          // Map backend items to store format
-                          setCartFromBackend(apiCart.items.map(i => ({
-                            id: i.supplement.id.toString(),
-                            name: i.supplement.name,
-                            price: i.supplement.price,
-                            image: i.supplement.image,
-                            description: i.supplement.description,
-                            category: 'supplement', // or map actual category if available
-                            quantity: i.quantity
-                          })));
+                        const itemId = item.id.toString();
+                        setRemovingItemId(itemId);
+                        try {
+                          await removeFromCart(itemId);
+                          await refetch();
+                          if (apiCart && apiCart.items) {
+                            setCartFromBackend(apiCart.items.map(i => ({
+                              id: i.supplement.id.toString(),
+                              name: i.supplement.name,
+                              price: i.supplement.price,
+                              image: i.supplement.image,
+                              description: i.supplement.description,
+                              category: 'supplement',
+                              quantity: i.quantity
+                            })));
+                          }
+                        } finally {
+                          setRemovingItemId(null);
                         }
                       }}
                       title="Remove from cart"
                     >
-                      <Trash2 className="h-5 w-5" />
+                      {removingItemId === item.id.toString() ? <LoadingSpinner /> : <Trash2 className="h-5 w-5" />}
                     </Button>
                   </div>
                 </CardContent>
@@ -217,9 +229,9 @@ const CartPage = () => {
                     <span>${apiCartTotal.toFixed(2)}</span>
                   </div>
                 </div>
-                <Button className="w-full" onClick={handleCheckout}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Proceed to Checkout
+                <Button className="w-full" onClick={handleCheckout} disabled={checkingOut}>
+                  {checkingOut ? <LoadingSpinner className="mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
+                  {checkingOut ? 'Redirecting...' : 'Proceed to Checkout'}
                 </Button>
               </CardContent>
             </Card>
@@ -255,15 +267,23 @@ const CartPage = () => {
             </DialogHeader>
             <div className="flex gap-2 justify-end mt-4">
               <Button variant="outline" onClick={() => setShowClearConfirm(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={async () => {
-                await clearCart();
-                await refetch();
-                if (apiCart && apiCart.items) {
-                  setCartFromBackend([]);
+              <Button variant="destructive" disabled={clearingCart} onClick={async () => {
+                setClearingCart(true);
+                try {
+                  await clearCart();
+                  await refetch();
+                  if (apiCart && apiCart.items) {
+                    setCartFromBackend([]);
+                  }
+                  setShowClearConfirm(false);
+                  toast.success('Cart cleared!');
+                } finally {
+                  setClearingCart(false);
                 }
-                setShowClearConfirm(false);
-                toast.success('Cart cleared!');
-              }}>Clear</Button>
+              }}>
+                {clearingCart && <LoadingSpinner className="mr-2" />}
+                {clearingCart ? 'Clearing...' : 'Clear'}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

@@ -21,6 +21,7 @@ export interface Supplement {
   strength?: string;
   dosageForm?: string;
   budgetRange?: string;
+  expiryDate?: string;
   tags?: Record<string, string[]>;
   imageUrl: string;
   price: number;
@@ -198,18 +199,22 @@ export const getSupplementsByCategory = (category: string) => {
 export const calculatePackBudget = (userBudget: { min: number; max: number }) => {
   if (!userBudget) return null;
 
+  const economicMax = Math.round(userBudget.max);
+  const doctorsMax = Math.round(userBudget.max * 1.25);
+  const premiumMax = Math.round(userBudget.max * 1.5);
+
   return {
     economic: {
-      min: 0,
-      max: userBudget.min + (userBudget.max - userBudget.min) * 0.25,
+      min: Math.round(userBudget.min),
+      max: economicMax,
     },
     doctors_choice: {
-      min: 0,
-      max: userBudget.max,
+      min: economicMax,
+      max: doctorsMax,
     },
     premium_offer: {
-      min: userBudget.min,
-      max: userBudget.max * 1.3,
+      min: doctorsMax,
+      max: premiumMax,
     },
   } as const;
 };

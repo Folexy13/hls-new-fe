@@ -1,5 +1,13 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, CreditCard, FileText, Info } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  FileText,
+  Info,
+  Share2,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -8,6 +16,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { type Supplement } from "@/lib/researcher/dummyData";
 
 interface PackCatalogueProps {
@@ -24,6 +39,8 @@ const PLACEHOLDER_IMAGE =
 export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false }: PackCatalogueProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemImageIndexes, setItemImageIndexes] = useState<Record<string, number>>({});
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const supplementsPerCard = 2;
   const totalPages = Math.max(1, Math.ceil(items.length / supplementsPerCard));
 
@@ -240,6 +257,21 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-700">Invoice summary</p>
+                <p className="text-xs text-slate-500">Share this invoice to your WhatsApp</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                onClick={() => setIsShareDialogOpen(true)}
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </Button>
+            </div>
             <div className="space-y-3 pt-2">
               {items.map((item) => (
                 <div key={item.id} className="flex justify-between text-xs text-slate-600">
@@ -287,6 +319,54 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Invoice</DialogTitle>
+            <DialogDescription>
+              {isSendingInvoice
+                ? "Sending to your WhatsApp number..."
+                : "Share to your WhatsApp number"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4 text-center">
+            {isSendingInvoice ? (
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                <p className="text-sm text-slate-600">Sending to your WhatsApp number</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700">
+                  Share this invoice as a PDF to your WhatsApp number.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsShareDialogOpen(false)}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setIsSendingInvoice(true);
+                      try {
+                        await new Promise((resolve) => setTimeout(resolve, 1500));
+                      } finally {
+                        setIsSendingInvoice(false);
+                        setIsShareDialogOpen(false);
+                      }
+                    }}
+                  >
+                    Yes
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
