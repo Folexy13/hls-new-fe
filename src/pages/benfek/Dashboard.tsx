@@ -10,6 +10,7 @@ import { packCategories } from '@/lib/researcher/dummyData';
 import { toast } from 'react-toastify';
 import { paystackService } from '@/services/paystackService';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { benfekService } from '@/services/benfekService';
 
 type SavedPharmacy = {
   name: string;
@@ -52,6 +53,8 @@ const Dashboard = () => {
   const [isPayingForPack, setIsPayingForPack] = useState(false);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
   const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
+  const [isHydratingPharmacy, setIsHydratingPharmacy] = useState(true);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const tabMenuRef = useRef<HTMLDivElement | null>(null);
 
   const bannerImages = useMemo(() => ([
@@ -266,6 +269,49 @@ const Dashboard = () => {
     }
   }, [savedPharmacies]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSavedPharmacy = async () => {
+      try {
+        const profile = await benfekService.getProfile();
+        const savedName = profile?.preferredPharmacyName?.trim();
+        const savedPhone = profile?.preferredPharmacyPhone?.trim();
+        const savedDeliveryAddress = profile?.deliveryAddress?.trim();
+
+        if (!mounted) return;
+
+        setDeliveryAddress(savedDeliveryAddress || '');
+
+        if (savedName) {
+          setSelectedPharmacy(savedName);
+          setSelectedPharmacyPhone(savedPhone || null);
+
+          if (savedPhone) {
+            setSavedPharmacies((prev) => {
+              const withoutDuplicate = prev.filter(
+                (pharmacy) => pharmacy.name.toLowerCase() !== savedName.toLowerCase()
+              );
+              return [...withoutDuplicate, { name: savedName, phone: savedPhone }];
+            });
+          }
+        }
+      } catch {
+        // Keep the dashboard usable if profile hydration fails.
+      } finally {
+        if (mounted) {
+          setIsHydratingPharmacy(false);
+        }
+      }
+    };
+
+    loadSavedPharmacy();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const selectPharmacy = (name: string) => {
     const saved = savedPharmacyByName.get(name.toLowerCase());
     setSelectedPharmacy(name);
@@ -303,13 +349,13 @@ const Dashboard = () => {
   }, [searchValue]);
   useEffect(() => {
     if (activeTab !== 'pharmacy') return;
-    if (selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
+    if (isHydratingPharmacy || selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
     const timer = window.setTimeout(() => {
       setShowPharmacyModal(true);
       setHasShownPharmacyModal(true);
     }, 3000);
     return () => window.clearTimeout(timer);
-  }, [activeTab, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
+  }, [activeTab, isHydratingPharmacy, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -424,11 +470,21 @@ const Dashboard = () => {
     };
   }, [location.search, navigate, packIdToPromoId]);
 
-  const handlePackCheckout = async (packId: string) => {
+  const handlePackCheckout = async (packId: string, addressOverride?: string) => {
     try {
+      const resolvedAddress = (addressOverride ?? deliveryAddress).trim();
+      if (!resolvedAddress) {
+        toast.error('Please enter a delivery address before paying for this pack.');
+        return;
+      }
+
       setIsPayingForPack(true);
+      if (resolvedAddress !== deliveryAddress.trim()) {
+        await benfekService.updateProfile({ deliveryAddress: resolvedAddress });
+        setDeliveryAddress(resolvedAddress);
+      }
       const callbackUrl = `${window.location.origin}/benfek/dashboard?payment=pack&packId=${encodeURIComponent(packId)}`;
-      const result = await paystackService.initializePackCheckout(packId, callbackUrl);
+      const result = await paystackService.initializePackCheckout(packId, resolvedAddress, callbackUrl);
       const authorizationUrl = result?.authorization_url;
 
       if (!authorizationUrl) {
@@ -441,6 +497,24 @@ const Dashboard = () => {
     } catch (error: any) {
       setIsPayingForPack(false);
       toast.error(error?.response?.data?.message || 'Could not initialize pack payment.');
+    }
+  };
+
+  const handleContinueWithPharmacy = async () => {
+    if (!selectedPharmacy) return;
+
+    try {
+      setIsSavingPharmacy(true);
+      await benfekService.updateProfile({
+        preferredPharmacyName: selectedPharmacy,
+        preferredPharmacyPhone: selectedPharmacyPhone || undefined,
+      });
+      setShowPharmacyModal(false);
+      setPharmacyModalDismissed(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to save selected pharmacy');
+    } finally {
+      setIsSavingPharmacy(false);
     }
   };
 
@@ -711,7 +785,9 @@ const Dashboard = () => {
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
                     onBack={() => setActiveCatalogueId(null)}
-                    onPay={() => handlePackCheckout(promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId])}
+                    deliveryAddress={deliveryAddress}
+                    onDeliveryAddressChange={setDeliveryAddress}
+                    onPay={(address) => handlePackCheckout(promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId], address)}
                     isPaying={isPayingForPack}
                   />
                 ) : !nutrientReady ? (
@@ -956,7 +1032,7 @@ const Dashboard = () => {
 
             <DialogFooter className="flex-col gap-2 border-t border-slate-100 bg-white px-5 py-2 sm:flex-col sm:px-6">
               <Button
-                onClick={() => setShowPharmacyModal(false)}
+                onClick={handleContinueWithPharmacy}
                 disabled={!selectedPharmacy || isSavingPharmacy}
                 className="h-11 w-full self-stretch rounded-xl bg-green-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
               >

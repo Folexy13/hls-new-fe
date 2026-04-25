@@ -20,6 +20,7 @@ import {
   ArrowDown, Building, Wallet, Plus,
   Filter, PhoneCall
 } from 'lucide-react';
+import { principalService } from '@/services/principalService';
 
 // Define the Withdrawal type
 type Withdrawal = {
@@ -44,23 +45,15 @@ type UnresolvedCredit = {
   markupFactor: number;
 };
 
-// Mock data for withdrawals
-const mockWithdrawals: Withdrawal[] = Array(30).fill(0).map((_, i) => ({
-  id: i + 1,
-  amount: `₦${(Math.random() * 100000 + 10000).toFixed(2)}`,
-  method: ['Bank Transfer', 'Mobile Money', 'Paystack', 'Flutterwave'][Math.floor(Math.random() * 4)],
-  date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toLocaleDateString(),
-  status: ['Completed', 'Processing', 'Pending', 'Failed'][Math.floor(Math.random() * 4)],
-  reference: `WD-${Math.floor(100000 + Math.random() * 900000)}`,
-  processingTime: ['1-2 business days', '2-3 business days', 'Instant', '3-5 business days'][Math.floor(Math.random() * 4)],
-}));
-
-// Mock data for payment methods
-const paymentMethods = [
-  { id: 1, type: 'bank', name: 'First Bank of Nigeria', accountNumber: '1234567890', default: true },
-  { id: 2, type: 'bank', name: 'Guaranty Trust Bank', accountNumber: '0987654321', default: false },
-  { id: 3, type: 'mobile', name: 'Mobile Money', phoneNumber: '+234 812 345 6789', default: false },
-];
+type PaymentMethod = {
+  id: number;
+  type: string;
+  name: string;
+  accountNumber?: string;
+  accountName?: string;
+  phoneNumber?: string;
+  default: boolean;
+};
 
 const WithdrawPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -71,53 +64,73 @@ const WithdrawPage: React.FC = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState(1);
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
-  const [walletBalance] = useState(1250000);
-  const [withdrawableBalance, setWithdrawableBalance] = useState(540000);
-  const [unresolvedCredits, setUnresolvedCredits] = useState<UnresolvedCredit[]>([
-    {
-      id: 1,
-      supplement: 'Economic Pack',
-      costPrice: 100000,
-      markupFactor: 1.2,
-      amount: 120000,
-      date: '12/03/2025',
-    },
-    {
-      id: 2,
-      supplement: "Doctor's Choice",
-      costPrice: 50000,
-      markupFactor: 1.7,
-      amount: 85000,
-      date: '10/03/2025',
-    },
-    {
-      id: 3,
-      supplement: 'Premium Offer Pack',
-      costPrice: 150000,
-      markupFactor: 1.4,
-      amount: 210000,
-      date: '08/03/2025',
-    },
-  ]);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [withdrawableBalance, setWithdrawableBalance] = useState(0);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [unresolvedCredits, setUnresolvedCredits] = useState<UnresolvedCredit[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'Completed' | 'Processing' | 'Pending' | 'Failed'>('all');
   const [filterMethod, setFilterMethod] = useState<'all' | 'Bank Transfer' | 'Mobile Money' | 'Paystack' | 'Flutterwave'>('all');
   const [openWithdrawalId, setOpenWithdrawalId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockWithdrawals.length / itemsPerPage);
   const primaryMethod = paymentMethods.find((method) => method.default) ?? paymentMethods[0];
   const displayedMethods = primaryMethod ? [primaryMethod] : [];
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setWithdrawals(mockWithdrawals);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const loadPayoutDetails = async () => {
+      setIsLoading(true);
+      try {
+        const [principal, incomeSummary, withdrawalsData] = await Promise.all([
+          principalService.getMe(),
+          principalService.getIncomeSummary(),
+          principalService.getWithdrawals(),
+        ]);
+
+        const resolvedWalletBalance = Number(incomeSummary?.walletBalance || 0);
+        setWalletBalance(resolvedWalletBalance);
+        setWithdrawableBalance(resolvedWalletBalance);
+        setWithdrawals(
+          Array.isArray(withdrawalsData)
+            ? withdrawalsData.map((item: any) => ({
+                id: item.id,
+                amount: `₦${Number(item.amount || 0).toLocaleString()}`,
+                method: principal?.preferredPaymentMethod || 'Bank Transfer',
+                date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently',
+                status: String(item.status || 'Pending'),
+                reference: `WD-${String(item.id).padStart(6, '0')}`,
+                processingTime: '1-3 business days',
+              }))
+            : []
+        );
+
+        const methodName = principal?.preferredPaymentMethod || 'Bank Transfer';
+        const nextMethods: PaymentMethod[] = principal?.bankName || principal?.accountNumber || principal?.accountName
+          ? [
+              {
+                id: 1,
+                type: methodName.toLowerCase().includes('mobile') ? 'mobile' : 'bank',
+                name: principal.bankName || methodName,
+                accountNumber: principal.accountNumber || '',
+                accountName: principal.accountName || '',
+                default: true,
+              },
+            ]
+          : [];
+
+        setPaymentMethods(nextMethods);
+      } catch (error) {
+        console.error('Failed to load principal payout details:', error);
+        setPaymentMethods([]);
+        setWithdrawals([]);
+        setWalletBalance(0);
+        setWithdrawableBalance(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPayoutDetails();
   }, []);
 
   // Handle withdrawal submission
@@ -154,6 +167,7 @@ const WithdrawPage: React.FC = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage || 1));
 
   // Generate pagination items
   const getPaginationItems = () => {
@@ -187,11 +201,13 @@ const WithdrawPage: React.FC = () => {
     setUnresolvedCredits((prev) => {
       const credit = prev.find((item) => item.id === id);
       if (credit) {
-        const tax = credit.amount * 0.075;
-        const serviceCharge = credit.amount * 0.05;
-        const amountAfterTax = credit.amount - tax;
+        const totalAmountPurchased = credit.amount ?? Math.round(credit.costPrice * credit.markupFactor);
+        const returns = Math.max(0, totalAmountPurchased - credit.costPrice);
+        const tax = returns * 0.075;
+        const serviceCharge = returns * 0.05;
+        const amountAfterTax = returns - tax;
         const hlsCommission = amountAfterTax * 0.3;
-        const principalShare = credit.amount - tax - serviceCharge - hlsCommission;
+        const principalShare = Math.max(0, returns - tax - serviceCharge - hlsCommission);
         setWithdrawableBalance((balance) => balance + principalShare);
       }
       return prev.filter((item) => item.id !== id);
@@ -678,7 +694,7 @@ const WithdrawPage: React.FC = () => {
                                 Core Account
                               </label>
                               <div className="space-y-3">
-                                {displayedMethods.map((method) => (
+                                {displayedMethods.length > 0 ? displayedMethods.map((method) => (
                                   <div
                                     key={method.id}
                                     className="border rounded-md p-4 bg-emerald-50 border-emerald-400"
@@ -694,17 +710,21 @@ const WithdrawPage: React.FC = () => {
                                           <p className="font-medium text-gray-900">{method.name}</p>
                                           <p className="text-sm text-gray-500">
                                             {method.type === 'bank'
-                                              ? `Account: ${method.accountNumber}`
+                                              ? `${method.accountName || 'Account'} • ${method.accountNumber || 'Not set'}`
                                               : `Phone: ${method.phoneNumber}`}
                                           </p>
                                         </div>
                                       </div>
                                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-                                        Change account
+                                        {primaryMethod?.type === 'bank' ? 'Bank payout' : 'Primary payout'}
                                       </span>
                                     </div>
                                   </div>
-                                ))}
+                                )) : (
+                                  <div className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                                    No payout account set yet. Update your bank account details in My Profile.
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -779,3 +799,4 @@ const WithdrawPage: React.FC = () => {
 };
 
 export default WithdrawPage;
+

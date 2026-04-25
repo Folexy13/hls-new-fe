@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
@@ -29,14 +30,24 @@ interface PackCatalogueProps {
   packName: string;
   items: Supplement[];
   onBack: () => void;
-  onPay?: () => void;
+  deliveryAddress?: string;
+  onDeliveryAddressChange?: (value: string) => void;
+  onPay?: (deliveryAddress: string) => void;
   isPaying?: boolean;
 }
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=800&auto=format&fit=crop";
 
-export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false }: PackCatalogueProps) {
+export function PackCatalogue({
+  packName,
+  items,
+  onBack,
+  deliveryAddress = "",
+  onDeliveryAddressChange,
+  onPay,
+  isPaying = false,
+}: PackCatalogueProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemImageIndexes, setItemImageIndexes] = useState<Record<string, number>>({});
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -304,12 +315,28 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5">
-            <div className="space-y-4 rounded-[20px] bg-emerald-50/50 p-6 text-center">
-              <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                Safe & Secure Payment
-              </p>
+            <div className="space-y-4 rounded-[20px] bg-emerald-50/50 p-6">
+              <div className="text-center">
+                <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                  Safe & Secure Payment
+                </p>
+              </div>
+              <div className="space-y-2 text-left">
+                <label className="text-sm font-semibold text-slate-700">
+                  Delivery Address
+                </label>
+                <Input
+                  value={deliveryAddress}
+                  onChange={(event) => onDeliveryAddressChange?.(event.target.value)}
+                  placeholder="Enter your delivery address"
+                  className="h-12 bg-white"
+                />
+                <p className="text-xs text-slate-500">
+                  We prefilled this from your saved delivery details. You can update it here before payment.
+                </p>
+              </div>
               <Button
-                onClick={onPay}
+                onClick={() => onPay?.(deliveryAddress)}
                 disabled={!onPay || isPaying || items.length === 0}
                 className="w-full rounded-full bg-emerald-600 py-6 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700"
               >
