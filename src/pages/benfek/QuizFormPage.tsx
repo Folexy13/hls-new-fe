@@ -10,6 +10,8 @@ import { quizService } from '@/services/quizService';
 import { apiClient } from '@/config/axios';
 import { tokenManager } from '@/utils/tokenManager';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { budgetRangeOptions } from '@/lib/researcher/taxonomy';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
   Sparkles,
   Flower,
@@ -205,13 +207,6 @@ const funOptions = ['Reading', 'Music', 'Movies', 'Gaming', 'Travel', 'Dancing',
 const routineOptions = ['Morning', 'Afternoon', 'Evening', 'Night', 'Weekdays', 'Weekends', 'Shift Work'];
 const careerOptions = ['Student', 'Developer', 'Teacher', 'Healthcare', 'Business', 'Freelancer', 'Entrepreneur'];
 const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
-const budgetRangeOptions = [
-  '1000 - 5000',
-  '5000 - 20000',
-  '20000 - 50000',
-  '50000 - 100000',
-  '100000 - 500000',
-];
 
 const QuizFormPage: React.FC = () => {
   const navigate = useNavigate();
@@ -975,6 +970,7 @@ const QuizFormPage: React.FC = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <LoadingSpinner className="mr-2" />}
                 {isSubmitting ? 'Submitting...' : 'Submit'}
               </Button>
             </form>
@@ -1426,6 +1422,7 @@ const QuizFormPage: React.FC = () => {
                   <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
                   {finalGameCompleted ? (
                     <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting && <LoadingSpinner className="mr-2" />}
                       {isSubmitting ? 'Submitting...' : 'Submit'}
                     </Button>
                   ) : (

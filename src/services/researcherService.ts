@@ -11,6 +11,7 @@ export type ResearcherSupplementPayload = {
   strength?: string | null;
   dosageForm?: string | null;
   budgetRange?: string | null;
+  expiryDate?: string | null;
   tags?: Record<string, string[]>;
   wholesalers?: Array<{ name: string; price: number; contact: string; address: string }>;
   status?: string;

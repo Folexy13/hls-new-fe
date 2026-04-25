@@ -12,14 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { benfekService } from '@/services/benfekService';
 import { useStore } from '@/store/useStore';
 import { Eye, EyeOff, HeartPulse, Lock, Sparkles, UserRound } from 'lucide-react';
-
-const budgetRangeOptions = [
-  '1000 - 5000',
-  '5000 - 20000',
-  '20000 - 50000',
-  '50000 - 100000',
-  '100000 - 500000',
-];
+import { budgetRangeOptions } from '@/lib/researcher/taxonomy';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
 
@@ -252,6 +246,7 @@ const MyProfilePage: React.FC = () => {
                 <div><Label>Gender</Label><Input value={personalForm.benfekGender} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekGender: e.target.value }))} disabled={loading} /></div>
                 <div className="sm:col-span-2">
                   <Button onClick={savePersonal} disabled={loading || savingSection === 'personal'}>
+                    {savingSection === 'personal' && <LoadingSpinner className="mr-2" />}
                     {savingSection === 'personal' ? 'Saving...' : 'Save Personal Details'}
                   </Button>
                 </div>
@@ -280,6 +275,7 @@ const MyProfilePage: React.FC = () => {
                   <Switch checked={healthForm.hasCurrentCondition} onCheckedChange={(value) => setHealthForm((s) => ({ ...s, hasCurrentCondition: value }))} />
                 </div>
                 <Button onClick={saveHealth} disabled={loading || savingSection === 'health'}>
+                  {savingSection === 'health' && <LoadingSpinner className="mr-2" />}
                   {savingSection === 'health' ? 'Saving...' : 'Save Health Details'}
                 </Button>
               </CardContent>
@@ -339,6 +335,7 @@ const MyProfilePage: React.FC = () => {
                 </div>
                 <div className="sm:col-span-2">
                   <Button onClick={saveQuiz} disabled={loading || savingSection === 'quiz'}>
+                    {savingSection === 'quiz' && <LoadingSpinner className="mr-2" />}
                     {savingSection === 'quiz' ? 'Saving...' : 'Save Quiz Data'}
                   </Button>
                 </div>
@@ -357,6 +354,7 @@ const MyProfilePage: React.FC = () => {
                 <div><Label>New Password</Label><Input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm((s) => ({ ...s, newPassword: e.target.value }))} /></div>
                 <div><Label>Confirm New Password</Label><Input type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((s) => ({ ...s, confirmPassword: e.target.value }))} /></div>
                 <Button onClick={updatePassword} disabled={savingSection === 'password'}>
+                  {savingSection === 'password' && <LoadingSpinner className="mr-2" />}
                   {savingSection === 'password' ? 'Updating...' : 'Update Password'}
                 </Button>
               </CardContent>

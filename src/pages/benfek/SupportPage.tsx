@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { benfekService } from '@/services/benfekService';
 import { LifeBuoy, MessageSquareMore, PhoneCall, ShieldAlert } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const SupportPage = () => {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -99,6 +100,7 @@ const SupportPage = () => {
                     />
                   </div>
                   <Button type="submit" disabled={submitting}>
+                    {submitting && <LoadingSpinner className="mr-2" />}
                     {submitting ? 'Submitting...' : 'Submit Complaint'}
                   </Button>
                 </form>

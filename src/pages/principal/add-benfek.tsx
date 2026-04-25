@@ -39,6 +39,7 @@ import * as z from 'zod';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Define form validation schema
 const formSchema = z.object({
@@ -567,6 +568,7 @@ const AddBenfekPage: React.FC = () => {
                                   className="flex-1 bg-slate-900 hover:bg-slate-800"
                                   disabled={isSubmitting}
                                 >
+                                  {isSubmitting && <LoadingSpinner className="mr-2" />}
                                   {isSubmitting ? "Processing..." : "Add Benfek"}
                                 </Button>
                               </div>
@@ -648,6 +650,7 @@ const AddBenfekPage: React.FC = () => {
                         onClick={handleBulkUpload}
                         disabled={!uploadedFile || isSubmitting}
                       >
+                        {isSubmitting && <LoadingSpinner className="mr-2" />}
                         {isSubmitting ? "Processing..." : "Upload and Process"}
                       </Button>
                     </div>

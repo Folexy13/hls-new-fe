@@ -41,6 +41,7 @@ import {
 } from "@/components/researcher/ClassFilterPopover";
 import { researcherService } from "@/services/researcherService";
 import { canViewWholesaleDetails } from "@/utils/authClaims";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: number }) {
   const SHEET_STORAGE_KEY = "researcher.sheet.supplements";
@@ -76,6 +77,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [tagCategory, setTagCategory] = useState<TagCategory>("hls_factors");
   const [tagValue, setTagValue] = useState<string>("");
   const [tagValueMode, setTagValueMode] = useState<"select" | "custom">("select");
+  const [isSavingSupplement, setIsSavingSupplement] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -356,6 +358,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
 
   const handleAddNewSupplement = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingSupplement) return;
 
     const name = newName.trim();
     const manufacturer = newManufacturer.trim();
@@ -371,6 +374,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       });
       return;
     }
+
+    setIsSavingSupplement(true);
 
     if (editingId) {
       const updatePayload = {
@@ -405,10 +410,13 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
               : item
           )
         );
+      } finally {
+        setIsSavingSupplement(false);
       }
     } else {
+      const tempId = `sup-${Date.now()}`;
       const newSupplement = {
-        id: `sup-${Date.now()}`,
+        id: tempId,
         name,
         description,
         manufacturer,
@@ -425,6 +433,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         code: verifiedCode,
         ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
       };
+
+      let addedSupplement = newSupplement;
       try {
         const created = await researcherService.createSupplement({
           name,
@@ -441,13 +451,53 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           code: verifiedCode,
           ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
         });
-        setGallerySupplements((prev) => [created || newSupplement, ...prev]);
-      } catch {
-        setGallerySupplements((prev) => [newSupplement, ...prev]);
+
+        if (!created) {
+          throw new Error("Supplement creation did not return a saved record");
+        }
+
+        addedSupplement = {
+          ...created,
+          id: String((created as any).id),
+          category: created.category || newSupplement.category,
+          tags: created.tags || newSupplement.tags,
+          imageUrl: created.imageUrl || newSupplement.imageUrl,
+        };
+
+        setGallerySupplements((prev) => [addedSupplement, ...prev]);
+      } catch (error) {
+        console.error("Failed to create supplement:", error);
+        toast({
+          title: "Supplement not saved",
+          description: "Unable to save the supplement to the server. It has been removed from the gallery.",
+          variant: "destructive",
+        });
+        setGallerySupplements((prev) => prev.filter((item) => item.id !== tempId));
+        setIsSavingSupplement(false);
+        return;
+      }
+
+      if (sessionStorage.getItem(ADD_ORIGIN_KEY) === "supplements") {
+        const targetPackId = localStorage.getItem("researcher.gallery.target_pack");
+        if (targetPackId) {
+          try {
+            localStorage.setItem(
+              "researcher.gallery.pending_pack_add",
+              JSON.stringify({
+                packId: targetPackId,
+                supplement: { ...addedSupplement, qty: 1 },
+              })
+            );
+            window.dispatchEvent(new Event("researcher-gallery-pending-add"));
+          } catch {
+            // ignore write failures
+          }
+        }
       }
     }
 
     handleCloseAdd();
+    setIsSavingSupplement(false);
 
     toast({
       title: editingId ? "Supplement updated" : "Supplement added",
@@ -1111,14 +1161,16 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={isSavingSupplement}
                   onClick={() => {
                     handleCloseAdd();
                   }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-researcher-primary hover:bg-researcher-secondary">
-                  {editingId ? "Save" : "Add"}
+                <Button type="submit" disabled={isSavingSupplement} className="bg-researcher-primary hover:bg-researcher-secondary">
+                  {isSavingSupplement && <LoadingSpinner className="mr-2" />}
+                  {isSavingSupplement ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
                 </Button>
               </div>
             </form>

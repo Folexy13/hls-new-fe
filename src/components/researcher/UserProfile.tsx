@@ -5,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { dummyUser } from "@/lib/researcher/dummyData";
+import { budgetRangeOptions } from "@/lib/researcher/taxonomy";
 import { User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { researcherService } from "@/services/researcherService";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface UserProfileProps {
   onUserVerified?: (verified: boolean, data: any) => void;
@@ -23,8 +25,27 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
     const text = String(value).trim();
     return text ? text : fallback;
   };
-  
-  // Use the prop data if available (persists across tab switches), otherwise local state
+
+  const parseRangeString = (range?: string | null) => {
+    if (!range) return null;
+    const matches = range.match(/\d+/g);
+    if (!matches || matches.length < 2) return null;
+    const [minValue, maxValue] = matches.map(Number);
+    if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) return null;
+    return { min: minValue, max: maxValue };
+  };
+
+  const inferBudgetRangeFromMax = (maxBudget?: number | null) => {
+    if (!Number.isFinite(Number(maxBudget)) || Number(maxBudget) <= 0) return null;
+    const numericMax = Number(maxBudget);
+    return budgetRangeOptions.find((option) => {
+      const matches = option.match(/\d+/g);
+      if (!matches || matches.length < 2) return false;
+      const optionMax = Number(matches[matches.length - 1]);
+      return optionMax === numericMax;
+    }) || null;
+  };
+
   const userDetails = benfekData ? {
     ...benfekData,
     displayName: benfekData.fullName || benfekData.name || "Unnamed Benefek",
@@ -34,9 +55,15 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
       ...benfekData.health,
       scares: benfekData.health?.scares,
     },
-    budget: benfekData.quiz?.preferences?.budget
-      ? { min: 0, max: Number(benfekData.quiz.preferences.budget) || 0 } // Ensure max is a number, default to 0 if NaN
-      : dummyUser.budget
+    budget: (() => {
+      const rangeString = benfekData.quiz?.preferences?.budgetRange?.trim();
+      const chosenRange = rangeString || inferBudgetRangeFromMax(Number(benfekData.quiz?.preferences?.budget));
+      return parseRangeString(chosenRange) ||
+        (benfekData.quiz?.preferences?.budget
+          ? { min: 0, max: Number(benfekData.quiz.preferences.budget) || 0 }
+          : dummyUser.budget);
+    })(),
+    budgetRange: benfekData.quiz?.preferences?.budgetRange?.trim() || inferBudgetRangeFromMax(Number(benfekData.quiz?.preferences?.budget)),
   } : null;
 
   const { toast } = useToast();
@@ -138,6 +165,7 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                     disabled={isVerifying || !benefekCode}
                     className="bg-researcher-primary hover:bg-researcher-secondary"
                   >
+                    {isVerifying && <LoadingSpinner className="mr-2" />}
                     {isVerifying ? "Verifying..." : "Verify"}
                   </Button>
                 </div>
@@ -212,7 +240,9 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                     <div className="col-span-2">
                       <Label className="text-muted-foreground">Budget Range</Label>
                       <p className="font-medium">
-                        ₦{userDetails.budget.min.toLocaleString()} - ₦{userDetails.budget.max.toLocaleString()}
+                        {userDetails.budgetRange
+                          ? userDetails.budgetRange
+                          : `₦${userDetails.budget.min.toLocaleString()} - ₦${userDetails.budget.max.toLocaleString()}`}
                       </p>
                     </div>
                   )}

@@ -21,6 +21,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { canViewWholesaleDetails } from "@/utils/authClaims";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type SelectedSupplement = {
   id: string;
@@ -83,6 +84,7 @@ export default function ResearcherSelectedSupplementsPage() {
   const [selectedSheetIds, setSelectedSheetIds] = useState<Record<string, boolean>>({});
   const [appliedClassFilters, setAppliedClassFilters] = useState<AppliedClassFilters>({});
   const [viewingSupplement, setViewingSupplement] = useState<SelectedSupplement | null>(null);
+  const [isAddingToPack, setIsAddingToPack] = useState(false);
 
   useEffect(() => {
     if (verifiedCode) return;
@@ -168,10 +170,11 @@ export default function ResearcherSelectedSupplementsPage() {
 
   const handleDispatchSelected = async () => {
     if (!selectedPackId || selectedForDispatch.length === 0) return;
+    setIsAddingToPack(true);
 
-    // Always update the local pack store so the Select Supplements tab reflects changes instantly,
-    // even if some items don't exist in the backend yet (e.g. local-only ids like `sup-...`).
     try {
+      // Always update the local pack store so the Select Supplements tab reflects changes instantly,
+      // even if some items don't exist in the backend yet (e.g. local-only ids like `sup-...`).
       const raw = localStorage.getItem(packStorageKey);
       const parsed = raw ? (JSON.parse(raw) as unknown) : null;
       const store: Record<string, any[]> = parsed && typeof parsed === "object" ? (parsed as any) : {};
@@ -191,8 +194,12 @@ export default function ResearcherSelectedSupplementsPage() {
 
     // Extract supplement IDs for backend sync (handling potential string-to-number conversion)
     const items = selectedForDispatch
-      .map((item) => ({ id: Number(item.id), quantity: item.qty || 1 }))
-      .filter((item) => !isNaN(item.id));
+      .map((item) => ({
+        id: Number(item.id),
+        quantity: item.qty || 1,
+        originalId: item.id,
+      }))
+      .filter((item) => Number.isFinite(item.id) && item.id > 0);
 
     const code = sessionStorage.getItem("researcherVerifiedBenfekCode") || "";
 
@@ -203,7 +210,7 @@ export default function ResearcherSelectedSupplementsPage() {
           code,
           packId: selectedPackId,
           packName: selectedPackName,
-          items: items, // Passing objects with quantity instead of just IDs
+          items: items.map(({ id, quantity }) => ({ id, quantity })),
           status: "draft",
         });
       } catch {
@@ -211,10 +218,13 @@ export default function ResearcherSelectedSupplementsPage() {
       }
     }
 
-    const localOnlyCount = selectedForDispatch.filter(s => s.id.startsWith('sup-')).length;
+    const invalidCount = selectedForDispatch.filter((item) => !Number.isFinite(Number(item.id)) || Number(item.id) <= 0).length;
+    const localOnlyCount = selectedForDispatch.filter((s) => String(s.id).startsWith('sup-')).length;
     toast({
       title: "Added to pack",
-      description: localOnlyCount
+      description: invalidCount
+        ? `${selectedForDispatch.length} supplements added to ${selectedPackName}. ${invalidCount} local-only item${invalidCount > 1 ? 's' : ''} will remain in the worksheet but cannot be synced until they have a valid server ID.`
+        : localOnlyCount
         ? `${selectedForDispatch.length} supplements added to ${selectedPackName}. (${localOnlyCount} are local-only and won't sync to server yet)`
         : `${selectedForDispatch.length} supplements added to ${selectedPackName}.`,
     });
@@ -222,6 +232,7 @@ export default function ResearcherSelectedSupplementsPage() {
     // Remove successfully dispatched items from the sheet view
     setSelected((prev) => prev.filter((item) => !selectedSheetIds[item.id]));
     setSelectedSheetIds({}); 
+    setIsAddingToPack(false);
   };
 
   return (
@@ -280,10 +291,10 @@ export default function ResearcherSelectedSupplementsPage() {
                     ? "bg-researcher-primary hover:bg-researcher-secondary"
                     : "border-researcher-border text-researcher-primary"
                 } h-9 w-9 p-0 flex justify-center items-center shrink-0`}
-                disabled={!selectedPackId || selectedForDispatch.length === 0}
+                disabled={!selectedPackId || selectedForDispatch.length === 0 || isAddingToPack}
                 onClick={handleDispatchSelected}
               >
-                <PackagePlus className="h-4 w-4" />
+                {isAddingToPack ? <LoadingSpinner /> : <PackagePlus className="h-4 w-4" />}
               </Button>
 
               {/* <div className="flex items-center gap-2 bg-white border rounded-md px-2 h-9 shadow-sm"> */}

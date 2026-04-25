@@ -3,8 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProfile } from "@/components/researcher/UserProfile";
 import { SupplementsSelector } from "@/components/researcher/SupplementsSelector";
 import { SupplementGallery } from "@/components/researcher/SupplementGallery";
-import { MyNutrientPacks } from "@/components/researcher/MyNutrientPacks";
-import { PackCatalogue } from "@/components/researcher/PackCatalogue";
 import { researcherService } from "@/services/researcherService";
 import {
   calculatePackBudget,
@@ -13,6 +11,7 @@ import {
   packCategories,
   type Supplement,
 } from "@/lib/researcher/dummyData";
+import { budgetRangeOptions } from "@/lib/researcher/taxonomy";
 import { useToast } from "@/components/ui/use-toast";
 import { useLocation } from "react-router-dom";
 
@@ -36,6 +35,8 @@ export function TabsContainer() {
     return verifiedCode ? `researcher.dispatched.packs.${verifiedCode}` : "researcher.dispatched.packs";
   }, [verifiedCode]);
 
+  const pendingPackAddStorageKey = "researcher.gallery.pending_pack_add";
+
   const [activeTab, setActiveTab] = useState(() => {
     if (!sessionStorage.getItem("researcherVerifiedBenfekCode") && defaultTab === "supplements") {
       return "profile";
@@ -56,7 +57,8 @@ export function TabsContainer() {
   const [userBudget, setUserBudget] = useState<{ min: number; max: number } | null>(null);
   const [benfekData, setBenfekData] = useState<any | null>(null);
   const [dispatchedPacks, setDispatchedPacks] = useState<Record<string, boolean>>({});
-  const [activeCataloguePack, setActiveCataloguePack] = useState<string | null>(null);
+  const [dispatchingPackId, setDispatchingPackId] = useState<string | null>(null);
+  const [dispatchingAll, setDispatchingAll] = useState(false);
 
   const { toast } = useToast();
 
@@ -154,14 +156,86 @@ export function TabsContainer() {
   }, [emptySelected, packStorageKey, dispatchedStorageKey, userVerified]);
 
   useEffect(() => {
+    if (!userVerified || !packsHydrated) return;
+
+    const processPendingPackAdd = () => {
+      try {
+        const raw = localStorage.getItem(pendingPackAddStorageKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as { packId?: string; supplement?: any } | null;
+        if (!parsed?.packId || !parsed?.supplement) return;
+
+        setSelectedSupplements((prev) => {
+          const currentPackItems = prev[parsed.packId] || [];
+          if (currentPackItems.some((item) => item.id === parsed.supplement.id)) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [parsed.packId]: [...currentPackItems, { ...parsed.supplement, qty: parsed.supplement.qty || 1 }],
+          };
+        });
+
+        localStorage.removeItem(pendingPackAddStorageKey);
+      } catch {
+        // ignore parsing or storage failures
+      }
+    };
+
+    processPendingPackAdd();
+    window.addEventListener("researcher-gallery-pending-add", processPendingPackAdd);
+    window.addEventListener("storage", processPendingPackAdd);
+
+    return () => {
+      window.removeEventListener("researcher-gallery-pending-add", processPendingPackAdd);
+      window.removeEventListener("storage", processPendingPackAdd);
+    };
+  }, [userVerified, packsHydrated, pendingPackAddStorageKey]);
+
+  const parseRangeString = (range?: string | null) => {
+    if (!range) return null;
+    const matches = range.match(/\d+/g);
+    if (!matches || matches.length < 2) return null;
+    const [minValue, maxValue] = matches.map(Number);
+    if (!Number.isFinite(minValue) || !Number.isFinite(maxValue)) return null;
+    return { min: minValue, max: maxValue };
+  };
+
+  const inferBudgetRangeFromMax = (maxBudget?: number | null) => {
+    if (!Number.isFinite(Number(maxBudget)) || Number(maxBudget) <= 0) return null;
+    const numericMax = Number(maxBudget);
+    for (const option of budgetRangeOptions) {
+      const matches = option.match(/\d+/g);
+      if (!matches || matches.length < 2) continue;
+      const optionMax = Number(matches[matches.length - 1]);
+      if (optionMax === numericMax) {
+        return {
+          min: Number(matches[0]),
+          max: optionMax,
+        };
+      }
+    }
+    return null;
+  };
+
+  useEffect(() => {
     const fetchBenfekDetails = async () => {
       if (userVerified && verifiedCode && !benfekData) {
         try {
           const response = await researcherService.verifyBenfekCode(verifiedCode);
-          // Capture full benfek object including principal and quiz details
           const fullData = response.benfek;
           setBenfekData(fullData);
-          setUserBudget(Number.isFinite(Number(fullData.quiz?.preferences?.budget)) ? { min: 0, max: Number(fullData.quiz?.preferences?.budget) } : dummyUser.budget);
+
+          const parsedRange =
+            parseRangeString(fullData.quiz?.preferences?.budgetRange) ||
+            inferBudgetRangeFromMax(Number(fullData.quiz?.preferences?.budget));
+
+          setUserBudget(
+            parsedRange ||
+              (Number.isFinite(Number(fullData.quiz?.preferences?.budget))
+                ? { min: 0, max: Number(fullData.quiz?.preferences?.budget) }
+                : dummyUser.budget)
+          );
         } catch (error) {
           console.error("Failed to restore benfek data", error);
         }
@@ -196,6 +270,7 @@ export function TabsContainer() {
       [packId]: [...(selectedSupplements[packId] || []), supplement],
     };
     setSelectedSupplements(updated);
+    setDispatchedPacks((prev) => ({ ...prev, [packId]: false }));
 
     if (packBudgets) {
       const totalPackPrice = calculateTotalPrice(updated[packId]);
@@ -246,34 +321,102 @@ export function TabsContainer() {
   const handleDispatchPack = async (packId: string) => {
     const packName = packCategories.find((p) => p.id === packId)?.name || packId;
 
-    if (verifiedCode) {
-      const items = (selectedSupplements[packId] || []).map(i => ({
-        id: i.id, // Keep as string, as Supplement.id is string
-        quantity: (i as any).qty || 1
-      })); // Removed filter as id is now string and !isNaN(string) is incorrect
+    if (!verifiedCode) {
+      return;
+    }
 
-      try {
-        await researcherService.dispatchPack({
-          code: verifiedCode,
-          packId,
-          packName,
-          items,
-          status: "dispatched"
-        });
+    const items = (selectedSupplements[packId] || []).map((i) => ({
+      id: i.id,
+      quantity: (i as any).qty || 1,
+    }));
 
-        setDispatchedPacks((prev) => ({ ...prev, [packId]: true }));
+    try {
+      setDispatchingPackId(packId);
+      await researcherService.dispatchPack({
+        code: verifiedCode,
+        packId,
+        packName,
+        items,
+        status: "dispatched",
+      });
+
+      setDispatchedPacks((prev) => ({ ...prev, [packId]: true }));
+      setSelectedSupplements((prev) => ({ ...prev, [packId]: [] }));
+      toast({
+        title: "Pack Dispatched",
+        description: `The ${packName} is now live in the beneficiary's catalogue.`,
+      });
+    } catch (e) {
+      toast({
+        title: "Dispatch failed",
+        description: "Could not sync with the server.",
+        variant: "destructive",
+      });
+    } finally {
+      setDispatchingPackId(null);
+    }
+  };
+
+  const handleDispatchAllPacks = async () => {
+    if (!verifiedCode) {
+      return;
+    }
+
+    const packsToDispatch = packCategories.filter(
+      (pack) => (selectedSupplements[pack.id] || []).length > 0
+    );
+
+    if (packsToDispatch.length === 0) {
+      toast({
+        title: "Nothing to dispatch",
+        description: "There are no new packs with supplements ready to dispatch.",
+      });
+      return;
+    }
+
+    let succeeded = 0;
+    const updatedDispatched = { ...dispatchedPacks };
+    const updatedSelected = { ...selectedSupplements };
+
+    setDispatchingAll(true);
+    try {
+      for (const pack of packsToDispatch) {
+        const items = (selectedSupplements[pack.id] || []).map((i) => ({
+          id: i.id,
+          quantity: (i as any).qty || 1,
+        }));
+
+        try {
+          await researcherService.dispatchPack({
+            code: verifiedCode,
+            packId: pack.id,
+            packName: pack.name,
+            items,
+            status: "dispatched",
+          });
+
+          updatedDispatched[pack.id] = true;
+          updatedSelected[pack.id] = [];
+          succeeded += 1;
+        } catch (error) {
+          toast({
+            title: `Failed to dispatch ${pack.name}`,
+            description: "One of the packs could not be dispatched. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      if (succeeded > 0) {
+        setDispatchedPacks(updatedDispatched);
+        setSelectedSupplements(updatedSelected);
         toast({
-          title: "Pack Dispatched",
-          description: `The ${packName} is now live in the beneficiary's catalogue.`,
-        });
-        setActiveTab("catalogue");
-      } catch (e) {
-        toast({
-          title: "Dispatch failed",
-          description: "Could not sync with the server.",
-          variant: "destructive"
+          title: "Packs Dispatched",
+          description: `${succeeded} pack${succeeded > 1 ? "s" : ""} dispatched successfully.`,
         });
       }
+    } finally {
+      setDispatchingAll(false);
     }
   };
 
@@ -339,7 +482,6 @@ export function TabsContainer() {
               Select Supplements
             </TabsTrigger>
             <TabsTrigger className="w-full" value="gallery">Gallery</TabsTrigger>
-            {/* <TabsTrigger className="w-full" value="catalogue">My Nutrient Packs</TabsTrigger> */}
           </TabsList>
         </div>
       </div>
@@ -358,27 +500,15 @@ export function TabsContainer() {
           budgetExceeded={budgetExceeded}
           packBudgets={packBudgets as any}
           onDispatchPack={handleDispatchPack}
+          onDispatchAllPacks={handleDispatchAllPacks}
+          dispatchedPacks={dispatchedPacks}
+          dispatchingPackId={dispatchingPackId}
+          dispatchingAll={dispatchingAll}
         />
       </TabsContent>
 
       <TabsContent value="gallery" className="animate-fade-in">
         <SupplementGallery openAddRequest={galleryAddRequest} />
-      </TabsContent>
-
-      <TabsContent value="catalogue" className="animate-fade-in p-1 sm:p-3">
-        {activeCataloguePack ? (
-          <PackCatalogue 
-            packName={packCategories.find(p => p.id === activeCataloguePack)?.name || ""}
-            items={selectedSupplements[activeCataloguePack] || []}
-            onBack={() => setActiveCataloguePack(null)}
-          />
-        ) : (
-          <MyNutrientPacks 
-            dispatchedPacks={dispatchedPacks}
-            selectedSupplements={selectedSupplements}
-            onViewCatalogue={setActiveCataloguePack}
-          />
-        )}
       </TabsContent>
     </Tabs>
   );
