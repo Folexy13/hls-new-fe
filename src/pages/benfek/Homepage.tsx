@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import doctor from '../../images/bannerdoctor.png'
+import doctor from '../../images/hero-doctor.png'
 import leftPill from '../../images/leftPill.png';
 import rightPill from '../../images/rightPill.png';
 import vitamins from '../../images/vitamins.png'

@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { packCategories, type Supplement } from "@/lib/researcher/dummyData";
 import { useToast } from "@/components/ui/use-toast";
 import { researcherService } from "@/services/researcherService";
@@ -36,6 +43,11 @@ type SelectedSupplement = {
   stock?: number;
   status?: string;
   wholesalers?: Array<{ name: string; price: number; contact: string; address: string }> | null;
+  selectedWholesalerName?: string | null;
+  selectedWholesalerPrice?: number | null;
+  selectedWholesalerContact?: string | null;
+  selectedWholesalerAddress?: string | null;
+  forceDispatchWithoutWholesaler?: boolean;
   tags?: Record<string, string[]>;
   qty?: number;
   imageUrl: string;
@@ -65,7 +77,7 @@ export default function ResearcherSelectedSupplementsPage() {
     [verifiedCode]
   );
 
-  const canViewWholesale = true; // Experimental: allow all researchers access
+  const canViewWholesale = canViewWholesaleDetails();
 
   const [selected, setSelected] = useState<SelectedSupplement[]>(() => {
     const fromState = state.selectedSupplements || [];
@@ -159,6 +171,25 @@ export default function ResearcherSelectedSupplementsPage() {
     );
   };
 
+  const updateSupplementWholesale = (
+    id: string,
+    updates: Partial<
+      Pick<
+        SelectedSupplement,
+        | "selectedWholesalerName"
+        | "selectedWholesalerPrice"
+        | "selectedWholesalerContact"
+        | "selectedWholesalerAddress"
+        | "forceDispatchWithoutWholesaler"
+      >
+    >
+  ) => {
+    setSelected((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+    setViewingSupplement((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
+  };
+
   const handleRemoveFromSheet = (id: string) => {
     setSelected((prev) => prev.filter((s) => s.id !== id));
     setSelectedSheetIds((prev) => {
@@ -197,6 +228,11 @@ export default function ResearcherSelectedSupplementsPage() {
       .map((item) => ({
         id: Number(item.id),
         quantity: item.qty || 1,
+        selectedWholesalerName: item.selectedWholesalerName || null,
+        selectedWholesalerPrice: item.selectedWholesalerPrice ?? null,
+        selectedWholesalerContact: item.selectedWholesalerContact || null,
+        selectedWholesalerAddress: item.selectedWholesalerAddress || null,
+        forceDispatchWithoutWholesaler: Boolean(item.forceDispatchWithoutWholesaler),
         originalId: item.id,
       }))
       .filter((item) => Number.isFinite(item.id) && item.id > 0);
@@ -210,7 +246,15 @@ export default function ResearcherSelectedSupplementsPage() {
           code,
           packId: selectedPackId,
           packName: selectedPackName,
-          items: items.map(({ id, quantity }) => ({ id, quantity })),
+          items: items.map(({ id, quantity, selectedWholesalerName, selectedWholesalerPrice, selectedWholesalerContact, selectedWholesalerAddress, forceDispatchWithoutWholesaler }) => ({
+            id,
+            quantity,
+            selectedWholesalerName,
+            selectedWholesalerPrice,
+            selectedWholesalerContact,
+            selectedWholesalerAddress,
+            forceDispatchWithoutWholesaler,
+          })),
           status: "draft",
         });
       } catch {
@@ -512,6 +556,61 @@ export default function ResearcherSelectedSupplementsPage() {
 
               {canViewWholesale ? (
                 <div className="space-y-2 pt-1">
+                  <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">
+                    Dispatch Source
+                  </p>
+                  {Array.isArray(viewingSupplement.wholesalers) && viewingSupplement.wholesalers.length ? (
+                    <div className="space-y-2 rounded-md border bg-slate-50 px-3 py-3">
+                      <Select
+                        value={viewingSupplement.selectedWholesalerName || ""}
+                        onValueChange={(value) => {
+                          const nextWholesaler = viewingSupplement.wholesalers?.find((item) => item.name === value);
+                          updateSupplementWholesale(viewingSupplement.id, {
+                            selectedWholesalerName: nextWholesaler?.name || null,
+                            selectedWholesalerPrice: nextWholesaler?.price ?? null,
+                            selectedWholesalerContact: nextWholesaler?.contact || null,
+                            selectedWholesalerAddress: nextWholesaler?.address || null,
+                            forceDispatchWithoutWholesaler: false,
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select wholesaler for this item" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {viewingSupplement.wholesalers.map((w, idx) => (
+                            <SelectItem key={`${w.name}-${idx}`} value={w.name}>
+                              {w.name} - ₦{Number(w.price || 0).toLocaleString()}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {viewingSupplement.selectedWholesalerName ? (
+                        <p className="text-xs text-slate-600">
+                          Selected: {viewingSupplement.selectedWholesalerName} at ₦
+                          {Number(viewingSupplement.selectedWholesalerPrice || 0).toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-3">
+                      <p className="text-xs font-medium text-amber-800">
+                        No wholesaler is currently available for this item. Dispatching it anyway will use the fallback 1.3 markup rule.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={Boolean(viewingSupplement.forceDispatchWithoutWholesaler)}
+                          onCheckedChange={(checked) =>
+                            updateSupplementWholesale(viewingSupplement.id, {
+                              forceDispatchWithoutWholesaler: Boolean(checked),
+                            })
+                          }
+                        />
+                        <span className="text-xs text-slate-700">Allow dispatch without wholesaler selection</span>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wide">
                     Wholesalers
                   </p>

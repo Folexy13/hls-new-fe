@@ -81,7 +81,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const canEditWholesale = true; // Experimental: allow all researchers access
+  const canEditWholesale = canViewWholesaleDetails();
 
   const [sheetSupplements, setSheetSupplements] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);

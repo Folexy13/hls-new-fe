@@ -42,4 +42,19 @@ export const principalService = {
     const response = await apiClient.get("/api/v2/wallet/withdrawals");
     return response.data?.data?.withdrawals ?? [];
   },
+
+  async requestWithdrawal(payload: {
+    amount: number;
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  }) {
+    const response = await apiClient.post("/api/v2/wallet/withdrawals", payload);
+    return response.data?.data?.withdrawal;
+  },
+
+  async resolveCredit(id: number) {
+    const response = await apiClient.post(`/api/v2/principals/me/credits/${id}/resolve`);
+    return response.data?.data;
+  },
 };

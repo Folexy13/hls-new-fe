@@ -325,9 +325,41 @@ export function TabsContainer() {
       return;
     }
 
-    const items = (selectedSupplements[packId] || []).map((i) => ({
+    const packItems = selectedSupplements[packId] || [];
+    const missingWholesaleSelection = packItems.filter((item: any) => {
+      const hasWholesalerOptions = Array.isArray(item.wholesalers) && item.wholesalers.length > 0;
+      if (!hasWholesalerOptions) {
+        return !item.forceDispatchWithoutWholesaler;
+      }
+
+      return !item.selectedWholesalerName || !Number.isFinite(Number(item.selectedWholesalerPrice));
+    });
+
+    if (missingWholesaleSelection.length > 0) {
+      const shouldForceDispatch = window.confirm(
+        "Some items need wholesaler reselection before dispatch. Click OK to force dispatch the missing items with the fallback 1.3 markup rule, or Cancel to go back and reselect."
+      );
+
+      if (!shouldForceDispatch) {
+        toast({
+          title: "Wholesaler reselection required",
+          description: "Select a wholesaler for each item in stock, or force dispatch items without an available wholesaler.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const items = packItems.map((i: any) => ({
       id: i.id,
       quantity: (i as any).qty || 1,
+      selectedWholesalerName: i.selectedWholesalerName || null,
+      selectedWholesalerPrice: i.selectedWholesalerPrice ?? null,
+      selectedWholesalerContact: i.selectedWholesalerContact || null,
+      selectedWholesalerAddress: i.selectedWholesalerAddress || null,
+      forceDispatchWithoutWholesaler:
+        Boolean(i.forceDispatchWithoutWholesaler) ||
+        missingWholesaleSelection.some((missing: any) => String(missing.id) === String(i.id)),
     }));
 
     try {
@@ -381,9 +413,28 @@ export function TabsContainer() {
     setDispatchingAll(true);
     try {
       for (const pack of packsToDispatch) {
-        const items = (selectedSupplements[pack.id] || []).map((i) => ({
+        const packItems = selectedSupplements[pack.id] || [];
+        const missingWholesaleSelection = packItems.filter((item: any) => {
+          const hasWholesalerOptions = Array.isArray(item.wholesalers) && item.wholesalers.length > 0;
+          if (!hasWholesalerOptions) {
+            return !item.forceDispatchWithoutWholesaler;
+          }
+
+          return !item.selectedWholesalerName || !Number.isFinite(Number(item.selectedWholesalerPrice));
+        });
+
+        if (missingWholesaleSelection.length > 0) {
+          throw new Error("WHOLESALER_RESELECTION_REQUIRED");
+        }
+
+        const items = packItems.map((i: any) => ({
           id: i.id,
           quantity: (i as any).qty || 1,
+          selectedWholesalerName: i.selectedWholesalerName || null,
+          selectedWholesalerPrice: i.selectedWholesalerPrice ?? null,
+          selectedWholesalerContact: i.selectedWholesalerContact || null,
+          selectedWholesalerAddress: i.selectedWholesalerAddress || null,
+          forceDispatchWithoutWholesaler: Boolean(i.forceDispatchWithoutWholesaler),
         }));
 
         try {
@@ -401,7 +452,10 @@ export function TabsContainer() {
         } catch (error) {
           toast({
             title: `Failed to dispatch ${pack.name}`,
-            description: "One of the packs could not be dispatched. Please try again.",
+            description:
+              error instanceof Error && error.message === "WHOLESALER_RESELECTION_REQUIRED"
+                ? "One or more items need wholesaler reselection before this pack can be dispatched."
+                : "One of the packs could not be dispatched. Please try again.",
             variant: "destructive",
           });
         }

@@ -24,26 +24,6 @@ import { apiClient } from '@/config/axios';
 
 const principalDashboardSections = [
   {
-    title: 'Wallet',
-    items: [
-      {
-        icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
-        label: 'Account',
-        href: '/principal/account',
-      },
-      {
-        icon: <TrendingUp className="h-6 w-6 text-emerald-600" />,
-        label: 'Earnings',
-        href: '/principal/earnings',
-      },
-      {
-        icon: <DollarSign className="h-6 w-6 text-emerald-600" />,
-        label: 'Withdraw',
-        href: '/principal/withdraw',
-      },
-    ],
-  },
-  {
     title: 'Directory',
     items: [
       {
@@ -64,7 +44,7 @@ const principalDashboardSections = [
     ],
   },
   {
-    title: 'Build webpage',
+    title: 'My Shop',
     items: [
       {
         icon: <Pill className="h-6 w-6 text-emerald-600" />,
@@ -80,6 +60,26 @@ const principalDashboardSections = [
         icon: <Mic className="h-6 w-6 text-emerald-600" />,
         label: 'Podcasts',
         href: '/principal/podcasts',
+      },
+    ],
+  },
+  {
+    title: 'Wallet',
+    items: [
+      {
+        icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
+        label: 'Account',
+        href: '/principal/account',
+      },
+      {
+        icon: <TrendingUp className="h-6 w-6 text-emerald-600" />,
+        label: 'Earnings',
+        href: '/principal/earnings',
+      },
+      {
+        icon: <DollarSign className="h-6 w-6 text-emerald-600" />,
+        label: 'Withdraw',
+        href: '/principal/withdraw',
       },
     ],
   },
@@ -185,7 +185,7 @@ const PrincipalHomepage: React.FC = () => {
   }));
 
   const walletShortcutSections = principalDashboardSections.filter((section) =>
-    ['Wallet', 'Directory', 'Build webpage'].includes(section.title)
+    ['Directory', 'My Shop', 'Wallet'].includes(section.title)
   );
 
   return (

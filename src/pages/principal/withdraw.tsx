@@ -90,6 +90,7 @@ const WithdrawPage: React.FC = () => {
         const resolvedWalletBalance = Number(incomeSummary?.walletBalance || 0);
         setWalletBalance(resolvedWalletBalance);
         setWithdrawableBalance(resolvedWalletBalance);
+        setUnresolvedCredits(Array.isArray(incomeSummary?.unresolvedCredits) ? incomeSummary.unresolvedCredits : []);
         setWithdrawals(
           Array.isArray(withdrawalsData)
             ? withdrawalsData.map((item: any) => ({
@@ -136,19 +137,29 @@ const WithdrawPage: React.FC = () => {
   // Handle withdrawal submission
   const handleWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
+    const method = displayedMethods[0];
+    const amount = Number(withdrawAmount);
+
+    if (!method || !Number.isFinite(amount) || amount <= 0) {
+      return;
+    }
+
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    principalService.requestWithdrawal({
+      amount,
+      bankName: method.name,
+      accountNumber: method.accountNumber || '',
+      accountName: method.accountName || '',
+    }).then(() => {
+      setWithdrawableBalance((prev) => Math.max(0, prev - amount));
+      setWalletBalance((prev) => Math.max(0, prev - amount));
       setWithdrawalSuccess(true);
-      
-      // Reset after showing success message
-      setTimeout(() => {
-        setWithdrawalSuccess(false);
-        setWithdrawAmount('');
-      }, 3000);
-    }, 1500);
+      setWithdrawAmount('');
+    }).catch((error) => {
+      console.error('Withdrawal failed:', error);
+    }).finally(() => {
+      setIsLoading(false);
+    });
   };
 
   // Filter and sort data
@@ -197,21 +208,13 @@ const WithdrawPage: React.FC = () => {
     return items;
   };
 
-  const handleResolveCredit = (id: number) => {
-    setUnresolvedCredits((prev) => {
-      const credit = prev.find((item) => item.id === id);
-      if (credit) {
-        const totalAmountPurchased = credit.amount ?? Math.round(credit.costPrice * credit.markupFactor);
-        const returns = Math.max(0, totalAmountPurchased - credit.costPrice);
-        const tax = returns * 0.075;
-        const serviceCharge = returns * 0.05;
-        const amountAfterTax = returns - tax;
-        const hlsCommission = amountAfterTax * 0.3;
-        const principalShare = Math.max(0, returns - tax - serviceCharge - hlsCommission);
-        setWithdrawableBalance((balance) => balance + principalShare);
-      }
-      return prev.filter((item) => item.id !== id);
-    });
+  const handleResolveCredit = async (id: number) => {
+    try {
+      await principalService.resolveCredit(id);
+      setUnresolvedCredits((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error('Failed to resolve credit:', error);
+    }
   };
 
   // Render status badge

@@ -97,7 +97,10 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
   const saveProfile = async () => {
     try {
       setSavingSection('profile');
-      const principal = await principalService.updateMe(profileForm);
+      const principal = await principalService.updateMe({
+        ...profileForm,
+        profileImageUrl: profileForm.profileImageUrl.trim() || undefined,
+      });
       hydrateProfile(principal);
       setUser({
         id: String(principal.id),
@@ -121,7 +124,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
         email: profileForm.email,
-        phone: profileForm.phone,
+        phone: profileForm.phone.trim() || undefined,
       });
       hydrateProfile(principal);
       setUser({
