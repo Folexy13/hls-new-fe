@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'react-toastify';
 import { quizService } from '@/services/quizService';
 import { apiClient } from '@/config/axios';
-import doctor from '../images/bannerdoctor.png'
+import doctor from '../images/hero-doctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
 import vitamins from '../images/vitamins.png'

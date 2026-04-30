@@ -13,6 +13,28 @@ export const apiClient = axios.create({
 
 let refreshPromise: Promise<{ accessToken: string; refreshToken: string }> | null = null;
 
+export const refreshAuthTokens = async (): Promise<{ accessToken: string; refreshToken: string }> => {
+  const refreshToken = tokenManager.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/api/v2/auth/refresh`, { refreshToken })
+      .then((response) => {
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+        tokenManager.setTokens(accessToken, newRefreshToken);
+        return { accessToken, refreshToken: newRefreshToken };
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
 // Request interceptor to add bearer token
 apiClient.interceptors.request.use(
   (config) => {
@@ -36,39 +58,18 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = tokenManager.getRefreshToken();
-      if (refreshToken) {
-        try {
-          // Avoid multiple concurrent refreshes causing token invalidation.
-          if (!refreshPromise) {
-            refreshPromise = axios
-              .post(`${API_BASE_URL}/api/v2/auth/refresh`, { refreshToken })
-              .then((response) => {
-                const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
-                tokenManager.setTokens(accessToken, newRefreshToken);
-                return { accessToken, refreshToken: newRefreshToken };
-              })
-              .finally(() => {
-                refreshPromise = null;
-              });
-          }
+      try {
+        const { accessToken } = await refreshAuthTokens();
 
-          const { accessToken } = await refreshPromise;
-
-          // Retry original request with new token
-          originalRequest.headers = originalRequest.headers ?? {};
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          console.error('Token refresh failed, logging out:', refreshError);
-          tokenManager.clearTokens();
-          window.location.href = '/auth/signin';
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // No refresh token available, force logout
+        // Retry original request with new token
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        console.error('Token refresh failed, logging out:', refreshError);
         tokenManager.clearTokens();
         window.location.href = '/auth/signin';
+        return Promise.reject(refreshError);
       }
     }
 

@@ -22,6 +22,7 @@ import {
 import Modal from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
@@ -31,6 +32,7 @@ type Medication = {
   id: number;
   name: string;
   category: string;
+  isSupplement?: boolean;
   price: string;
   stock: number;
   manufacturer: string;
@@ -92,6 +94,40 @@ const AccordionSkeleton: React.FC = () => (
 );
 
 const MedicationsPage: React.FC = () => {
+  const EMPTY_MEDICATION_IMAGE = 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med';
+  const formatDateForInput = (value?: string | null) => {
+    if (!value) return '';
+
+    const normalizedValue = value.includes('T') ? value : `${value}T00:00:00`;
+    const parsedDate = new Date(normalizedValue);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
+    }
+
+    return parsedDate.toISOString().slice(0, 10);
+  };
+
+  const formatExpiryDisplay = (value?: string | null) => {
+    const normalizedValue = formatDateForInput(value);
+    if (!normalizedValue) return 'N/A';
+
+    return new Date(`${normalizedValue}T00:00:00`).toLocaleDateString();
+  };
+
+  const createEmptyMedication = (): Partial<Medication> => ({
+    name: '',
+    category: '',
+    isSupplement: false,
+    price: '',
+    stock: 0,
+    manufacturer: '',
+    strength: '',
+    status: 'In Stock',
+    expiryDate: '',
+    description: '',
+    image: EMPTY_MEDICATION_IMAGE,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,18 +138,7 @@ const MedicationsPage: React.FC = () => {
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const [newMedication, setNewMedication] = useState<Partial<Medication>>({
-    name: '',
-    category: '',
-    price: '',
-    stock: 0,
-    manufacturer: '',
-    strength: '',
-    status: 'In Stock',
-    expiryDate: '',
-    description: '',
-    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med'
-  });
+  const [newMedication, setNewMedication] = useState<Partial<Medication>>(createEmptyMedication());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,14 +159,15 @@ const MedicationsPage: React.FC = () => {
         const mappedMedications: Medication[] = data.map((item: Record<string, unknown>) => ({
           id: item.id as number,
           name: item.name as string,
-          category: (item.category as string) || 'Supplement',
+          category: (item.category as string) || 'Medication',
+          isSupplement: ((item.category as string) || '').trim().toLowerCase() === 'supplement',
           price: `₦${(item.price as number)?.toLocaleString() || '0'}`,
           stock: (item.stock as number) || 0,
           manufacturer: (item.manufacturer as string) || (item.brand as string) || 'Unknown',
           strength: (item.strength as string) || '',
           status: (item.stock as number) > 10 ? 'In Stock' : (item.stock as number) > 0 ? 'Low Stock' : 'Out of Stock',
           dateAdded: item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A',
-          expiryDate: (item.expiryDate as string) || '',
+          expiryDate: formatDateForInput(item.expiryDate as string | undefined),
           image: (item.imageUrl as string) || (item.image as string) || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
           description: item.description as string,
         }));
@@ -332,8 +358,11 @@ const MedicationsPage: React.FC = () => {
 
       // Parse price - remove currency symbol and convert to number
       const priceValue = typeof newMedication.price === 'string' 
-        ? parseFloat(newMedication.price.replace(/[₦,]/g, '')) || 0
+        ? parseFloat(newMedication.price.replace(/[^\d.]/g, '')) || 0
         : newMedication.price || 0;
+      const resolvedCategory = newMedication.isSupplement
+        ? 'Supplement'
+        : (newMedication.category || 'Medication');
 
       if (editingMedicationId !== null) {
         // Update existing supplement
@@ -343,7 +372,7 @@ const MedicationsPage: React.FC = () => {
           price: priceValue,
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
-          category: newMedication.category,
+          category: resolvedCategory,
           manufacturer: newMedication.manufacturer || '',
           strength: newMedication.strength || '',
           expiryDate: newMedication.expiryDate || '',
@@ -358,11 +387,13 @@ const MedicationsPage: React.FC = () => {
                     ...medication,
                     name: updated.name,
                     category: updated.category || medication.category,
+                    isSupplement: (updated.category || medication.category || '').trim().toLowerCase() === 'supplement',
                     price: `₦${updated.price?.toLocaleString() || '0'}`,
                     stock: updated.stock,
                     manufacturer: newMedication.manufacturer || medication.manufacturer,
                     strength: newMedication.strength || medication.strength,
                     status: updated.stock > 10 ? 'In Stock' : updated.stock > 0 ? 'Low Stock' : 'Out of Stock',
+                    expiryDate: formatDateForInput(updated.expiryDate || newMedication.expiryDate || ''),
                     description: updated.description,
                     image: updated.imageUrl || medication.image,
                   }
@@ -379,7 +410,7 @@ const MedicationsPage: React.FC = () => {
           price: priceValue,
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
-          category: newMedication.category || 'Supplement',
+          category: resolvedCategory,
           manufacturer: newMedication.manufacturer || '',
           strength: newMedication.strength || '',
           expiryDate: newMedication.expiryDate || '',
@@ -390,14 +421,15 @@ const MedicationsPage: React.FC = () => {
            const medicationToAdd: Medication = {
              id: created.id,
              name: created.name,
-             category: created.category || 'Supplement',
+             category: created.category || 'Medication',
+             isSupplement: (created.category || '').trim().toLowerCase() === 'supplement',
              price: `₦${created.price?.toLocaleString() || '0'}`,
              stock: created.stock || 0,
              manufacturer: created.manufacturer || newMedication.manufacturer || 'Unknown',
              strength: (created.strength as string) || newMedication.strength || '',
              status: created.stock > 10 ? 'In Stock' : created.stock > 0 ? 'Low Stock' : 'Out of Stock',
              dateAdded: new Date(created.createdAt).toLocaleDateString(),
-             expiryDate: created.expiryDate || newMedication.expiryDate || '',
+             expiryDate: formatDateForInput(created.expiryDate || newMedication.expiryDate || ''),
              image: created.imageUrl || created.image || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
              description: created.description,
            };
@@ -411,18 +443,7 @@ const MedicationsPage: React.FC = () => {
       setEditingMedicationId(null);
       setSelectedMedication(null);
       setSelectedFile(null);
-      setNewMedication({
-        name: '',
-        category: '',
-        price: '',
-        stock: 0,
-        manufacturer: '',
-        strength: '',
-        status: 'In Stock',
-        expiryDate: '',
-        description: '',
-        image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-      });
+      setNewMedication(createEmptyMedication());
       setPreviewImage(null);
       setIsDirty(false);
       setIsDirty(false);
@@ -446,6 +467,7 @@ const MedicationsPage: React.FC = () => {
     setNewMedication({
       name: medication.name,
       category: medication.category,
+      isSupplement: medication.isSupplement || medication.category.trim().toLowerCase() === 'supplement',
       price: medication.price,
       stock: medication.stock,
       manufacturer: medication.manufacturer,
@@ -487,18 +509,7 @@ const MedicationsPage: React.FC = () => {
               onClick={() => {
                 setSelectedMedication(null);
                 setEditingMedicationId(null);
-                setNewMedication({
-                  name: '',
-                  category: '',
-                  price: '',
-                  stock: 0,
-                  manufacturer: '',
-                  strength: '',
-                  status: 'In Stock',
-                  expiryDate: '',
-                  description: '',
-                  image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                });
+                setNewMedication(createEmptyMedication());
                 setPreviewImage(null);
                 setIsDirty(false);
                 setIsModalOpen(true);
@@ -597,18 +608,7 @@ const MedicationsPage: React.FC = () => {
               <EmptyState onAddClick={() => {
                 setSelectedMedication(null);
                 setEditingMedicationId(null);
-                setNewMedication({
-                  name: '',
-                  category: '',
-                  price: '',
-                  stock: 0,
-                  manufacturer: '',
-                  strength: '',
-                  status: 'In Stock',
-                  expiryDate: '',
-                  description: '',
-                  image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                });
+                setNewMedication(createEmptyMedication());
                 setPreviewImage(null);
                 setIsDirty(false);
                 setIsModalOpen(true);
@@ -768,18 +768,7 @@ const MedicationsPage: React.FC = () => {
                 <EmptyState onAddClick={() => {
                   setSelectedMedication(null);
                   setEditingMedicationId(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    strength: '',
-                    status: 'In Stock',
-                    expiryDate: '',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
+                  setNewMedication(createEmptyMedication());
                   setPreviewImage(null);
                   setIsModalOpen(true);
                 }} />
@@ -842,6 +831,11 @@ const MedicationsPage: React.FC = () => {
                           <div className="flex items-center justify-between gap-6">
                             <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Date Added</p>
                             <p className="font-bold text-gray-900">{medication.dateAdded}</p>
+                          </div>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Expiry Date</p>
+                            <p className="font-bold text-gray-900">{formatExpiryDisplay(medication.expiryDate)}</p>
                           </div>
                         </div>
                         {medication.description && (
@@ -1046,7 +1040,11 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.category}
                       onChange={handleInputChange}
                       placeholder="e.g., Pain Relief"
+                      disabled={!!newMedication.isSupplement}
                     />
+                    {newMedication.isSupplement && (
+                      <p className="mt-1 text-xs text-gray-500">Supplement items are saved under the Supplement category automatically.</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="expiryDate">Expiry Date</Label>
@@ -1093,6 +1091,27 @@ const MedicationsPage: React.FC = () => {
                       <option value="Low Stock">Low Stock</option>
                       <option value="Out of Stock">Out of Stock</option>
                     </select>
+                  </div>
+                  <div className="md:col-span-2 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="isSupplement"
+                        checked={!!newMedication.isSupplement}
+                        onCheckedChange={(checked) => {
+                          const isSupplement = checked === true;
+                          setNewMedication((prev) => ({
+                            ...prev,
+                            isSupplement,
+                            category: isSupplement ? 'Supplement' : '',
+                          }));
+                          setIsDirty(true);
+                        }}
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="isSupplement" className="cursor-pointer">This medication is a supplement</Label>
+                        <p className="text-xs text-gray-600">Turn this on to save the item as a supplement and auto-select the Supplement category.</p>
+                      </div>
+                    </div>
                   </div>
               </div>
             </div>
@@ -1171,16 +1190,7 @@ const MedicationsPage: React.FC = () => {
                   setIsModalOpen(false);
                   setEditingMedicationId(null);
                   setSelectedMedication(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    status: 'In Stock',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
+                  setNewMedication(createEmptyMedication());
                   setPreviewImage(null);
                   setIsDirty(false);
                 }}

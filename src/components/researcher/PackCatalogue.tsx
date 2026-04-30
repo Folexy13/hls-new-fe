@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
@@ -29,20 +30,73 @@ interface PackCatalogueProps {
   packName: string;
   items: Supplement[];
   onBack: () => void;
-  onPay?: () => void;
+  deliveryAddress?: string;
+  savedDeliveryAddress?: string;
+  onDeliveryAddressChange?: (value: string) => void;
+  onPay?: (deliveryAddress: string, options: { saveAddress: boolean }) => void;
+  onReorder?: () => void;
   isPaying?: boolean;
+  paymentState?: {
+    isPaid: boolean;
+    status: string | null;
+    paidAt: string | null;
+    paystackReference: string | null;
+    orderId: number | null;
+    orderStatus: string | null;
+  };
 }
 
 const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=800&auto=format&fit=crop";
 
-export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false }: PackCatalogueProps) {
+export function PackCatalogue({
+  packName,
+  items,
+  onBack,
+  deliveryAddress = "",
+  savedDeliveryAddress = "",
+  onDeliveryAddressChange,
+  onPay,
+  onReorder,
+  isPaying = false,
+  paymentState,
+}: PackCatalogueProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [itemImageIndexes, setItemImageIndexes] = useState<Record<string, number>>({});
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
+  const [addressMode, setAddressMode] = useState<"saved" | "new">(
+    savedDeliveryAddress.trim() ? "saved" : "new"
+  );
+  const [shouldSaveAddress, setShouldSaveAddress] = useState(Boolean(savedDeliveryAddress.trim()));
   const supplementsPerCard = 2;
   const totalPages = Math.max(1, Math.ceil(items.length / supplementsPerCard));
+  const trimmedSavedDeliveryAddress = savedDeliveryAddress.trim();
+  const trimmedDeliveryAddress = deliveryAddress.trim();
+  const effectiveDeliveryAddress =
+    addressMode === "saved" ? trimmedSavedDeliveryAddress : trimmedDeliveryAddress;
+  const canProceedToPayment =
+    Boolean(onPay) &&
+    !isPaying &&
+    items.length > 0 &&
+    !paymentState?.isPaid &&
+    effectiveDeliveryAddress.length > 0;
+  const paymentButtonLabel = isPaying
+    ? "Redirecting to secure checkout..."
+    : !effectiveDeliveryAddress
+      ? "Proceed to Payment"
+      : "Proceed to Payment";
+
+  useEffect(() => {
+    if (trimmedSavedDeliveryAddress) {
+      setAddressMode("saved");
+      setShouldSaveAddress(true);
+      return;
+    }
+
+    setAddressMode("new");
+    setShouldSaveAddress(false);
+  }, [trimmedSavedDeliveryAddress]);
 
   const currentItems = items.slice(
     currentPage * supplementsPerCard,
@@ -97,9 +151,9 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
         <h2 className="truncate text-2xl font-bold text-slate-900">{packName}</h2>
       </div>
 
-      <div className="relative rounded-[32px] border border-white/20 bg-white/40 p-4 shadow-xl backdrop-blur-md">
+      <div className="relative rounded-[32px] border border-white/20 bg-white/40 p-4">
         <div className="flex justify-center">
-          <Card className="block h-auto w-full max-w-[720px] overflow-hidden rounded-3xl border-none bg-white shadow-sm">
+          <Card className="block h-auto w-full max-w-[720px] overflow-hidden rounded-b-3xl rounded-t-none border-none bg-white shadow-none">
             <div className="flex flex-row gap-2 overflow-hidden">
           {currentItems.map((item) => {
             const imageKey = String(item.id);
@@ -110,20 +164,24 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
             return (
               <div
                 key={item.id}
-                className="flex min-h-[268px] min-w-0 basis-1/2 flex-col overflow-hidden bg-emerald-50/70 backdrop-blur-sm"
+                className="flex min-h-[320px] min-w-0 basis-1/2 flex-col overflow-hidden bg-emerald-50/70"
               >
-                <div className="relative h-[160px] w-full overflow-hidden bg-slate-50/80">
+                <div className="relative flex h-[230px] w-full items-center justify-center overflow-hidden bg-slate-300">
                   <div
                     className="flex h-full w-full transition-transform duration-500 ease-out"
                     style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                   >
                     {images.map((image, index) => (
-                      <img
+                      <div
                         key={`${item.id}-slide-${index}`}
-                        src={image}
-                        alt={`${item.name} ${index + 1}`}
-                        className="h-full min-w-full object-cover"
-                      />
+                        className="flex h-full min-w-full items-center justify-center bg-slate-300"
+                      >
+                        <img
+                          src={image}
+                          alt={`${item.name} ${index + 1}`}
+                          className="h-[70%] w-auto max-w-[82%]"
+                        />
+                      </div>
                     ))}
                   </div>
 
@@ -171,7 +229,7 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
                   )}
                 </div>
 
-                <CardContent className="flex h-[108px] min-w-0 flex-col justify-start p-2.5">
+                <CardContent className="flex h-[90px] min-w-0 flex-col justify-start p-2.5">
                   <div className="min-h-[28px]">
                     <h3 className="line-clamp-2 text-sm font-bold leading-tight text-slate-800">
                       {(item as any).qty > 1 && (
@@ -183,10 +241,6 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
 
                   <p className="mt-px text-sm font-black text-emerald-600">
                     NGN {totalPrice.toLocaleString()}
-                  </p>
-
-                  <p className="mt-0.5 min-h-[28px] line-clamp-2 text-[11px] leading-4 text-slate-500">
-                    {item.description}
                   </p>
                 </CardContent>
               </div>
@@ -300,21 +354,110 @@ export function PackCatalogue({ packName, items, onBack, onPay, isPaying = false
           <AccordionTrigger className="px-5 py-4 font-semibold text-slate-700 hover:no-underline">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-emerald-500" />
-              <span>Make Payment</span>
+              <span>Payment & Delivery</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5">
-            <div className="space-y-4 rounded-[20px] bg-emerald-50/50 p-6 text-center">
-              <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                Safe & Secure Payment
-              </p>
-              <Button
-                onClick={onPay}
-                disabled={!onPay || isPaying || items.length === 0}
-                className="w-full rounded-full bg-emerald-600 py-6 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700"
-              >
-                {isPaying ? "Redirecting..." : "Pay & Finalize Pack"}
-              </Button>
+            <div className="space-y-5 rounded-[24px] border border-slate-300 bg-slate-200 p-6 shadow-[0_18px_45px_-24px_rgba(15,23,42,0.18)]">
+              {paymentState?.isPaid ? (
+                <div className="rounded-2xl border border-emerald-200 bg-white px-4 py-4 text-sm text-slate-700">
+                  <p className="font-semibold text-emerald-700">Payment successful</p>
+                  <p className="mt-1">This nutrient pack has already been paid for.</p>
+                  <Button
+                    type="button"
+                    onClick={onReorder}
+                    className="mt-3 rounded-full bg-emerald-600 px-5 text-white hover:bg-emerald-700"
+                  >
+                    Reorder Pack
+                  </Button>
+                </div>
+              ) : null}
+
+              {!paymentState?.isPaid ? (
+                <>
+              <div className="space-y-3 rounded-[22px] border border-emerald-200 bg-white p-4 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]">
+                <div className="space-y-1 text-left">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                    Delivery
+                  </p>
+                </div>
+
+                {trimmedSavedDeliveryAddress ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressMode("saved");
+                          setShouldSaveAddress(true);
+                        }}
+                        className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                          addressMode === "saved"
+                            ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        Use saved address
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddressMode("new");
+                          setShouldSaveAddress(false);
+                        }}
+                        className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                          addressMode === "new"
+                            ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        Enter new address
+                      </button>
+                    </div>
+
+                    {addressMode === "saved" ? (
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                        {trimmedSavedDeliveryAddress}
+                      </div>
+                    ) : (
+                      <Input
+                        value={deliveryAddress}
+                        onChange={(event) => onDeliveryAddressChange?.(event.target.value)}
+                        placeholder="Enter your delivery address"
+                        className="h-12 border-2 border-slate-200 bg-slate-100/90 shadow-inner focus-visible:border-emerald-500 focus-visible:bg-white"
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <Input
+                    value={deliveryAddress}
+                    onChange={(event) => onDeliveryAddressChange?.(event.target.value)}
+                    placeholder="Enter your delivery address"
+                    className="h-12 border-2 border-slate-200 bg-slate-100/90 shadow-inner focus-visible:border-emerald-500 focus-visible:bg-white"
+                  />
+                )}
+
+                <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={shouldSaveAddress}
+                    onChange={(event) => setShouldSaveAddress(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Save this address to my profile</span>
+                </label>
+              </div>
+                <Button
+                  onClick={() =>
+                    onPay?.(effectiveDeliveryAddress, { saveAddress: shouldSaveAddress })
+                  }
+                  disabled={!canProceedToPayment}
+                  className="w-full rounded-full bg-emerald-600 py-6 text-white hover:bg-emerald-700 disabled:bg-emerald-300 disabled:text-white"
+                >
+                  {paymentButtonLabel}
+                </Button>
+                </>
+              ) : null}
             </div>
           </AccordionContent>
         </AccordionItem>

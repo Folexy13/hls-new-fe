@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot } from 'lucide-react';
+import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -10,11 +10,37 @@ import { packCategories } from '@/lib/researcher/dummyData';
 import { toast } from 'react-toastify';
 import { paystackService } from '@/services/paystackService';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { benfekService } from '@/services/benfekService';
 
 type SavedPharmacy = {
   name: string;
   phone: string;
 };
+
+type PharmacySelectionSnapshot = {
+  name: string | null;
+  phone: string | null;
+};
+
+type PendingPackCheckout = {
+  packId: string;
+  catalogueId: string;
+  returnPath: string;
+};
+
+type PackPaymentState = {
+  isPaid: boolean;
+  status: string | null;
+  paidAt: string | null;
+  paystackReference: string | null;
+  orderId: number | null;
+  orderStatus: string | null;
+};
+
+const PENDING_PACK_CHECKOUT_KEY = 'benfek.pending.pack.checkout';
+const VERIFIED_PACK_REFERENCE_KEY = 'benfek.verified.pack.reference';
+
+const getCallbackOrigin = () => window.location.origin;
 
 const Dashboard = () => {
   const location = useLocation();
@@ -49,10 +75,41 @@ const Dashboard = () => {
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
+  const [packPaymentStates, setPackPaymentStates] = useState<Record<string, PackPaymentState>>({});
   const [isPayingForPack, setIsPayingForPack] = useState(false);
   const [isLoadingPacks, setIsLoadingPacks] = useState(false);
+  const [arePromoCardsReady, setArePromoCardsReady] = useState(false);
   const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
+  const [isHydratingPharmacy, setIsHydratingPharmacy] = useState(true);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [savedDeliveryAddress, setSavedDeliveryAddress] = useState('');
+  const [pharmacyModalSnapshot, setPharmacyModalSnapshot] = useState<PharmacySelectionSnapshot | null>(null);
   const tabMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const setPendingPackCheckout = (value: PendingPackCheckout) => {
+    try {
+      sessionStorage.setItem(PENDING_PACK_CHECKOUT_KEY, JSON.stringify(value));
+    } catch {
+      // ignore storage failures
+    }
+  };
+
+  const getPendingPackCheckout = (): PendingPackCheckout | null => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_PACK_CHECKOUT_KEY);
+      return raw ? (JSON.parse(raw) as PendingPackCheckout) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPendingPackCheckout = () => {
+    try {
+      sessionStorage.removeItem(PENDING_PACK_CHECKOUT_KEY);
+    } catch {
+      // ignore storage failures
+    }
+  };
 
   const bannerImages = useMemo(() => ([
     'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
@@ -190,19 +247,30 @@ const Dashboard = () => {
         const response = await apiClient.get('/api/v2/benfek/packs');
         const packs = response.data?.data || [];
         const mapped: Record<string, any[]> = {};
+        const paymentStates: Record<string, PackPaymentState> = {};
         packs.forEach((p: any) => {
           mapped[p.packId] = (p.items || []).map((i: any) => ({
             ...i.supplement,
             qty: i.quantity
           }));
+          paymentStates[p.packId] = {
+            isPaid: Boolean(p.payment?.isPaid),
+            status: p.payment?.status ?? null,
+            paidAt: p.payment?.paidAt ?? null,
+            paystackReference: p.payment?.paystackReference ?? null,
+            orderId: p.payment?.orderId ?? null,
+            orderStatus: p.payment?.orderStatus ?? null,
+          };
         });
         setPackItems(mapped);
+        setPackPaymentStates(paymentStates);
         setNutrientReady(
           packs.some((pack: any) => Array.isArray(pack?.items) && pack.items.length > 0)
         );
       } catch (error) {
         console.error('Failed to fetch packs:', error);
         setPackItems({});
+        setPackPaymentStates({});
         setNutrientReady(false);
       } finally {
         setIsLoadingPacks(false);
@@ -266,6 +334,50 @@ const Dashboard = () => {
     }
   }, [savedPharmacies]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSavedPharmacy = async () => {
+      try {
+        const profile = await benfekService.getProfile();
+        const savedName = profile?.preferredPharmacyName?.trim();
+        const savedPhone = profile?.preferredPharmacyPhone?.trim();
+        const savedDeliveryAddress = profile?.deliveryAddress?.trim();
+
+        if (!mounted) return;
+
+        setDeliveryAddress(savedDeliveryAddress || '');
+        setSavedDeliveryAddress(savedDeliveryAddress || '');
+
+        if (savedName) {
+          setSelectedPharmacy(savedName);
+          setSelectedPharmacyPhone(savedPhone || null);
+
+          if (savedPhone) {
+            setSavedPharmacies((prev) => {
+              const withoutDuplicate = prev.filter(
+                (pharmacy) => pharmacy.name.toLowerCase() !== savedName.toLowerCase()
+              );
+              return [...withoutDuplicate, { name: savedName, phone: savedPhone }];
+            });
+          }
+        }
+      } catch {
+        // Keep the dashboard usable if profile hydration fails.
+      } finally {
+        if (mounted) {
+          setIsHydratingPharmacy(false);
+        }
+      }
+    };
+
+    loadSavedPharmacy();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const selectPharmacy = (name: string) => {
     const saved = savedPharmacyByName.get(name.toLowerCase());
     setSelectedPharmacy(name);
@@ -274,22 +386,29 @@ const Dashboard = () => {
     setCustomPharmacyPhone('');
   };
 
-  const handleSelectCustomPharmacy = () => {
-    const name = pharmacySearchName;
-    const phone = customPharmacyPhone.trim();
-    if (!name || !phone) return;
-
-    setIsSavingPharmacy(true);
-    setSavedPharmacies((prev) => {
-      const withoutDuplicate = prev.filter((pharmacy) => pharmacy.name.toLowerCase() !== name.toLowerCase());
-      return [...withoutDuplicate, { name, phone }];
+  const openPharmacyModal = () => {
+    setPharmacyModalSnapshot({
+      name: selectedPharmacy,
+      phone: selectedPharmacyPhone,
     });
-    setSelectedPharmacy(name);
-    setSelectedPharmacyPhone(phone);
-    setPharmacySearch('');
-    setCustomPharmacyPhone('');
-    window.setTimeout(() => setIsSavingPharmacy(false), 200);
+    setShowPharmacyModal(true);
   };
+
+  const handlePharmacyModalOpenChange = (open: boolean) => {
+    if (!open) {
+      if (pharmacyModalSnapshot) {
+        setSelectedPharmacy(pharmacyModalSnapshot.name);
+        setSelectedPharmacyPhone(pharmacyModalSnapshot.phone);
+      }
+      setPharmacySearch('');
+      setCustomPharmacyPhone('');
+      setShowPharmacyModal(false);
+      return;
+    }
+
+    setShowPharmacyModal(true);
+  };
+
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredPharmacyItems.length / itemsPerPage));
   const [currentPage, setCurrentPage] = useState(1);
@@ -303,13 +422,13 @@ const Dashboard = () => {
   }, [searchValue]);
   useEffect(() => {
     if (activeTab !== 'pharmacy') return;
-    if (selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
+    if (isHydratingPharmacy || selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
     const timer = window.setTimeout(() => {
       setShowPharmacyModal(true);
       setHasShownPharmacyModal(true);
     }, 3000);
     return () => window.clearTimeout(timer);
-  }, [activeTab, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
+  }, [activeTab, isHydratingPharmacy, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -367,6 +486,41 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
+    if (activeTab !== 'nutrient') {
+      setArePromoCardsReady(false);
+      return;
+    }
+
+    if (activeCatalogueId || !nutrientReady) {
+      setArePromoCardsReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    setArePromoCardsReady(false);
+
+    const imageLoads = promoCards.map((card) => {
+      return new Promise<void>((resolve) => {
+        const image = new Image();
+        const finish = () => resolve();
+        image.onload = finish;
+        image.onerror = finish;
+        image.src = card.image;
+      });
+    });
+
+    Promise.all(imageLoads).then(() => {
+      if (!cancelled) {
+        setArePromoCardsReady(true);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCatalogueId, activeTab, nutrientReady, promoCards]);
+
+  useEffect(() => {
     if (showPharmacyModal) return;
     const timer = window.setInterval(() => {
       setBannerIndex((prev) => (prev + 1) % bannerImages.length);
@@ -388,10 +542,43 @@ const Dashboard = () => {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const paymentMode = searchParams.get('payment');
+    if (paymentMode === 'pack') return;
+
+    const pendingCheckout = getPendingPackCheckout();
+    if (!pendingCheckout) return;
+
+    if (pendingCheckout.returnPath === location.pathname) {
+      setActiveTab('nutrient');
+      setActiveCatalogueId(pendingCheckout.catalogueId);
+    }
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const paymentMode = searchParams.get('payment');
     const reference = searchParams.get('reference') || searchParams.get('trxref');
     const packId = searchParams.get('packId');
+    const catalogueId = searchParams.get('catalogueId');
 
     if (paymentMode !== 'pack' || !reference) return;
+
+    const lastVerifiedReference = sessionStorage.getItem(VERIFIED_PACK_REFERENCE_KEY);
+    if (lastVerifiedReference === reference) {
+      const cleanedParams = new URLSearchParams(location.search);
+      cleanedParams.delete('payment');
+      cleanedParams.delete('reference');
+      cleanedParams.delete('trxref');
+      cleanedParams.delete('packId');
+      cleanedParams.delete('catalogueId');
+      navigate(
+        {
+          pathname: location.pathname,
+          search: cleanedParams.toString() ? `?${cleanedParams.toString()}` : '',
+        },
+        { replace: true }
+      );
+      return;
+    }
 
     let cancelled = false;
 
@@ -401,18 +588,52 @@ const Dashboard = () => {
         const result = await paystackService.verifyCheckout(reference);
         if (cancelled) return;
 
+        sessionStorage.setItem(VERIFIED_PACK_REFERENCE_KEY, reference);
         toast.success(`Payment successful for ${result?.packName || 'your nutrient pack'}.`);
         setActiveTab('nutrient');
-        if (packId && packIdToPromoId[packId as keyof typeof packIdToPromoId]) {
-          setActiveCatalogueId(packIdToPromoId[packId as keyof typeof packIdToPromoId]);
+        if (result?.packId) {
+          setPackPaymentStates((prev) => ({
+            ...prev,
+            [String(result.packId)]: {
+              isPaid: true,
+              status: result?.status ?? 'success',
+              paidAt: new Date().toISOString(),
+              paystackReference: reference,
+              orderId: result?.orderId ? Number(result.orderId) : null,
+              orderStatus: 'paid',
+            },
+          }));
         }
+        const pendingCheckout = getPendingPackCheckout();
+        const resolvedCatalogueId =
+          catalogueId ||
+          pendingCheckout?.catalogueId ||
+          (packId ? packIdToPromoId[packId as keyof typeof packIdToPromoId] : null);
+
+        if (resolvedCatalogueId) {
+          setActiveCatalogueId(resolvedCatalogueId);
+        }
+
+        clearPendingPackCheckout();
       } catch (error: any) {
         if (cancelled) return;
         toast.error(error?.response?.data?.message || 'Could not verify pack payment.');
       } finally {
         if (!cancelled) {
           setIsPayingForPack(false);
-          navigate('/benfek/dashboard', { replace: true });
+          const cleanedParams = new URLSearchParams(location.search);
+          cleanedParams.delete('payment');
+          cleanedParams.delete('reference');
+          cleanedParams.delete('trxref');
+          cleanedParams.delete('packId');
+          cleanedParams.delete('catalogueId');
+          navigate(
+            {
+              pathname: location.pathname,
+              search: cleanedParams.toString() ? `?${cleanedParams.toString()}` : '',
+            },
+            { replace: true }
+          );
         }
       }
     };
@@ -422,13 +643,45 @@ const Dashboard = () => {
     return () => {
       cancelled = true;
     };
-  }, [location.search, navigate, packIdToPromoId]);
+  }, [location.pathname, location.search, navigate, packIdToPromoId]);
 
-  const handlePackCheckout = async (packId: string) => {
+  const handlePackCheckout = async (
+    packId: string,
+    addressOverride?: string,
+    options?: { saveAddress?: boolean }
+  ) => {
     try {
+      if (packPaymentStates[packId]?.isPaid) {
+        toast.info('This nutrient pack has already been paid for.');
+        return;
+      }
+
+      const resolvedAddress = (addressOverride ?? deliveryAddress).trim();
+      if (!resolvedAddress) {
+        toast.error('Please enter a delivery address before paying for this pack.');
+        return;
+      }
+
       setIsPayingForPack(true);
-      const callbackUrl = `${window.location.origin}/benfek/dashboard?payment=pack&packId=${encodeURIComponent(packId)}`;
-      const result = await paystackService.initializePackCheckout(packId, callbackUrl);
+      if (options?.saveAddress && resolvedAddress !== savedDeliveryAddress.trim()) {
+        await benfekService.updateProfile({ deliveryAddress: resolvedAddress });
+        setDeliveryAddress(resolvedAddress);
+        setSavedDeliveryAddress(resolvedAddress);
+      }
+      const currentCatalogueId =
+        activeCatalogueId ||
+        packIdToPromoId[packId as keyof typeof packIdToPromoId] ||
+        '';
+
+      setPendingPackCheckout({
+        packId,
+        catalogueId: currentCatalogueId,
+        returnPath: location.pathname,
+      });
+
+      const callbackOrigin = getCallbackOrigin();
+      const callbackUrl = `${callbackOrigin}${location.pathname}?payment=pack&packId=${encodeURIComponent(packId)}&catalogueId=${encodeURIComponent(currentCatalogueId)}`;
+      const result = await paystackService.initializePackCheckout(packId, resolvedAddress, callbackUrl);
       const authorizationUrl = result?.authorization_url;
 
       if (!authorizationUrl) {
@@ -443,6 +696,72 @@ const Dashboard = () => {
       toast.error(error?.response?.data?.message || 'Could not initialize pack payment.');
     }
   };
+
+  const handleReorderPack = (packId: string) => {
+    setPackPaymentStates((prev) => ({
+      ...prev,
+      [packId]: {
+        ...(prev[packId] || {
+          status: null,
+          paidAt: null,
+          paystackReference: null,
+          orderId: null,
+          orderStatus: null,
+        }),
+        isPaid: false,
+      },
+    }));
+  };
+
+  const handleContinueWithPharmacy = async () => {
+    const customName = pharmacySearchName;
+    const customPhone = customPharmacyPhone.trim();
+    const shouldCreateCustomPharmacy =
+      !selectedPharmacy &&
+      customName.length > 0 &&
+      filteredPharmacyDirectory.length === 0 &&
+      !isExistingPharmacyOption;
+
+    const resolvedPharmacyName = shouldCreateCustomPharmacy ? customName : selectedPharmacy;
+    const resolvedPharmacyPhone = shouldCreateCustomPharmacy
+      ? customPhone
+      : selectedPharmacyPhone || undefined;
+
+    if (!resolvedPharmacyName) return;
+    if (shouldCreateCustomPharmacy && !resolvedPharmacyPhone) return;
+
+    try {
+      setIsSavingPharmacy(true);
+
+      if (shouldCreateCustomPharmacy && resolvedPharmacyPhone) {
+        setSavedPharmacies((prev) => {
+          const withoutDuplicate = prev.filter(
+            (pharmacy) => pharmacy.name.toLowerCase() !== resolvedPharmacyName.toLowerCase()
+          );
+          return [...withoutDuplicate, { name: resolvedPharmacyName, phone: resolvedPharmacyPhone }];
+        });
+        setSelectedPharmacy(resolvedPharmacyName);
+        setSelectedPharmacyPhone(resolvedPharmacyPhone);
+      }
+
+      await benfekService.updateProfile({
+        preferredPharmacyName: resolvedPharmacyName,
+        preferredPharmacyPhone: resolvedPharmacyPhone,
+      });
+      setPharmacySearch('');
+      setCustomPharmacyPhone('');
+      setPharmacyModalSnapshot(null);
+      setShowPharmacyModal(false);
+      setPharmacyModalDismissed(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to save selected pharmacy');
+    } finally {
+      setIsSavingPharmacy(false);
+    }
+  };
+
+  const isNutrientLandingLoading =
+    isLoadingPacks || (!activeCatalogueId && nutrientReady && !arePromoCardsReady);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -555,15 +874,15 @@ const Dashboard = () => {
                     <button
                       type="button"
                       className="h-10 w-12 border rounded-sm border-emerald-100 bg-gray-500/90 text-white shadow-sm flex items-center justify-center"
-                      aria-label="Open menu"
+                      aria-label="Filter medications"
                     >
-                      <Menu className="h-7 w-7" />
+                      <Filter className="h-5 w-5" />
                     </button>
                   </div>
                   {selectedPharmacy && (
                     <button
                       type="button"
-                      onClick={() => setShowPharmacyModal(true)}
+                      onClick={openPharmacyModal}
                       className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
                     >
                       Change pharmacy
@@ -573,7 +892,7 @@ const Dashboard = () => {
                 {!selectedPharmacy ? (
                   <button
                     type="button"
-                    onClick={() => setShowPharmacyModal(true)}
+                    onClick={openPharmacyModal}
                     className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-50/80 transition"
                   >
                     Select a pharmacy to view available drugs.
@@ -701,7 +1020,7 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {isLoadingPacks ? (
+                {isNutrientLandingLoading ? (
                   <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-6 text-center text-sm text-emerald-800 inline-flex items-center justify-center gap-2">
                     <LoadingSpinner className="text-emerald-600" />
                     Loading nutrient packs...
@@ -711,8 +1030,23 @@ const Dashboard = () => {
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
                     onBack={() => setActiveCatalogueId(null)}
-                    onPay={() => handlePackCheckout(promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId])}
+                    deliveryAddress={deliveryAddress}
+                    savedDeliveryAddress={savedDeliveryAddress}
+                    onDeliveryAddressChange={setDeliveryAddress}
+                    onPay={(address, options) =>
+                      handlePackCheckout(
+                        promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId],
+                        address,
+                        options
+                      )
+                    }
+                    onReorder={() =>
+                      handleReorderPack(
+                        promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]
+                      )
+                    }
                     isPaying={isPayingForPack}
+                    paymentState={packPaymentStates[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]]}
                   />
                 ) : !nutrientReady ? (
                   <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-6 text-center text-sm text-emerald-800">
@@ -771,7 +1105,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <Dialog open={showPharmacyModal} onOpenChange={setShowPharmacyModal}>
+      <Dialog open={showPharmacyModal} onOpenChange={handlePharmacyModalOpenChange}>
         <DialogContent className="sm:max-w-[24rem] gap-0 overflow-hidden rounded-none border border-emerald-100 bg-white p-0 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.45)] [&>button]:hidden sm:w-[24rem]">
           <div className="h-1.5 w-full bg-green-800" />
 
@@ -880,17 +1214,13 @@ const Dashboard = () => {
                   <div className="space-y-2">
                     {filteredPharmacyDirectory.length === 0 ? (
                       <div className="rounded-lg border border-dashed border-emerald-200 bg-white px-4 py-4 text-left">
-                        <p className="text-sm font-semibold text-slate-700">Add this pharmacy</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-500">
-                          Enter the pharmacy office telephone number to save it.
-                        </p>
                         {shouldShowCustomPharmacyPhone && (
                           <div className="mt-3 space-y-2">
                             <label
                               htmlFor="custom-pharmacy-phone"
                               className="text-sm font-medium text-slate-800"
                             >
-                              Office telephone number
+                              Pharmacy mobile number
                             </label>
                             <Input
                               id="custom-pharmacy-phone"
@@ -900,15 +1230,6 @@ const Dashboard = () => {
                               placeholder="e.g. 08012345678"
                               className="h-11"
                             />
-                            <Button
-                              type="button"
-                              onClick={handleSelectCustomPharmacy}
-                              disabled={!customPharmacyPhone.trim() || isSavingPharmacy}
-                              className="h-10 w-full rounded-xl bg-green-800 text-sm font-semibold text-white hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60"
-                            >
-                              {isSavingPharmacy && <LoadingSpinner className="mr-2" />}
-                              {isSavingPharmacy ? 'Saving...' : 'Save pharmacy'}
-                            </Button>
                           </div>
                         )}
                       </div>
@@ -956,8 +1277,12 @@ const Dashboard = () => {
 
             <DialogFooter className="flex-col gap-2 border-t border-slate-100 bg-white px-5 py-2 sm:flex-col sm:px-6">
               <Button
-                onClick={() => setShowPharmacyModal(false)}
-                disabled={!selectedPharmacy || isSavingPharmacy}
+                onClick={handleContinueWithPharmacy}
+                disabled={
+                  isSavingPharmacy ||
+                  (!selectedPharmacy &&
+                    !(shouldShowCustomPharmacyPhone && pharmacySearchName && customPharmacyPhone.trim()))
+                }
                 className="h-11 w-full self-stretch rounded-xl bg-green-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isSavingPharmacy && <LoadingSpinner className="mr-2" />}

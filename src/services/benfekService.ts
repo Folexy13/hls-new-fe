@@ -8,6 +8,8 @@ export interface BenfekProfilePayload {
   whatsappNumber?: string;
   deliveryAddress?: string;
   dropOffAddress?: string;
+  preferredPharmacyName?: string;
+  preferredPharmacyPhone?: string;
   benfekName?: string;
   benfekAge?: string;
   benfekGender?: string;

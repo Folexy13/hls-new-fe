@@ -55,7 +55,15 @@ export const researcherService = {
     code: string;
     packId: string;
     packName: string;
-    items: Array<{ id: string | number; quantity: number }>;
+    items: Array<{
+      id: string | number;
+      quantity: number;
+      selectedWholesalerName?: string | null;
+      selectedWholesalerPrice?: number | null;
+      selectedWholesalerContact?: string | null;
+      selectedWholesalerAddress?: string | null;
+      forceDispatchWithoutWholesaler?: boolean;
+    }>;
     status?: string;
   }) {
     const response = await apiClient.post("/api/v2/researcher/packs/dispatch", payload);

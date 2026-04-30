@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { authService } from '../services/authService';
+import { refreshAuthTokens } from '../config/axios';
 import { tokenManager } from '../utils/tokenManager';
 import { cartService } from '../services/cartService';
 
@@ -14,26 +14,29 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // If user is already authenticated from persisted state and has valid tokens, skip refresh
+      const refreshToken = tokenManager.getRefreshToken();
+      const hasRefreshSession = !!refreshToken && !tokenManager.isTokenExpired();
+      const accessToken = tokenManager.getAccessToken();
+
+      // If user is already authenticated from persisted state and has tokens available, keep session.
       if (isAuthenticated && user && tokenManager.hasValidTokens()) {
         console.log('User already authenticated from persisted state');
         setIsLoading(false);
         return;
       }
 
-      const refreshToken = tokenManager.getRefreshToken();
-      
-      // Only try to refresh if we have a token but no authenticated user
-      if (refreshToken && !tokenManager.isTokenExpired() && !isAuthenticated) {
+      // Recover the session whenever a non-expired refresh token exists, even if
+      // access token state or persisted auth state is temporarily out of sync.
+      if (hasRefreshSession && (!isAuthenticated || !user || !accessToken)) {
         try {
-          const response = await authService.refreshToken(refreshToken);
-          tokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+          const { accessToken } = await refreshAuthTokens();
+          const claims = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
           // Update user state after successful token refresh
           setUser({
-            id: response.user.id,
-            email: response.user.email,
-            name: `${response.user.firstName} ${response.user.lastName}`,
-            role: response.user.role,
+            id: String(claims.userId),
+            email: String(claims.email || ''),
+            name: '',
+            role: String(claims.role || ''),
             isAuthenticated: true,
           });
           // Fetch cart from backend and sync store
@@ -58,8 +61,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           tokenManager.clearTokens();
           logout();
         }
-      } else if (!tokenManager.hasValidTokens() && isAuthenticated) {
-        // Tokens expired but user thinks they're authenticated - log them out
+      } else if (!hasRefreshSession && isAuthenticated) {
+        // No recoverable session remains, so clear the persisted auth state.
         logout();
       }
       
@@ -68,44 +71,6 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
     initializeAuth();
   }, [setUser, logout, isAuthenticated, user, setCartFromBackend]);
-
-  // Proactively refresh access tokens so idle users don't get logged out when they return.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const tick = async () => {
-      const refreshToken = tokenManager.getRefreshToken();
-      if (!refreshToken) return;
-      if (tokenManager.isTokenExpired()) {
-        logout();
-        return;
-      }
-
-      const accessExp = tokenManager.getAccessTokenExpiresAt();
-      if (!accessExp) return;
-
-      // Refresh when the access token is within 60 seconds of expiring.
-      const msLeft = accessExp.getTime() - Date.now();
-      if (msLeft > 60_000) return;
-
-      try {
-        const response = await authService.refreshToken(refreshToken);
-        tokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
-      } catch (error) {
-        console.error('Proactive token refresh failed:', error);
-        tokenManager.clearTokens();
-        logout();
-      }
-    };
-
-    // Run once quickly, then periodically.
-    const immediate = window.setTimeout(() => tick(), 500);
-    const interval = window.setInterval(() => tick(), 30_000);
-    return () => {
-      window.clearTimeout(immediate);
-      window.clearInterval(interval);
-    };
-  }, [isAuthenticated, logout]);
 
   if (isLoading) {
     return (

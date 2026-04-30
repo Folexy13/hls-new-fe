@@ -48,6 +48,8 @@ const MyProfilePage: React.FC = () => {
     email: '',
     phone: '',
     whatsappNumber: '',
+    preferredPharmacyName: '',
+    preferredPharmacyPhone: '',
     benfekName: '',
     benfekAge: '',
     benfekGender: '',
@@ -83,6 +85,8 @@ const MyProfilePage: React.FC = () => {
       email: nextProfile?.email || '',
       phone: nextProfile?.phone || '',
       whatsappNumber: nextProfile?.whatsappNumber || '',
+      preferredPharmacyName: nextProfile?.preferredPharmacyName || '',
+      preferredPharmacyPhone: nextProfile?.preferredPharmacyPhone || '',
       benfekName: nextProfile?.quizCode?.benfekName || nextProfile?.fullName || '',
       benfekAge: nextProfile?.quizCode?.benfekAge || '',
       benfekGender: nextProfile?.quizCode?.benfekGender || '',
@@ -241,6 +245,8 @@ const MyProfilePage: React.FC = () => {
                 <div><Label>Email</Label><Input type="email" value={personalForm.email} onChange={(e) => setPersonalForm((s) => ({ ...s, email: e.target.value }))} disabled={loading} /></div>
                 <div><Label>WhatsApp Number</Label><Input value={personalForm.whatsappNumber} onChange={(e) => setPersonalForm((s) => ({ ...s, whatsappNumber: e.target.value }))} disabled={loading} placeholder="Update your WhatsApp number" /></div>
                 <div><Label>Phone Number</Label><Input value={personalForm.phone} onChange={(e) => setPersonalForm((s) => ({ ...s, phone: e.target.value }))} disabled={loading} /></div>
+                <div><Label>Preferred Pharmacy</Label><Input value={personalForm.preferredPharmacyName} onChange={(e) => setPersonalForm((s) => ({ ...s, preferredPharmacyName: e.target.value }))} disabled={loading} placeholder="Enter your preferred pharmacy" /></div>
+                <div><Label>Pharmacy Office Phone</Label><Input value={personalForm.preferredPharmacyPhone} onChange={(e) => setPersonalForm((s) => ({ ...s, preferredPharmacyPhone: e.target.value }))} disabled={loading} placeholder="Enter the pharmacy office phone" /></div>
                 <div><Label>Display Name</Label><Input value={personalForm.benfekName} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekName: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Age</Label><Input value={personalForm.benfekAge} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekAge: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Gender</Label><Input value={personalForm.benfekGender} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekGender: e.target.value }))} disabled={loading} /></div>
