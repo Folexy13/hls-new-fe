@@ -31,6 +31,8 @@ import {
   FlaskConical,
   ChevronDown,
   ChevronUp,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import logo from '../../images/logo.jpg';
 
@@ -237,7 +239,9 @@ const QuizFormPage: React.FC = () => {
   const [showCustomDrugForm, setShowCustomDrugForm] = useState(false);
   const [customDrugForm, setCustomDrugForm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [finalLogin, setFinalLogin] = useState({ email: '', phone: '', password: '', confirmPassword: '' });
+  const [finalLogin, setFinalLogin] = useState({ password: '', confirmPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showGame, setShowGame] = useState(false);
   const [gameScore, setGameScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
@@ -285,6 +289,7 @@ const QuizFormPage: React.FC = () => {
 
   const validatedQuizCode = sessionStorage.getItem('validatedQuizCode') || '';
   const validatedBenfekName = sessionStorage.getItem('validatedBenfekName') || '';
+  const validatedBenfekEmail = sessionStorage.getItem('validatedBenfekEmail') || '';
   const validatedBenfekPhone = sessionStorage.getItem('validatedBenfekPhone') || '';
   const validatedBenfekGender = sessionStorage.getItem('validatedBenfekGender') || '';
   const validatedBenfekAge = sessionStorage.getItem('validatedBenfekAge') || '';
@@ -813,8 +818,12 @@ const QuizFormPage: React.FC = () => {
 
   const handleFinalLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!finalLogin.email || !finalLogin.phone || !finalLogin.password || !finalLogin.confirmPassword) {
-      toast.error('Please fill all fields.');
+    if (!validatedBenfekEmail || !validatedBenfekPhone) {
+      toast.error('Your principal must provide your email and phone number before you can complete sign up.');
+      return;
+    }
+    if (!finalLogin.password || !finalLogin.confirmPassword) {
+      toast.error('Please fill all password fields.');
       return;
     }
     if (finalLogin.password !== finalLogin.confirmPassword) {
@@ -829,8 +838,8 @@ const QuizFormPage: React.FC = () => {
       const registerResponse = await apiClient.post('/api/v2/auth/register-benfek-unreferred', {
         firstName,
         lastName,
-        email: finalLogin.email,
-        phone: finalLogin.phone,
+        email: validatedBenfekEmail,
+        phone: validatedBenfekPhone,
         password: finalLogin.password,
         confirmPassword: finalLogin.confirmPassword,
       });
@@ -843,8 +852,8 @@ const QuizFormPage: React.FC = () => {
       await apiClient.post('/api/v2/benfek/game-points', {
         points: totalScore,
         quizCode: validatedQuizCode || undefined,
-        email: finalLogin.email,
-        phone: finalLogin.phone,
+        email: validatedBenfekEmail,
+        phone: validatedBenfekPhone,
         metadata: {
           source: 'quiz-form',
           completedAt: new Date().toISOString(),
@@ -935,38 +944,49 @@ const QuizFormPage: React.FC = () => {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label>Email address</Label>
-                  <Input
-                    type="email"
-                    value={finalLogin.email}
-                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter your email address"
-                  />
+                  <Input type="email" value={validatedBenfekEmail} disabled placeholder="Email provided by your principal" />
                 </div>
                 <div>
                   <Label>WhatsApp Phone number</Label>
-                  <Input
-                    value={finalLogin.phone}
-                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, phone: e.target.value }))}
-                    placeholder="e.g. +2348000000000"
-                  />
+                  <Input value={validatedBenfekPhone} disabled placeholder="Phone provided by your principal" />
                 </div>
                 <div>
                   <Label>Password</Label>
-                  <Input
-                    type="password"
-                    value={finalLogin.password}
-                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, password: e.target.value }))}
-                    placeholder="Enter password"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={finalLogin.password}
+                      onChange={(e) => setFinalLogin((prev) => ({ ...prev, password: e.target.value }))}
+                      placeholder="Enter password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <Label>Confirm Password</Label>
-                  <Input
-                    type="password"
-                    value={finalLogin.confirmPassword}
-                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                    placeholder="Confirm password"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={finalLogin.confirmPassword}
+                      onChange={(e) => setFinalLogin((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirm password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>

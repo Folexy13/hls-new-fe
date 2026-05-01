@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ const Homepage: React.FC = () => {
   const [validatedCode, setValidatedCode] = useState('');
   const [expandedTestimonials, setExpandedTestimonials] = useState<Record<number, boolean>>({});
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const handleQuizStart = () => {
     setShowReferralDialog(true);
   };
@@ -73,7 +74,15 @@ const Homepage: React.FC = () => {
       setShowCodeDialog(true);
       window.sessionStorage.removeItem('showQuizModal');
     }
-  }, [isAuthenticated, user, navigate]);
+    if (searchParams.get('startQuiz') === '1') {
+      setShowReferralDialog(true);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('startQuiz');
+        return next;
+      }, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, searchParams, setSearchParams]);
 
   const handleCodeSubmit = async () => {
     if (!code.trim()) {

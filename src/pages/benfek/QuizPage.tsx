@@ -34,6 +34,7 @@ const QuizPage = () => {
         JSON.stringify({
           code: data?.code || quizCode.trim(),
           benfekName: data?.benfekName || '',
+          benfekEmail: data?.benfekEmail || '',
           benfekPhone: data?.benfekPhone || '',
           registrationStatus: data?.registrationStatus || '',
         })

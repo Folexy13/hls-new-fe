@@ -251,6 +251,7 @@ const AddBenfekPage: React.FC = () => {
       const payload = {
         // API expects these names
         benfekName,
+        benfekEmail: values.email,
         benfekPhone: values.phone,
         benfekAge: values.age,
         benfekGender: values.gender,

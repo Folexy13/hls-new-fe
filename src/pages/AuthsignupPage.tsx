@@ -1,10 +1,10 @@
+import { Briefcase } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const AuthSignupPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-3xl w-full">
-
         <h1 className="text-3xl font-semibold text-center mb-2">
           Create an Account
         </h1>
@@ -14,32 +14,26 @@ const AuthSignupPage = () => {
         </p>
 
         <div className="grid md:grid-cols-3 gap-6">
-
-          {/* Researcher */}
-          <Link to="/auth/signup/researcher">
+          <Link to="/?startQuiz=1">
             <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-green-500 hover:shadow-lg hover:bg-green-50">
-
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center text-2xl">
-                👤
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-2xl">👤</span>
               </div>
 
               <h2 className="text-lg font-semibold text-green-600 mb-2">
-                Researcher
+                Benfek
               </h2>
 
               <p className="text-sm text-gray-600">
-                Researcher account to join studies and access research-related features
+                Start the same quiz and signup flow used when a benfek clicks the quiz button.
               </p>
-
             </div>
           </Link>
 
-          {/* Principal */}
           <Link to="/auth/signup/principal">
             <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-blue-500 hover:shadow-lg hover:bg-blue-50">
-
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center text-2xl">
-                👔
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="text-2xl">👔</span>
               </div>
 
               <h2 className="text-lg font-semibold text-blue-600 mb-2">
@@ -49,29 +43,8 @@ const AuthSignupPage = () => {
               <p className="text-sm text-gray-600">
                 Admin account to manage the platform, users, and products
               </p>
-
             </div>
           </Link>
-
-          {/* Wholesaler */}
-          {/* <Link to="/auth/signup/wholesaler">
-            <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:bg-purple-50">
-
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center text-2xl">
-                🏪
-              </div>
-
-              <h2 className="text-lg font-semibold text-purple-600 mb-2">
-                Wholesaler
-              </h2>
-
-              <p className="text-sm text-gray-600">
-                Seller account to list and sell products on the platform
-              </p>
-
-            </div>
-          </Link> */}
-
         </div>
 
         <div className="text-center mt-8 text-sm text-gray-600">
@@ -80,7 +53,6 @@ const AuthSignupPage = () => {
             Sign in
           </Link>
         </div>
-
       </div>
     </div>
   );

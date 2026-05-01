@@ -47,6 +47,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const unreadNotifications = 3;
+  const homeHref = useMemo(() => {
+    if (!isAuthenticated) return '/';
+    switch (userRole) {
+      case UserRole.BENFEK:
+        return '/benfek/dashboard';
+      case UserRole.PRINCIPAL:
+        return '/principal';
+      case UserRole.RESEARCHER:
+        return '/researcher';
+      case UserRole.WHOLESALER:
+        return '/wholesaler';
+      default:
+        return '/';
+    }
+  }, [isAuthenticated, userRole]);
   const isIOS = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -101,7 +116,7 @@ const onPointerDown = (event: PointerEvent) => {
       {/* Mobile Header */}
       <header className="lg:hidden bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
-          <Link to="/">
+          <Link to={homeHref}>
             <img src={logo} alt="HLS Logo" className="h-8" />
           </Link>
           <div className="flex items-center space-x-4">
@@ -254,7 +269,7 @@ const onPointerDown = (event: PointerEvent) => {
       <header className="hidden lg:block bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <Link to="/">
+            <Link to={homeHref}>
               <img src={logo} alt="HLS Logo" className="h-10" />
             </Link>
             

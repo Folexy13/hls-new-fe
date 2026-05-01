@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "@/components/researcher/AuthModal";
 import { TabsContainer } from "@/components/researcher/TabsContainer";
@@ -87,9 +87,9 @@ const ResearcherHomepage = () => {
     <div className="min-h-screen bg-researcher-background flex flex-col">
       <header className="fixed left-0 right-0 top-0 z-50 h-[72px] bg-white shadow-sm">
         <div className="container h-full flex justify-between items-center px-2 sm:px-4">
-          <div className="flex items-center">
+          <Link to="/researcher" className="flex items-center">
             <img src={logo} width={150} alt="HLS" />
-          </div>
+          </Link>
 
           <div>
             {isAuthenticated ? (
