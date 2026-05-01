@@ -9,6 +9,7 @@ import { apiClient } from '@/config/axios';
 interface QuizCodeResponse {
   code?: string;
   benfekName?: string;
+  benfekEmail?: string;
   benfekPhone?: string;
   principalName?: string;
 }
@@ -44,6 +45,7 @@ const AssessmentPage: React.FC = () => {
       setQuizData({
         code: quizCodeData?.code || quizCode,
         benfekName: quizCodeData?.benfekName || '',
+        benfekEmail: quizCodeData?.benfekEmail || '',
         benfekPhone: quizCodeData?.benfekPhone || '',
         principalName: quizCodeData?.createdBy
           ? `${quizCodeData.createdBy.firstName} ${quizCodeData.createdBy.lastName}`.trim()
@@ -66,6 +68,7 @@ const AssessmentPage: React.FC = () => {
     // Save validated quiz details temporarily
     sessionStorage.setItem('validatedQuizCode', quizData.code || '');
     sessionStorage.setItem('validatedBenfekName', quizData.benfekName || '');
+    sessionStorage.setItem('validatedBenfekEmail', quizData.benfekEmail || '');
     sessionStorage.setItem('validatedBenfekPhone', quizData.benfekPhone || '');
 
     // Move to next step

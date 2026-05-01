@@ -7,7 +7,6 @@ import { researcherService } from "@/services/researcherService";
 import {
   calculatePackBudget,
   calculateTotalPrice,
-  dummyUser,
   packCategories,
   type Supplement,
 } from "@/lib/researcher/dummyData";
@@ -234,7 +233,7 @@ export function TabsContainer() {
             parsedRange ||
               (Number.isFinite(Number(fullData.quiz?.preferences?.budget))
                 ? { min: 0, max: Number(fullData.quiz?.preferences?.budget) }
-                : dummyUser.budget)
+                : null)
           );
         } catch (error) {
           console.error("Failed to restore benfek data", error);
@@ -518,7 +517,7 @@ export function TabsContainer() {
     
     // Extract budget from the nested quiz preferences if available
     const budgetValue = Number(data?.quiz?.preferences?.budget);
-    setUserBudget(Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : dummyUser.budget);
+    setUserBudget(Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : null);
 
     toast({
       title: "Beneficiary Verified",

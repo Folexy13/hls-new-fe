@@ -116,95 +116,6 @@ const Dashboard = () => {
     'https://images.unsplash.com/photo-1532009877282-3340270e0529?q=80&w=1600&auto=format&fit=crop',
     'https://images.unsplash.com/photo-1514996937319-344454492b37?q=80&w=1600&auto=format&fit=crop',
   ]), []);
-  const fallbackPharmacyItems = useMemo(
-    () => [
-      {
-        id: 'supp-1',
-        title: 'Feroglobin Liquid',
-        price: '₦24.99',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.34.jpeg',
-      },
-      {
-        id: 'supp-2',
-        title: 'Lung Defense',
-        price: '₦31.50',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35.jpeg',
-      },
-      {
-        id: 'supp-3',
-        title: 'Wellwoman 50+',
-        price: '₦18.99',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35 (1).jpeg',
-      },
-      {
-        id: 'supp-4',
-        title: 'Wellwoman 70+',
-        price: '₦22.00',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36.jpeg',
-      },
-      {
-        id: 'supp-5',
-        title: 'Osteocare Chewable',
-        price: '₦29.75',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (1).jpeg',
-      },
-      {
-        id: 'supp-6',
-        title: 'Jointace Max',
-        price: '₦16.40',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (2).jpeg',
-      },
-      {
-        id: 'supp-7',
-        title: 'Wellman 50+',
-        price: '₦27.90',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37.jpeg',
-      },
-      {
-        id: 'supp-8',
-        title: 'Cod Liver Oil',
-        price: '₦19.60',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (1).jpeg',
-      },
-      {
-        id: 'supp-9',
-        title: 'Nectamin Liquid',
-        price: '₦21.20',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (2).jpeg',
-      },
-      {
-        id: 'supp-10',
-        title: 'Cardioace Max',
-        price: '₦26.50',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (3).jpeg',
-      },
-      {
-        id: 'supp-11',
-        title: 'Prenatal Gummies',
-        price: '₦23.40',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30.jpeg',
-      },
-      {
-        id: 'supp-12',
-        title: 'Tocovid SupraBio',
-        price: '₦28.15',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (1).jpeg',
-      },
-      {
-        id: 'supp-13',
-        title: 'Move Free Joint',
-        price: '₦19.75',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (2).jpeg',
-      },
-      {
-        id: 'supp-14',
-        title: 'Vitamin E 1000IU',
-        price: '₦17.90',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (3).jpeg',
-      },
-    ],
-    []
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -230,7 +141,7 @@ const Dashboard = () => {
 
         if (mounted) setApiPharmacyItems(mapped);
       } catch {
-        // Keep fallback list if API fails.
+        if (mounted) setApiPharmacyItems([]);
       }
     };
 
@@ -280,9 +191,7 @@ const Dashboard = () => {
     if (activeTab === 'nutrient') fetchPacks();
   }, [activeTab]);
 
-  const pharmacyItems = useMemo(() => {
-    return apiPharmacyItems.length > 0 ? apiPharmacyItems : fallbackPharmacyItems;
-  }, [apiPharmacyItems, fallbackPharmacyItems]);
+  const pharmacyItems = apiPharmacyItems;
   const filteredPharmacyItems = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
     if (!query) return pharmacyItems;

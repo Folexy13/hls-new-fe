@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { dummyUser } from "@/lib/researcher/dummyData";
 import { budgetRangeOptions } from "@/lib/researcher/taxonomy";
 import { User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,7 +60,7 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
       return parseRangeString(chosenRange) ||
         (benfekData.quiz?.preferences?.budget
           ? { min: 0, max: Number(benfekData.quiz.preferences.budget) || 0 }
-          : dummyUser.budget);
+          : null);
     })(),
     budgetRange: benfekData.quiz?.preferences?.budgetRange?.trim() || inferBudgetRangeFromMax(Number(benfekData.quiz?.preferences?.budget)),
   } : null;

@@ -21,6 +21,7 @@ import {
   Filter, PhoneCall
 } from 'lucide-react';
 import { principalService } from '@/services/principalService';
+import { toast } from 'react-toastify';
 
 // Define the Withdrawal type
 type Withdrawal = {
@@ -43,6 +44,7 @@ type UnresolvedCredit = {
   costPrice: number;
   // Markup factor applied to cost price (e.g. 1.3 -> 30% markup).
   markupFactor: number;
+  principalShare?: number;
 };
 
 type PaymentMethod = {
@@ -88,8 +90,9 @@ const WithdrawPage: React.FC = () => {
         ]);
 
         const resolvedWalletBalance = Number(incomeSummary?.walletBalance || 0);
+        const resolvedWithdrawableBalance = Number(incomeSummary?.withdrawableBalance || 0);
         setWalletBalance(resolvedWalletBalance);
-        setWithdrawableBalance(resolvedWalletBalance);
+        setWithdrawableBalance(resolvedWithdrawableBalance);
         setUnresolvedCredits(Array.isArray(incomeSummary?.unresolvedCredits) ? incomeSummary.unresolvedCredits : []);
         setWithdrawals(
           Array.isArray(withdrawalsData)
@@ -209,11 +212,24 @@ const WithdrawPage: React.FC = () => {
   };
 
   const handleResolveCredit = async (id: number) => {
+    const resolvedCredit = unresolvedCredits.find((item) => item.id === id);
+    if (!resolvedCredit) return;
+
+    const creditPrincipalShare = Number(resolvedCredit.principalShare || 0);
+    const previousWithdrawableBalance = withdrawableBalance;
+    const previousCredits = unresolvedCredits;
+
     try {
-      await principalService.resolveCredit(id);
+      setWithdrawableBalance((prev) => prev + creditPrincipalShare);
       setUnresolvedCredits((prev) => prev.filter((item) => item.id !== id));
+
+      await principalService.resolveCredit(id);
+      toast.success('Credit resolved successfully');
     } catch (error) {
+      setWithdrawableBalance(previousWithdrawableBalance);
+      setUnresolvedCredits(previousCredits);
       console.error('Failed to resolve credit:', error);
+      toast.error('Failed to resolve credit');
     }
   };
 

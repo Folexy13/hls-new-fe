@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supplements } from "@/lib/researcher/dummyData";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,7 +52,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const ADD_ORIGIN_KEY = "researcher.gallery.add_origin";
   const ITEMS_PER_PAGE = 20;
 
-  const [gallerySupplements, setGallerySupplements] = useState(() => supplements);
+  const [gallerySupplements, setGallerySupplements] = useState<any[]>([]);
   const [selectedSupplements, setSelectedSupplements] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [appliedClassFilters, setAppliedClassFilters] = useState<AppliedClassFilters>({});
@@ -178,59 +177,29 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   }, []);
 
   useEffect(() => {
-    // 1. Load from local storage first to provide immediate content
-    try {
-      const raw = localStorage.getItem(GALLERY_STORAGE_KEY);
-      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-      if (Array.isArray(parsed) && parsed.length) {
-        const migrated = (parsed as any[]).map((item) => ({
-          ...item,
-          id: String(item.id), // Ensure ID is string for consistency
-          category: normalizeLoadedCategory(item),
-          tags: item.tags || {},
-          source: item.source,
-        }));
-        setGallerySupplements(migrated as any);
-      } else {
-        // If local storage is empty, initialize with dummy data
-        setGallerySupplements(supplements);
-      }
-    } catch {
-      setGallerySupplements(supplements); // Fallback to dummy data on error
-    }
+    setGallerySupplements([]);
 
-    // 2. Then, fetch from the backend to get the latest data
     const fetchSupplements = async () => {
       try {
         const items = await researcherService.getSupplements({ code: verifiedCode || undefined });
-        console.log("Gallery Supplements API Response:", items);
-        if (Array.isArray(items) && items.length) {
-          const fetchedSupplements = items.map((item: any) => ({
-            ...item,
-            id: String(item.id),
-            category: normalizeLoadedCategory(item),
-            tags: item.tags || {},
-            source: item.source,
-          })) as any;
-          setGallerySupplements(fetchedSupplements);
-          localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(fetchedSupplements)); // Update local storage with fresh data
-        } else if (verifiedCode && items !== null) {
-          // Only clear if the response was explicitly empty and we have a verified code
-          // This prevents wiping if the user is just browsing or the API is warming up.
-          console.warn("Backend returned no items for this context.");
-          // setGallerySupplements([]); // Keep existing dummy data/cache if backend is empty
-          localStorage.removeItem(GALLERY_STORAGE_KEY);
-        }
+        const fetchedSupplements = Array.isArray(items)
+          ? items.map((item: any) => ({
+              ...item,
+              id: String(item.id),
+              category: normalizeLoadedCategory(item),
+              tags: item.tags || {},
+              source: item.source,
+            }))
+          : [];
+        setGallerySupplements(fetchedSupplements as any);
       } catch (error) {
         console.error("Failed to fetch supplements from backend:", error);
-        // If backend fetch fails, rely on what's already loaded from local storage or dummy data.
-        // No need to clear gallerySupplements here, as local data might be valid.
+        setGallerySupplements([]);
       }
     };
 
     fetchSupplements();
 
-    // 3. Also load sheet supplements (this part is fine as is)
     try {
       const raw = localStorage.getItem(sheetStorageKey);
       const parsed = raw ? (JSON.parse(raw) as unknown) : null;
