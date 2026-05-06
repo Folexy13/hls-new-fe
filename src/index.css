@@ -100,6 +100,18 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    @apply border-slate-300 bg-white text-slate-950 placeholder:text-slate-500 shadow-sm;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply border-slate-900 outline-none ring-2 ring-slate-900/20;
+  }
 }
 
 /* Researcher app helpers (ported from `hls-researcher-app`). */

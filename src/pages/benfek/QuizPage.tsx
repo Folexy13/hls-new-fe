@@ -28,17 +28,28 @@ const QuizPage = () => {
       });
 
       const data = response.data?.data;
+      const validatedData = {
+        code: data?.code || quizCode.trim(),
+        benfekName: data?.benfekName || '',
+        benfekEmail: data?.benfekEmail || '',
+        benfekPhone: data?.benfekPhone || '',
+        registrationStatus: data?.registrationStatus || '',
+      };
 
-      sessionStorage.setItem(
-        'validatedQuizData',
-        JSON.stringify({
-          code: data?.code || quizCode.trim(),
-          benfekName: data?.benfekName || '',
-          benfekEmail: data?.benfekEmail || '',
-          benfekPhone: data?.benfekPhone || '',
-          registrationStatus: data?.registrationStatus || '',
-        })
-      );
+      sessionStorage.setItem('validatedQuizData', JSON.stringify(validatedData));
+      localStorage.setItem('validatedQuizData', JSON.stringify(validatedData));
+
+      const entries = {
+        validatedQuizCode: validatedData.code,
+        validatedBenfekName: validatedData.benfekName,
+        validatedBenfekEmail: validatedData.benfekEmail,
+        validatedBenfekPhone: validatedData.benfekPhone,
+      };
+
+      Object.entries(entries).forEach(([key, value]) => {
+        sessionStorage.setItem(key, value);
+        localStorage.setItem(key, value);
+      });
 
       toast.success('Code validated successfully');
       navigate('/benfek/quiz-form');
