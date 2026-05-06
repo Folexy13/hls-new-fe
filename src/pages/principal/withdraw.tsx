@@ -36,6 +36,9 @@ type Withdrawal = {
 
 type UnresolvedCredit = {
   id: number;
+  packId?: string;
+  packName?: string;
+  benfekName?: string;
   supplement: string;
   // Total amount the benfek paid (cost price + returns).
   amount: number;
@@ -44,6 +47,9 @@ type UnresolvedCredit = {
   costPrice: number;
   // Markup factor applied to cost price (e.g. 1.3 -> 30% markup).
   markupFactor: number;
+  taxAmount?: number;
+  serviceChargeAmount?: number;
+  hlsCommissionAmount?: number;
   principalShare?: number;
 };
 
@@ -216,6 +222,7 @@ const WithdrawPage: React.FC = () => {
     if (!resolvedCredit) return;
 
     const creditPrincipalShare = Number(resolvedCredit.principalShare || 0);
+    const previousWalletBalance = walletBalance;
     const previousWithdrawableBalance = withdrawableBalance;
     const previousCredits = unresolvedCredits;
 
@@ -223,9 +230,16 @@ const WithdrawPage: React.FC = () => {
       setWithdrawableBalance((prev) => prev + creditPrincipalShare);
       setUnresolvedCredits((prev) => prev.filter((item) => item.id !== id));
 
-      await principalService.resolveCredit(id);
+      const result = await principalService.resolveCredit(id);
+      const summary = result?.summary;
+      if (summary) {
+        setWalletBalance(Number(summary.walletBalance || 0));
+        setWithdrawableBalance(Number(summary.withdrawableBalance || 0));
+        setUnresolvedCredits(Array.isArray(summary.unresolvedCredits) ? summary.unresolvedCredits : []);
+      }
       toast.success('Credit resolved successfully');
     } catch (error) {
+      setWalletBalance(previousWalletBalance);
       setWithdrawableBalance(previousWithdrawableBalance);
       setUnresolvedCredits(previousCredits);
       console.error('Failed to resolve credit:', error);
@@ -587,13 +601,20 @@ const WithdrawPage: React.FC = () => {
                     credit.amount ?? Math.round(credit.costPrice * credit.markupFactor);
                   const returns = Math.max(0, totalAmountPurchased - credit.costPrice);
 
-                  // All derived values are computed from returns (the markup/profit portion).
-                  const tax = returns * 0.075;
-                  const serviceCharge = returns * 0.05;
+                  const tax = Number.isFinite(Number(credit.taxAmount))
+                    ? Number(credit.taxAmount)
+                    : returns * 0.075;
+                  const serviceCharge = Number.isFinite(Number(credit.serviceChargeAmount))
+                    ? Number(credit.serviceChargeAmount)
+                    : returns * 0.05;
                   const amountAfterTax = returns - tax;
-                  const hlsCommission = amountAfterTax * 0.3;
-                  const principalShare =
-                    returns - tax - serviceCharge - hlsCommission;
+                  const hlsCommission = Number.isFinite(Number(credit.hlsCommissionAmount))
+                    ? Number(credit.hlsCommissionAmount)
+                    : amountAfterTax * 0.3;
+                  const principalShare = Number.isFinite(Number(credit.principalShare))
+                    ? Number(credit.principalShare)
+                    : returns - tax - serviceCharge - hlsCommission;
+                  const packLabel = credit.packName?.trim() || credit.packId?.trim() || 'Supplement Pack';
 
                   return (
                     <AccordionItem
@@ -605,9 +626,11 @@ const WithdrawPage: React.FC = () => {
                         <div className="flex w-full items-center justify-between gap-3 text-left">
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-slate-900 truncate">
-                              {credit.supplement}
+                              {packLabel}
                             </p>
-                            <p className="text-xs text-slate-500">{credit.date}</p>
+                            <p className="text-xs text-slate-500">
+                              {credit.benfekName ? `${credit.benfekName} • ` : ''}{credit.date}
+                            </p>
                           </div>
                           <div className="text-sm font-semibold text-red-600">
                             ₦{credit.amount.toLocaleString()}

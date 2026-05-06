@@ -53,6 +53,7 @@ type Coin = {
 };
 
 const GAME_DURATION_MS = 15000;
+const GAME_RESULT_ACTION_LOCK_MS = 1500;
 const SPAWN_INTERVAL_MS = 600;
 const HIGH_VALUE_TTL = 400;
 const ULTRA_VALUE_TTL = 320;
@@ -210,6 +211,30 @@ const routineOptions = ['Morning', 'Afternoon', 'Evening', 'Night', 'Weekdays', 
 const careerOptions = ['Student', 'Developer', 'Teacher', 'Healthcare', 'Business', 'Freelancer', 'Entrepreneur'];
 const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
 
+const getPersistedQuizValue = (key: string) => {
+  const directValue = sessionStorage.getItem(key) || localStorage.getItem(key);
+  if (directValue) return directValue;
+
+  const legacyFieldMap: Record<string, string> = {
+    validatedQuizCode: 'code',
+    validatedBenfekName: 'benfekName',
+    validatedBenfekEmail: 'benfekEmail',
+    validatedBenfekPhone: 'benfekPhone',
+  };
+  const legacyField = legacyFieldMap[key];
+  if (!legacyField) return '';
+
+  const raw = sessionStorage.getItem('validatedQuizData') || localStorage.getItem('validatedQuizData');
+  if (!raw) return '';
+
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return typeof parsed[legacyField] === 'string' ? parsed[legacyField] : '';
+  } catch {
+    return '';
+  }
+};
+
 const QuizFormPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -239,7 +264,18 @@ const QuizFormPage: React.FC = () => {
   const [showCustomDrugForm, setShowCustomDrugForm] = useState(false);
   const [customDrugForm, setCustomDrugForm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [finalLogin, setFinalLogin] = useState({ password: '', confirmPassword: '' });
+  const validatedQuizCode = getPersistedQuizValue('validatedQuizCode');
+  const validatedBenfekName = getPersistedQuizValue('validatedBenfekName');
+  const validatedBenfekEmail = getPersistedQuizValue('validatedBenfekEmail');
+  const validatedBenfekPhone = getPersistedQuizValue('validatedBenfekPhone');
+  const validatedBenfekGender = getPersistedQuizValue('validatedBenfekGender');
+  const validatedBenfekAge = getPersistedQuizValue('validatedBenfekAge');
+  const [finalLogin, setFinalLogin] = useState({
+    email: validatedBenfekEmail,
+    phone: validatedBenfekPhone,
+    password: '',
+    confirmPassword: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showGame, setShowGame] = useState(false);
@@ -258,10 +294,24 @@ const QuizFormPage: React.FC = () => {
   const preGameIntervalRef = useRef<number | null>(null);
   const animationRef = useRef<number | null>(null);
   const lastFrameRef = useRef<number | null>(null);
+  const gameResultActionUnlockTimeoutRef = useRef<number | null>(null);
   const spawnIndexRef = useRef(0);
   const trappedContainerRef = useRef<HTMLDivElement | null>(null);
+  const [gameResultActionsLocked, setGameResultActionsLocked] = useState(false);
   const [trappedZonePct, setTrappedZonePct] = useState(DEFAULT_MIN_Y_BOUND);
   const [maxSafeYPct, setMaxSafeYPct] = useState(DEFAULT_MAX_Y_BOUND);
+
+  const lockGameResultActions = () => {
+    if (gameResultActionUnlockTimeoutRef.current) {
+      clearTimeout(gameResultActionUnlockTimeoutRef.current);
+    }
+    setGameResultActionsLocked(true);
+    gameResultActionUnlockTimeoutRef.current = window.setTimeout(() => {
+      setGameResultActionsLocked(false);
+      gameResultActionUnlockTimeoutRef.current = null;
+    }, GAME_RESULT_ACTION_LOCK_MS);
+  };
+
   useEffect(() => {
     if (!showGame) return;
     const element = trappedContainerRef.current;
@@ -287,12 +337,15 @@ const QuizFormPage: React.FC = () => {
     };
   }, [showGame, collectedCoins.length]);
 
-  const validatedQuizCode = sessionStorage.getItem('validatedQuizCode') || '';
-  const validatedBenfekName = sessionStorage.getItem('validatedBenfekName') || '';
-  const validatedBenfekEmail = sessionStorage.getItem('validatedBenfekEmail') || '';
-  const validatedBenfekPhone = sessionStorage.getItem('validatedBenfekPhone') || '';
-  const validatedBenfekGender = sessionStorage.getItem('validatedBenfekGender') || '';
-  const validatedBenfekAge = sessionStorage.getItem('validatedBenfekAge') || '';
+  useEffect(() => {
+    if (!showGame) {
+      if (gameResultActionUnlockTimeoutRef.current) {
+        clearTimeout(gameResultActionUnlockTimeoutRef.current);
+        gameResultActionUnlockTimeoutRef.current = null;
+      }
+      setGameResultActionsLocked(false);
+    }
+  }, [showGame]);
 
   const beginGame = (nextStep: number | null) => {
     setNextStepAfterGame(nextStep);
@@ -488,6 +541,11 @@ const QuizFormPage: React.FC = () => {
       clearInterval(gameIntervalRef.current);
       gameIntervalRef.current = null;
     }
+    if (gameResultActionUnlockTimeoutRef.current) {
+      clearTimeout(gameResultActionUnlockTimeoutRef.current);
+      gameResultActionUnlockTimeoutRef.current = null;
+    }
+    setGameResultActionsLocked(false);
     setGameRunning(true);
     setGameDone(false);
     setGameElapsedMs(0);
@@ -641,8 +699,9 @@ const QuizFormPage: React.FC = () => {
       if (elapsed >= GAME_DURATION_MS) {
         clearInterval(interval);
         gameIntervalRef.current = null;
-        setGameRunning(false);
-        setGameDone(true);
+          setGameRunning(false);
+          setGameDone(true);
+          lockGameResultActions();
       } else {
         spawn();
       }
@@ -654,6 +713,10 @@ const QuizFormPage: React.FC = () => {
     if (preGameIntervalRef.current) {
       clearInterval(preGameIntervalRef.current);
       preGameIntervalRef.current = null;
+    }
+    if (gameResultActionUnlockTimeoutRef.current) {
+      clearTimeout(gameResultActionUnlockTimeoutRef.current);
+      gameResultActionUnlockTimeoutRef.current = null;
     }
   }, []);
 
@@ -818,8 +881,15 @@ const QuizFormPage: React.FC = () => {
 
   const handleFinalLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validatedBenfekEmail || !validatedBenfekPhone) {
-      toast.error('Your principal must provide your email and phone number before you can complete sign up.');
+    const email = finalLogin.email.trim();
+    const phone = finalLogin.phone.trim();
+
+    if (!email || !phone) {
+      toast.error('Please provide your email address and WhatsApp phone number to complete sign up.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Please enter a valid email address.');
       return;
     }
     if (!finalLogin.password || !finalLogin.confirmPassword) {
@@ -838,8 +908,8 @@ const QuizFormPage: React.FC = () => {
       const registerResponse = await apiClient.post('/api/v2/auth/register-benfek-unreferred', {
         firstName,
         lastName,
-        email: validatedBenfekEmail,
-        phone: validatedBenfekPhone,
+        email,
+        phone,
         password: finalLogin.password,
         confirmPassword: finalLogin.confirmPassword,
       });
@@ -852,8 +922,8 @@ const QuizFormPage: React.FC = () => {
       await apiClient.post('/api/v2/benfek/game-points', {
         points: totalScore,
         quizCode: validatedQuizCode || undefined,
-        email: validatedBenfekEmail,
-        phone: validatedBenfekPhone,
+        email,
+        phone,
         metadata: {
           source: 'quiz-form',
           completedAt: new Date().toISOString(),
@@ -944,11 +1014,26 @@ const QuizFormPage: React.FC = () => {
               <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label>Email address</Label>
-                  <Input type="email" value={validatedBenfekEmail} disabled placeholder="Email provided by your principal" />
+                  <Input
+                    type="email"
+                    value={finalLogin.email}
+                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, email: e.target.value }))}
+                    readOnly={Boolean(validatedBenfekEmail)}
+                    aria-readonly={Boolean(validatedBenfekEmail)}
+                    placeholder="Enter email address"
+                    className="text-slate-900"
+                  />
                 </div>
                 <div>
                   <Label>WhatsApp Phone number</Label>
-                  <Input value={validatedBenfekPhone} disabled placeholder="Phone provided by your principal" />
+                  <Input
+                    value={finalLogin.phone}
+                    onChange={(e) => setFinalLogin((prev) => ({ ...prev, phone: e.target.value }))}
+                    readOnly={Boolean(validatedBenfekPhone)}
+                    aria-readonly={Boolean(validatedBenfekPhone)}
+                    placeholder="Enter WhatsApp phone number"
+                    className="text-slate-900"
+                  />
                 </div>
                 <div>
                   <Label>Password</Label>
@@ -1570,10 +1655,10 @@ const QuizFormPage: React.FC = () => {
                     Total so far: {totalScore + gameScore} gz
                   </p>
                   <div className="mt-6 flex w-full gap-3">
-                    <Button variant="outline" onClick={handleReplayGame} className="flex-1">
+                    <Button variant="outline" onClick={handleReplayGame} disabled={gameResultActionsLocked} className="flex-1">
                       Replay
                     </Button>
-                    <Button onClick={handleContinueAfterGame} className="flex-1">
+                    <Button onClick={handleContinueAfterGame} disabled={gameResultActionsLocked} className="flex-1">
                       Continue
                     </Button>
                   </div>

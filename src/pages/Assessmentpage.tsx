@@ -65,13 +65,18 @@ const AssessmentPage: React.FC = () => {
   const handleProceed = () => {
     if (!quizData) return;
 
-    // Save validated quiz details temporarily
-    sessionStorage.setItem('validatedQuizCode', quizData.code || '');
-    sessionStorage.setItem('validatedBenfekName', quizData.benfekName || '');
-    sessionStorage.setItem('validatedBenfekEmail', quizData.benfekEmail || '');
-    sessionStorage.setItem('validatedBenfekPhone', quizData.benfekPhone || '');
+    const entries = {
+      validatedQuizCode: quizData.code || '',
+      validatedBenfekName: quizData.benfekName || '',
+      validatedBenfekEmail: quizData.benfekEmail || '',
+      validatedBenfekPhone: quizData.benfekPhone || '',
+    };
 
-    // Move to next step
+    Object.entries(entries).forEach(([key, value]) => {
+      sessionStorage.setItem(key, value);
+      localStorage.setItem(key, value);
+    });
+
     navigate('/benfek/quiz-form');
   };
 

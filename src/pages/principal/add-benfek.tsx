@@ -133,11 +133,16 @@ const MultiSelectCreatableField: React.FC<MultiSelectCreatableProps> = ({
             type="button"
             variant="outline"
             className="min-h-10 w-full justify-between bg-gray-100 px-3 py-2 text-left font-normal text-slate-700 hover:bg-gray-100"
+            aria-label={open ? `Close ${label} options` : `Open ${label} options`}
           >
             <span className="truncate">
               {normalizedSelected.length > 0 ? `${normalizedSelected.length} selected` : placeholder}
             </span>
-            <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+            {open ? (
+              <X className="h-4 w-4 shrink-0 opacity-70" />
+            ) : (
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
@@ -298,6 +303,9 @@ const AddBenfekPage: React.FC = () => {
     const isValid = await form.trigger(['firstName', 'lastName', 'email', 'phone', 'age', 'gender']);
     if (isValid) {
       setManualStep(1);
+      window.requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     }
   };
 
@@ -460,11 +468,11 @@ const AddBenfekPage: React.FC = () => {
                           </>
                         )}
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {manualStep === 0
-                          ? 'Enter the details of the benfek you want to add to your network.'
-                          : 'Provide health factors to personalize the benfek experience.'}
-                      </p>
+                      {manualStep === 0 && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Enter the details of the benfek you want to add to your network.
+                        </p>
+                      )}
                     </div>
 
                     <div className="p-4 sm:p-6 bg-white">
