@@ -33,6 +33,8 @@ const QuizPage = () => {
         benfekName: data?.benfekName || '',
         benfekEmail: data?.benfekEmail || '',
         benfekPhone: data?.benfekPhone || '',
+        benfekWeight: data?.benfekWeight || '',
+        benfekHeight: data?.benfekHeight || '',
         registrationStatus: data?.registrationStatus || '',
       };
 
@@ -44,6 +46,8 @@ const QuizPage = () => {
         validatedBenfekName: validatedData.benfekName,
         validatedBenfekEmail: validatedData.benfekEmail,
         validatedBenfekPhone: validatedData.benfekPhone,
+        validatedBenfekWeight: validatedData.benfekWeight,
+        validatedBenfekHeight: validatedData.benfekHeight,
       };
 
       Object.entries(entries).forEach(([key, value]) => {

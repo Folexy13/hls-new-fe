@@ -59,6 +59,8 @@ const formSchema = z.object({
   phone: z.string().min(10, { message: 'Phone number must be at least 10 characters.' }),
   age: z.string().min(1, { message: 'Age is required.' }),
   gender: z.string().min(1, { message: 'Please select a gender.' }),
+  weight: z.string().min(1, { message: 'Weight is required.' }),
+  height: z.string().min(1, { message: 'Height is required.' }),
   allergies: z.array(z.string()).optional(),
   scares: z.array(z.string()).optional(),
   familyCondition: z.array(z.string()).optional(),
@@ -228,6 +230,8 @@ const AddBenfekPage: React.FC = () => {
       phone: '',
       age: '',
       gender: '',
+      weight: '',
+      height: '',
       allergies: [],
       scares: [],
       familyCondition: [],
@@ -260,6 +264,8 @@ const AddBenfekPage: React.FC = () => {
         benfekPhone: values.phone,
         benfekAge: values.age,
         benfekGender: values.gender,
+        benfekWeight: values.weight,
+        benfekHeight: values.height,
         allergies: values.allergies?.length ? values.allergies : undefined,
         familyCondition: values.familyCondition?.length ? values.familyCondition : undefined,
         medications: values.medications?.length ? values.medications : undefined,
@@ -300,7 +306,7 @@ const AddBenfekPage: React.FC = () => {
   };
 
   const handleManualNext = async () => {
-    const isValid = await form.trigger(['firstName', 'lastName', 'email', 'phone', 'age', 'gender']);
+    const isValid = await form.trigger(['firstName', 'lastName', 'email', 'phone', 'age', 'gender', 'weight', 'height']);
     if (isValid) {
       setManualStep(1);
       window.requestAnimationFrame(() => {
@@ -579,6 +585,33 @@ const AddBenfekPage: React.FC = () => {
                                         <SelectItem value="female">Female</SelectItem>
                                       </SelectContent>
                                     </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="weight"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Weight (kg)</FormLabel>
+                                    <FormControl>
+                                      <Input className='bg-gray-100' type="number" placeholder="e.g. 70" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+
+                              <FormField
+                                control={form.control}
+                                name="height"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Height (cm)</FormLabel>
+                                    <FormControl>
+                                      <Input className='bg-gray-100' type="number" placeholder="e.g. 170" {...field} />
+                                    </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}

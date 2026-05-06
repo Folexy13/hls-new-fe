@@ -207,9 +207,36 @@ const habitOptions = [
   'Yoga',
 ];
 const funOptions = ['Reading', 'Music', 'Movies', 'Gaming', 'Travel', 'Dancing', 'Cooking', 'Sports', 'Art'];
-const routineOptions = ['Morning', 'Afternoon', 'Evening', 'Night', 'Weekdays', 'Weekends', 'Shift Work'];
+const desireOptions = [
+  'Wealth Creation',
+  'Enhanced Skin',
+  'Longevity',
+  'Immunity',
+  'Energy Cultivation',
+  'Brain Power',
+  'Memory Enhancement',
+  'Age Defying',
+  'Quick Recovery',
+  'Better Sleep',
+  'Stress Balance',
+  'Hormonal Balance',
+  'Heart Health',
+  'Joint Flexibility',
+  'Digestive Comfort',
+  'Weight Management',
+  'Muscle Strength',
+  'Calm Focus',
+  'Mood Elevation',
+  'Eye Support',
+  'Hair Growth',
+  'Detox Support',
+  'Fertility Support',
+  'Bone Strength',
+];
 const careerOptions = ['Student', 'Developer', 'Teacher', 'Healthcare', 'Business', 'Freelancer', 'Entrepreneur'];
 const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
+const addMoreButtonClass =
+  'rounded-full border border-lime-500 bg-lime-300 px-4 py-1.5 text-xs font-extrabold text-lime-950 shadow-sm transition hover:bg-lime-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:ring-offset-2';
 
 const getPersistedQuizValue = (key: string) => {
   const directValue = sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -220,6 +247,8 @@ const getPersistedQuizValue = (key: string) => {
     validatedBenfekName: 'benfekName',
     validatedBenfekEmail: 'benfekEmail',
     validatedBenfekPhone: 'benfekPhone',
+    validatedBenfekWeight: 'benfekWeight',
+    validatedBenfekHeight: 'benfekHeight',
   };
   const legacyField = legacyFieldMap[key];
   if (!legacyField) return '';
@@ -241,14 +270,7 @@ const QuizFormPage: React.FC = () => {
   const includeGenderAge = Boolean(
     (location.state as { includeGenderAge?: boolean } | null)?.includeGenderAge
   );
-  const [nutrientStep, setNutrientStep] = useState(0);
-  const [showIdentityModal, setShowIdentityModal] = useState(true);
-  useEffect(() => {
-    if (includeGenderAge) {
-      setShowIdentityModal(false);
-    }
-  }, [includeGenderAge]);
-  const [basic, setBasic] = useState({ gender: '', nickname: '', age: '', weight: '', height: '' });
+  const [nutrientStep, setNutrientStep] = useState(includeGenderAge ? 0 : 1);
   const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
   const [preference, setPreference] = useState({ drugForm: [], budgetRange: '' });
   const [showCustomHabit, setShowCustomHabit] = useState(false);
@@ -270,6 +292,17 @@ const QuizFormPage: React.FC = () => {
   const validatedBenfekPhone = getPersistedQuizValue('validatedBenfekPhone');
   const validatedBenfekGender = getPersistedQuizValue('validatedBenfekGender');
   const validatedBenfekAge = getPersistedQuizValue('validatedBenfekAge');
+  const validatedBenfekWeight = getPersistedQuizValue('validatedBenfekWeight');
+  const validatedBenfekHeight = getPersistedQuizValue('validatedBenfekHeight');
+  const shouldShowBodyMetricFields = includeGenderAge;
+  const shouldUsePrincipalBodyMetrics = !includeGenderAge;
+  const [basic, setBasic] = useState({
+    gender: validatedBenfekGender,
+    nickname: '',
+    age: validatedBenfekAge,
+    weight: shouldUsePrincipalBodyMetrics ? validatedBenfekWeight : '',
+    height: shouldUsePrincipalBodyMetrics ? validatedBenfekHeight : '',
+  });
   const [finalLogin, setFinalLogin] = useState({
     email: validatedBenfekEmail,
     phone: validatedBenfekPhone,
@@ -394,7 +427,7 @@ const QuizFormPage: React.FC = () => {
       if (nutrientStep === 2) {
         setFinalGameCompleted(false);
       }
-      setNutrientStep(nutrientStep - 1);
+      setNutrientStep(includeGenderAge ? nutrientStep - 1 : Math.max(1, nutrientStep - 1));
     }
   };
 
@@ -420,12 +453,13 @@ const QuizFormPage: React.FC = () => {
       code: validatedQuizCode,
       basics: {
         // nickname: basic.nickname || undefined,
-        weight: String(basic.weight),
-        height: String(basic.height),
+        weight: String(basic.weight || validatedBenfekWeight),
+        height: String(basic.height || validatedBenfekHeight),
       },
       lifestyle: {
-        habits: [...lifestyle.habit, ...lifestyle.routine].join(','),
+        habits: lifestyle.habit.join(','),
         funActivities: lifestyle.fun.join(','),
+        desires: lifestyle.routine.join(','),
         priority: lifestyle.career || 'general',
       },
       preferences: {
@@ -957,35 +991,6 @@ const QuizFormPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        {showIdentityModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <Card className="w-full max-w-lg border border-slate-200 p-6 shadow-lg">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Welcome {validatedBenfekName || 'Benfek'}!
-              </h2>
-              <p className="text-sm text-gray-600 mt-3">
-                Please confirm that your name is {validatedBenfekName || 'your name'}. You are{' '}
-                {validatedBenfekGender || 'unspecified'}, and you are{' '}
-                {validatedBenfekAge || 'N/A'} years old.
-              </p>
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => setShowIdentityModal(false)}
-                  className="w-full sm:w-auto"
-                >
-                  Yes, it is me
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/assessment')}
-                  className="w-full sm:w-auto"
-                >
-                  It is not me
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
         {/* <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome {validatedBenfekName || "Benfek"}</h1>
           <p className="text-sm text-gray-600 mt-2">
@@ -993,11 +998,7 @@ const QuizFormPage: React.FC = () => {
           </p>
         </div> */}
 
-        <Card
-          className={`p-5 sm:p-6 border border-slate-200 ${
-            showIdentityModal ? 'pointer-events-none opacity-50' : ''
-          }`}
-        >
+        <Card className="p-5 sm:p-6 border border-slate-200">
           {totalScore > 0 && (
             <div className="mb-4 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               Total points so far: <span className="font-semibold">{totalScore} gz</span>
@@ -1108,14 +1109,18 @@ const QuizFormPage: React.FC = () => {
                       </div>
                     </>
                   )}
-                  <div>
-                    <Label>Weight (kg)</Label>
-                    <Input type="number" value={basic.weight} onChange={e => setBasic(b => ({ ...b, weight: e.target.value }))} placeholder="Enter weight" />
-                  </div>
-                  <div>
-                    <Label>Height (cm)</Label>
-                    <Input type="number" value={basic.height} onChange={e => setBasic(b => ({ ...b, height: e.target.value }))} placeholder="Enter height" />
-                  </div>
+                  {shouldShowBodyMetricFields && (
+                    <>
+                      <div>
+                        <Label>Weight (kg)</Label>
+                        <Input type="number" value={basic.weight} onChange={e => setBasic(b => ({ ...b, weight: e.target.value }))} placeholder="Enter weight" />
+                      </div>
+                      <div>
+                        <Label>Height (cm)</Label>
+                        <Input type="number" value={basic.height} onChange={e => setBasic(b => ({ ...b, height: e.target.value }))} placeholder="Enter height" />
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" onClick={handleNutrientNext}>Next</Button>
@@ -1171,7 +1176,7 @@ const QuizFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCustomHabit(true)}
-                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                          className={addMoreButtonClass}
                         >
                           Add more
                         </button>
@@ -1246,7 +1251,7 @@ const QuizFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCustomFun(true)}
-                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                          className={addMoreButtonClass}
                         >
                           Add more
                         </button>
@@ -1285,7 +1290,7 @@ const QuizFormPage: React.FC = () => {
                       }
                       className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-900"
                     >
-                      Routine (select all that apply)
+                      Desire (select all that apply)
                       {openLifestyleSection === 'routine' ? (
                         <ChevronUp className="h-4 w-4 text-slate-500" />
                       ) : (
@@ -1294,7 +1299,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openLifestyleSection === 'routine' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {routineOptions.map((option) => {
+                        {desireOptions.map((option) => {
                           const selected = lifestyle.routine.includes(option);
                           return (
                             <button
@@ -1321,7 +1326,7 @@ const QuizFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCustomRoutine(true)}
-                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                          className={addMoreButtonClass}
                         >
                           Add more
                         </button>
@@ -1332,7 +1337,7 @@ const QuizFormPage: React.FC = () => {
                         <Input
                           value={customRoutine}
                           onChange={(e) => setCustomRoutine(e.target.value)}
-                          placeholder="Enter routine"
+                          placeholder="Enter desire"
                         />
                         <Button
                           type="button"
@@ -1388,7 +1393,7 @@ const QuizFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCustomCareer(true)}
-                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                          className={addMoreButtonClass}
                         >
                           Add more
                         </button>
@@ -1418,7 +1423,9 @@ const QuizFormPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
+                  {includeGenderAge && (
+                    <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
+                  )}
                   <Button type="button" onClick={handleNutrientNext}>Next</Button>
                 </div>
               </div>
@@ -1472,7 +1479,7 @@ const QuizFormPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowCustomDrugForm(true)}
-                          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-50"
+                          className={addMoreButtonClass}
                         >
                           Add more
                         </button>
