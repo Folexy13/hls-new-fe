@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { principalService } from '@/services/principalService';
 import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
 
 // Define the Withdrawal type
 type Withdrawal = {
@@ -64,6 +65,7 @@ type PaymentMethod = {
 };
 
 const WithdrawPage: React.FC = () => {
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +86,13 @@ const WithdrawPage: React.FC = () => {
   const itemsPerPage = 10;
   const primaryMethod = paymentMethods.find((method) => method.default) ?? paymentMethods[0];
   const displayedMethods = primaryMethod ? [primaryMethod] : [];
+
+  useEffect(() => {
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (tab === 'withdraw' || tab === 'unresolved') {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const loadPayoutDetails = async () => {

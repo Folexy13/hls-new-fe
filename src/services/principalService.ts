@@ -57,4 +57,27 @@ export const principalService = {
     const response = await apiClient.post(`/api/v2/principals/me/credits/${id}/resolve`);
     return response.data?.data;
   },
+
+  async getNotificationSummary(): Promise<{
+    count: number;
+    items?: Array<{ id: number; title: string; message: string; href?: string; count?: number; isRead?: boolean }>;
+  }> {
+    const response = await apiClient.get("/api/v2/principals/me/notifications");
+    return response.data?.data ?? { count: 0, items: [] };
+  },
+
+  async markNotificationRead(id: number) {
+    const response = await apiClient.patch(`/api/v2/principals/me/notifications/${id}/read`);
+    return response.data?.data;
+  },
+
+  async markAllNotificationsRead() {
+    const response = await apiClient.patch("/api/v2/principals/me/notifications/read-all");
+    return response.data?.data;
+  },
+
+  async deleteNotification(id: number) {
+    const response = await apiClient.delete(`/api/v2/principals/me/notifications/${id}`);
+    return response.data?.data;
+  },
 };
