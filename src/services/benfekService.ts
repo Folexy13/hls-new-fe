@@ -23,6 +23,7 @@ export interface BenfekProfilePayload {
   basicHeight?: string;
   lifestyleHabits?: string;
   lifestyleFun?: string;
+  lifestyleDesires?: string;
   lifestylePriority?: string;
   preferenceDrugForm?: string;
   preferenceBudget?: number;
