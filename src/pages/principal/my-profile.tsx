@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import { principalService } from '@/services/principalService';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useLocation } from 'react-router-dom';
 
 type MyProfilePageProps = {
   defaultTab?: 'profile' | 'settings';
@@ -21,9 +22,11 @@ type MyProfilePageProps = {
 const paymentMethodOptions = ['Bank Transfer', 'Paystack', 'Flutterwave', 'Mobile Money'];
 
 const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' }) => {
+  const location = useLocation();
   const { user, setUser } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(defaultTab);
+  const [openSettingsSection, setOpenSettingsSection] = useState<string | undefined>();
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -39,6 +42,20 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     licenseNumber: '',
     yearsOfExperience: '',
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const section = params.get('section');
+
+    if (tab === 'profile' || tab === 'settings') {
+      setActiveTab(tab);
+    }
+
+    if (section) {
+      setOpenSettingsSection(section);
+    }
+  }, [location.search]);
   const [paymentForm, setPaymentForm] = useState({
     preferredPaymentMethod: 'Bank Transfer',
     bankName: '',
@@ -355,7 +372,13 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                 <p className="mt-1 text-sm text-gray-500">Manage your profile, payout setup, security, notifications, and support.</p>
               </div>
               <div className="p-6">
-                <Accordion type="single" collapsible className="space-y-2">
+                <Accordion
+                  type="single"
+                  collapsible
+                  value={openSettingsSection}
+                  onValueChange={setOpenSettingsSection}
+                  className="space-y-2"
+                >
                   <AccordionItem value="personal" className="border rounded-lg px-4">
                     <AccordionTrigger className="py-4">
                       <div className="flex items-center gap-3 text-left">

@@ -71,14 +71,11 @@ const Dashboard = () => {
   const [hasShownPharmacyModal, setHasShownPharmacyModal] = useState(false);
   const [showNutrientNotice, setShowNutrientNotice] = useState(false);
   const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
-  const [nutrientReady, setNutrientReady] = useState(false);
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
   const [packPaymentStates, setPackPaymentStates] = useState<Record<string, PackPaymentState>>({});
   const [isPayingForPack, setIsPayingForPack] = useState(false);
-  const [isLoadingPacks, setIsLoadingPacks] = useState(false);
-  const [arePromoCardsReady, setArePromoCardsReady] = useState(false);
   const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
   const [isHydratingPharmacy, setIsHydratingPharmacy] = useState(true);
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -154,7 +151,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchPacks = async () => {
       try {
-        setIsLoadingPacks(true);
         const response = await apiClient.get('/api/v2/benfek/packs');
         const packs = response.data?.data || [];
         const mapped: Record<string, any[]> = {};
@@ -175,16 +171,10 @@ const Dashboard = () => {
         });
         setPackItems(mapped);
         setPackPaymentStates(paymentStates);
-        setNutrientReady(
-          packs.some((pack: any) => Array.isArray(pack?.items) && pack.items.length > 0)
-        );
       } catch (error) {
         console.error('Failed to fetch packs:', error);
         setPackItems({});
         setPackPaymentStates({});
-        setNutrientReady(false);
-      } finally {
-        setIsLoadingPacks(false);
       }
     };
 
@@ -393,41 +383,6 @@ const Dashboard = () => {
     }),
     []
   );
-
-  useEffect(() => {
-    if (activeTab !== 'nutrient') {
-      setArePromoCardsReady(false);
-      return;
-    }
-
-    if (activeCatalogueId || !nutrientReady) {
-      setArePromoCardsReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    setArePromoCardsReady(false);
-
-    const imageLoads = promoCards.map((card) => {
-      return new Promise<void>((resolve) => {
-        const image = new Image();
-        const finish = () => resolve();
-        image.onload = finish;
-        image.onerror = finish;
-        image.src = card.image;
-      });
-    });
-
-    Promise.all(imageLoads).then(() => {
-      if (!cancelled) {
-        setArePromoCardsReady(true);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeCatalogueId, activeTab, nutrientReady, promoCards]);
 
   useEffect(() => {
     if (showPharmacyModal) return;
@@ -668,9 +623,6 @@ const Dashboard = () => {
       setIsSavingPharmacy(false);
     }
   };
-
-  const isNutrientLandingLoading =
-    isLoadingPacks || (!activeCatalogueId && nutrientReady && !arePromoCardsReady);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -929,12 +881,7 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {isNutrientLandingLoading ? (
-                  <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-6 text-center text-sm text-emerald-800 inline-flex items-center justify-center gap-2">
-                    <LoadingSpinner className="text-emerald-600" />
-                    Loading nutrient packs...
-                  </div>
-                ) : activeCatalogueId ? (
+                {activeCatalogueId ? (
                   <PackCatalogue 
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
@@ -957,20 +904,6 @@ const Dashboard = () => {
                     isPaying={isPayingForPack}
                     paymentState={packPaymentStates[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]]}
                   />
-                ) : !nutrientReady ? (
-                  <div className="w-full max-w-md rounded-2xl border border-emerald-100 bg-emerald-50/70 p-6 text-center text-sm text-emerald-800">
-                    <p>Our researchers are working. An alert with a link will be sent to your number.</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHasNutrientNotice(false);
-                        setNutrientReady(true);
-                      }}
-                      className="mt-4 inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-                    >
-                      View highest demand nutrient packs
-                    </button>
-                  </div>
                 ) : (
                   promoCards.map((card) => (
                     <div
