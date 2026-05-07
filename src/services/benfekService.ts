@@ -69,4 +69,22 @@ export const benfekService = {
     const response = await apiClient.post("/api/v2/benfek/support", payload);
     return response.data?.data?.ticket;
   },
+
+  async getNotificationSummary(): Promise<{
+    count: number;
+    items?: Array<{ id: number; title: string; message: string; href?: string; count?: number; isRead?: boolean }>;
+  }> {
+    const response = await apiClient.get("/api/v2/benfek/notifications");
+    return response.data?.data ?? { count: 0, items: [] };
+  },
+
+  async markAllNotificationsRead() {
+    const response = await apiClient.patch("/api/v2/benfek/notifications/read-all");
+    return response.data?.data;
+  },
+
+  async deleteNotification(id: number) {
+    const response = await apiClient.delete(`/api/v2/benfek/notifications/${id}`);
+    return response.data?.data;
+  },
 };

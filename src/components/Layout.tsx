@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, ShoppingCart, BookOpen, Headphones, Menu, X, LogOut, Bell, Settings, LogIn, UserPlus, LayoutDashboard, CheckCheck, Trash2 } from 'lucide-react';
+import { Home, ShoppingCart, BookOpen, Headphones, Menu, X, LogOut, Bell, Settings, LogIn, UserPlus, LayoutDashboard, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
 import { useRBAC } from '../context/useRBAC';
 import { UserRole } from '../context/roles';
 import { commonNavigation, getNavigationByRole, NavigationItem } from '../utils/navigation';
 import { principalService } from '@/services/principalService';
+import { benfekService } from '@/services/benfekService';
 
 type PrincipalNotificationItem = {
   id: number;
@@ -20,6 +21,7 @@ type PrincipalNotificationItem = {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated, cartItems, logout, user } = useStore();
   const { userRole } = useRBAC();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,7 +65,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     userRole !== UserRole.BENFEK && !mobilePrivateNavigation.some((item) => item.href === '/about');
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const unreadNotifications = userRole === UserRole.PRINCIPAL ? principalNotificationCount : 0;
+  const unreadNotifications =
+    userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK ? principalNotificationCount : 0;
   const homeHref = useMemo(() => {
     if (!isAuthenticated) return '/';
     switch (userRole) {
@@ -93,31 +96,30 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const refreshPrincipalNotifications = () => setNotificationRefreshKey((key) => key + 1);
 
   const handleNotificationItemClick = async (item: PrincipalNotificationItem) => {
+    if (!item.href) return;
+
+    navigate(item.href);
+    setNotificationMenuOpen(false);
+    setPrincipalNotificationItems((items) => items.filter((notification) => notification.id !== item.id));
     if (!item.isRead) {
-      setPrincipalNotificationItems((items) =>
-        items.map((notification) =>
-          notification.id === item.id ? { ...notification, isRead: true } : notification
-        )
-      );
       setPrincipalNotificationCount((count) => Math.max(0, count - Number(item.count || 0)));
-      principalService.markNotificationRead(item.id).catch(refreshPrincipalNotifications);
     }
+
+    const deleteRequest =
+      userRole === UserRole.BENFEK
+        ? benfekService.deleteNotification(item.id)
+        : principalService.deleteNotification(item.id);
+    deleteRequest.catch(refreshPrincipalNotifications);
   };
 
   const handleMarkAllNotificationsRead = async () => {
     setPrincipalNotificationItems((items) => items.map((item) => ({ ...item, isRead: true })));
     setPrincipalNotificationCount(0);
-    await principalService.markAllNotificationsRead();
-    refreshPrincipalNotifications();
-  };
-
-  const handleDeleteNotification = async (id: number) => {
-    const item = principalNotificationItems.find((notification) => notification.id === id);
-    setPrincipalNotificationItems((items) => items.filter((notification) => notification.id !== id));
-    if (item && !item.isRead) {
-      setPrincipalNotificationCount((count) => Math.max(0, count - Number(item.count || 0)));
+    if (userRole === UserRole.BENFEK) {
+      await benfekService.markAllNotificationsRead();
+    } else {
+      await principalService.markAllNotificationsRead();
     }
-    await principalService.deleteNotification(id);
     refreshPrincipalNotifications();
   };
 
@@ -159,7 +161,8 @@ const onPointerDown = (event: PointerEvent) => {
     let cancelled = false;
 
     const loadPrincipalNotifications = async () => {
-      if (!isAuthenticated || userRole !== UserRole.PRINCIPAL) {
+      const supportsNotifications = userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK;
+      if (!isAuthenticated || !supportsNotifications) {
         setPrincipalNotificationCount(0);
         setPrincipalNotificationTitle('Notifications');
         setPrincipalNotificationItems([]);
@@ -168,7 +171,10 @@ const onPointerDown = (event: PointerEvent) => {
       }
 
       try {
-        const summary = await principalService.getNotificationSummary();
+        const summary =
+          userRole === UserRole.BENFEK
+            ? await benfekService.getNotificationSummary()
+            : await principalService.getNotificationSummary();
         if (cancelled) return;
         const count = Number(summary?.count || 0);
         const items = Array.isArray(summary?.items) ? summary.items : [];
@@ -204,14 +210,14 @@ const onPointerDown = (event: PointerEvent) => {
   const principalNotificationMenu = (
     <div
       ref={notificationMenuRef}
-      className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl z-50"
+      className="fixed left-1/2 top-16 z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:absolute lg:left-auto lg:right-0 lg:top-full lg:w-80 lg:max-w-[calc(100vw-2rem)] lg:translate-x-0"
     >
       <div className="border-b border-slate-100 px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-slate-900">Notifications</p>
             <p className="text-xs text-slate-500">
-              {unreadNotifications > 0 ? `${unreadNotifications} item${unreadNotifications === 1 ? '' : 's'} need attention` : 'No new principal notifications'}
+              {unreadNotifications > 0 ? `${unreadNotifications} item${unreadNotifications === 1 ? '' : 's'} need attention` : 'No new notifications'}
             </p>
           </div>
           {principalNotificationItems.some((item) => !item.isRead) && (
@@ -226,31 +232,22 @@ const onPointerDown = (event: PointerEvent) => {
           )}
         </div>
       </div>
-      <div className="max-h-80 overflow-y-auto py-1">
+      <div className="max-h-[calc(100vh-12rem)] overflow-y-auto py-1 lg:max-h-80">
         {principalNotificationItems.length > 0 ? (
           principalNotificationItems.map((item) => (
-            <div
+            <button
               key={item.id}
-              className={`group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${item.isRead ? 'opacity-70' : ''}`}
+              type="button"
+              onClick={() => handleNotificationItemClick(item)}
+              disabled={!item.href}
+              className={`group flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 disabled:cursor-default ${item.isRead ? 'opacity-70' : ''}`}
             >
               <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${item.isRead ? 'bg-slate-300' : 'bg-rose-500'}`} />
-              <button
-                type="button"
-                onClick={() => handleNotificationItemClick(item)}
-                className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20"
-              >
+              <span className="min-w-0 flex-1 text-left">
                 <span className="block text-sm font-semibold text-slate-900">{item.title}</span>
                 <span className="mt-0.5 block text-xs leading-5 text-slate-600">{item.message}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteNotification(item.id)}
-                className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/30"
-                aria-label={`Delete ${item.title}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
+              </span>
+            </button>
           ))
         ) : (
           <div className="px-4 py-5 text-sm text-slate-600">You are all caught up.</div>
@@ -285,7 +282,7 @@ const onPointerDown = (event: PointerEvent) => {
                   data-principal-notification-button="true"
                   type="button"
                   onClick={() => {
-                    if (userRole === UserRole.PRINCIPAL) {
+                    if (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) {
                       setNotificationMenuOpen((open) => !open);
                     }
                   }}
@@ -301,7 +298,7 @@ const onPointerDown = (event: PointerEvent) => {
                     </span>
                   )}
                 </button>
-                {notificationMenuOpen && userRole === UserRole.PRINCIPAL && principalNotificationMenu}
+                {notificationMenuOpen && (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) && principalNotificationMenu}
               </div>
             )}
             <button
@@ -493,7 +490,7 @@ const onPointerDown = (event: PointerEvent) => {
                     data-principal-notification-button="true"
                     type="button"
                     onClick={() => {
-                      if (userRole === UserRole.PRINCIPAL) {
+                      if (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) {
                         setNotificationMenuOpen((open) => !open);
                       }
                     }}
@@ -509,7 +506,7 @@ const onPointerDown = (event: PointerEvent) => {
                       </span>
                     )}
                   </button>
-                  {notificationMenuOpen && userRole === UserRole.PRINCIPAL && principalNotificationMenu}
+                  {notificationMenuOpen && (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) && principalNotificationMenu}
                 </div>
               )}
               {!isAuthenticated ? (
