@@ -50,4 +50,9 @@ export const authService = {
       refreshToken,
     });
   },
+
+  async forgotPassword(email: string): Promise<any> {
+    const response = await apiClient.post("/api/v2/auth/forgot-password", { email });
+    return response.data;
+  },
 };

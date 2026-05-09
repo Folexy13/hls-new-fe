@@ -322,15 +322,54 @@ const SignUpPage = () => {
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      toast.success('Password reset link sent to your email!');
-    } else {
+    if (!email) {
       toast.error('Please enter your email address');
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      const response = await authService.forgotPassword(email);
+      toast.success(response.message || 'Password reset link sent to your email!');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to send reset link');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Reset Password</CardTitle>
+        <CardDescription>Enter your email to receive a reset link</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              disabled={isLoading}
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <LoadingSpinner className="mr-2" />}
+            {isLoading ? 'Sending...' : 'Send Reset Link'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
 
   return (
     <Card className="w-full max-w-md mx-auto">
