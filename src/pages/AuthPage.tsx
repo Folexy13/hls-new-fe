@@ -365,33 +365,6 @@ const ForgotPasswordPage = () => {
             {isLoading && <LoadingSpinner className="mr-2" />}
             {isLoading ? 'Sending...' : 'Send Reset Link'}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
-  );
-};
-
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Reset Password</CardTitle>
-        <CardDescription>Enter your email to receive a reset link</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-            />
-          </div>
-          <Button type="submit" className="w-full">
-            Send Reset Link
-          </Button>
           <div className="text-center">
             <Link to="/auth/signin" className="text-sm text-emerald-600 hover:underline">
               Back to Sign In
