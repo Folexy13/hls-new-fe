@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -376,6 +376,123 @@ const ForgotPasswordPage = () => {
   );
 };
 
+const ResetPasswordPage = () => {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useStore();
+
+  useEffect(() => {
+    if (!token) {
+      toast.error('Invalid or missing reset token');
+      navigate('/auth/signin');
+    }
+  }, [token, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password || !confirmPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await authService.resetPassword(token!, password);
+      
+      // The backend returns a fresh set of tokens if successful, we can log them in
+      login(response.tokens.accessToken, response.tokens.refreshToken, response.user);
+      
+      toast.success('Password reset successful!');
+      
+      // Route them to correct dashboard based on role
+      const role = response.user.role;
+      if (role === 'benfek') navigate('/dashboard');
+      else if (role === 'principal') navigate('/principal');
+      else if (role === 'researcher') navigate('/researcher');
+      else navigate('/');
+      
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!token) return null;
+
+  return (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Set New Password</CardTitle>
+        <CardDescription>Enter your new password below</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="password">New Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="confirm-password">Confirm Password</Label>
+            <div className="relative">
+              <Input
+                id="confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading && <LoadingSpinner className="mr-2" />}
+            {isLoading ? 'Resetting...' : 'Reset Password'}
+          </Button>
+          <div className="text-center">
+            <Link to="/auth/signin" className="text-sm text-emerald-600 hover:underline">
+              Back to Sign In
+            </Link>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
 const AuthPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8 lg:py-4">
@@ -384,6 +501,7 @@ const AuthPage = () => {
           <Route path="signin" element={<SignInPage />} />
           <Route path="signup" element={<SignUpPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
         </Routes>
       </div>
     </div>
