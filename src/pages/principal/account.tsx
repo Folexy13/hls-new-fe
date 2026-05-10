@@ -24,10 +24,9 @@ import {
   Search, Download, CreditCard, 
   DollarSign, ArrowUp, ArrowDown, Calendar, 
   Copy, CheckCircle, User, Lock, Bell, Shield,
-  MessageCircle,
-  Filter,
-  AlertTriangle
+  MessageCircle, Filter, AlertTriangle 
 } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 // Define the Transaction type
 type Transaction = {
@@ -60,6 +59,7 @@ const mockTransactions: Transaction[] = Array(50).fill(0).map((_, i) => ({
 }));
 
 const AccountPage: React.FC = () => {
+  const { principal } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -286,18 +286,18 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span>NEJJE HEALTH SOLUTIONS</span>
+                        <span>{principal?.accountName || 'Not Set'}</span>
                       </div>
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span>1234567890</span>
+                        <span className="font-mono">{principal?.accountNumber || 'Not Set'}</span>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={copyAccountNumber}
+                          onClick={() => handleCopy(principal?.accountNumber || '')}
                           className="flex items-center gap-1"
                         >
                           {copied ? (
@@ -318,7 +318,7 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <span>First Bank of Nigeria</span>
+                        <span>{principal?.bankName || 'Not Set'}</span>
                       </div>
                     </div>
                   </div>
@@ -616,17 +616,17 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <p className='text-sm'>NEJJE HEALTH SOLUTIONS</p>
+                        <p className='text-sm'>{principal?.accountName || 'Not Set'}</p>
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <p className='text-sm'>1234567890</p>
+                        <p className='font-mono text-sm'>{principal?.accountNumber || 'Not Set'}</p>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={copyAccountNumber}
+                          onClick={() => handleCopy(principal?.accountNumber || '')}
                           className="flex items-center gap-1"
                         >
                           {copied ? (
@@ -646,8 +646,8 @@ const AccountPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
-                        <p className='text-sm'>First Bank of Nigeria</p>
-                        <Button variant="outline" size="sm">Change Account</Button>
+                        <p className='text-sm'>{principal?.bankName || 'Not Set'}</p>
+                        <Button variant="outline" size="sm" onClick={() => window.location.href = '/principal/profile?tab=settings'}>Change Account</Button>
                       </div>
                     </div>
                   </div>
