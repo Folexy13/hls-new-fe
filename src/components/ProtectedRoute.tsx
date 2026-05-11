@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { tokenManager } from '@/utils/tokenManager';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,9 +13,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   const { isAuthenticated, user } = useStore();
   const location = useLocation();
   const role = String(user?.role ?? '').toLowerCase();
+  const hasValidSession = isAuthenticated && Boolean(user) && tokenManager.hasValidTokens();
 
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/signin" replace />;
+  if (!hasValidSession) {
+    return <Navigate to="/auth/signin" replace state={{ from: location }} />;
   }
 
   // If a specific role is required and the user doesn't have it, redirect to their appropriate homepage

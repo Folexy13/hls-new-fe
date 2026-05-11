@@ -221,7 +221,7 @@ const AccountPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6 pt-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-2 pt-1">
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Weekly Summary */}

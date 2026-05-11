@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot } from 'lucide-react';
+import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot, ShoppingCart, Plus } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -11,6 +11,9 @@ import { toast } from 'react-toastify';
 import { paystackService } from '@/services/paystackService';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { benfekService } from '@/services/benfekService';
+import { cartService } from '@/services/cartService';
+import { getApiErrorMessage } from '@/utils/apiError';
+import { useStore } from '@/store/useStore';
 
 type SavedPharmacy = {
   name: string;
@@ -45,6 +48,7 @@ const getCallbackOrigin = () => window.location.origin;
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const setCartFromBackend = useStore((state) => state.setCartFromBackend);
   const [searchValue, setSearchValue] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'pharmacy' | 'nutrient'>('pharmacy');
@@ -72,6 +76,7 @@ const Dashboard = () => {
   const [showNutrientNotice, setShowNutrientNotice] = useState(false);
   const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
+  const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
   const [packPaymentStates, setPackPaymentStates] = useState<Record<string, PackPaymentState>>({});
@@ -577,6 +582,30 @@ const Dashboard = () => {
     }));
   };
 
+  const handleAddPharmacyItemToCart = async (item: { id: string; title: string }) => {
+    try {
+      setAddingToCartId(item.id);
+      const response = await cartService.addItemToCart(Number(item.id), 1);
+      const cart = response?.data?.cart;
+      if (cart?.items) {
+        setCartFromBackend(cart.items.map((cartItem: any) => ({
+          id: String(cartItem.supplement.id),
+          name: cartItem.supplement.name,
+          price: Number(cartItem.supplement.price || 0),
+          image: cartItem.supplement.image || cartItem.supplement.imageUrl || '',
+          description: cartItem.supplement.description || '',
+          category: 'supplement',
+          quantity: Number(cartItem.quantity || 1),
+        })));
+      }
+      toast.success(`${item.title} added to cart.`);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not add this item to cart. Please try again.'));
+    } finally {
+      setAddingToCartId(null);
+    }
+  };
+
   const handleContinueWithPharmacy = async () => {
     const customName = pharmacySearchName;
     const customPhone = customPharmacyPhone.trim();
@@ -779,10 +808,26 @@ const Dashboard = () => {
                               <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
                             </div>
                             <div className="flex justify-around w-full gap-2">
-                              <p className="flex h-4 items-center justify-center rounded-md px-3 text-xs text-emerald-600 bg-gray-200 hover:text-emerald-700">
-                                Buy
-                              </p>
-                              <p className="flex h-4 items-center justify-center rounded-md px-3 text-xs text-orange-500 bg-gray-200 hover:text-orange-600">
+                              <button
+                                type="button"
+                                onClick={() => handleAddPharmacyItemToCart(item)}
+                                disabled={addingToCartId === item.id}
+                                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label={`Add ${item.title} to cart`}
+                                title="Add to cart"
+                              >
+                                {addingToCartId === item.id ? (
+                                  <LoadingSpinner className="h-3 w-3" />
+                                ) : (
+                                  <>
+                                    <ShoppingCart className="h-4 w-4" />
+                                    <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                                      <Plus className="h-2.5 w-2.5" />
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                              <p className="flex h-7 items-center justify-center rounded-md px-3 text-xs text-orange-500 bg-gray-200 hover:text-orange-600">
                                 Later
                               </p>
                             </div>

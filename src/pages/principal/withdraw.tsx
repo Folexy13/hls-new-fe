@@ -23,6 +23,7 @@ import {
 import { principalService } from '@/services/principalService';
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 // Define the Withdrawal type
 type Withdrawal = {
@@ -67,6 +68,7 @@ type PaymentMethod = {
 const WithdrawPage: React.FC = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const [isWalletLoading, setIsWalletLoading] = useState(true);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,7 +82,7 @@ const WithdrawPage: React.FC = () => {
   const [unresolvedCredits, setUnresolvedCredits] = useState<UnresolvedCredit[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [filterStatus, setFilterStatus] = useState<'all' | 'Completed' | 'Processing' | 'Pending' | 'Failed'>('all');
-  const [filterMethod, setFilterMethod] = useState<'all' | 'Bank Transfer' | 'Mobile Money' | 'Paystack' | 'Flutterwave'>('all');
+  const [filterMethod, setFilterMethod] = useState<'all' | 'Paystack'>('all');
   const [openWithdrawalId, setOpenWithdrawalId] = useState<number | null>(null);
   
   const itemsPerPage = 10;
@@ -97,6 +99,7 @@ const WithdrawPage: React.FC = () => {
   useEffect(() => {
     const loadPayoutDetails = async () => {
       setIsLoading(true);
+      setIsWalletLoading(true);
       try {
         const [principal, incomeSummary, withdrawalsData] = await Promise.all([
           principalService.getMe(),
@@ -114,7 +117,7 @@ const WithdrawPage: React.FC = () => {
             ? withdrawalsData.map((item: any) => ({
                 id: item.id,
                 amount: `₦${Number(item.amount || 0).toLocaleString()}`,
-                method: principal?.preferredPaymentMethod || 'Bank Transfer',
+                method: 'Paystack',
                 date: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Recently',
                 status: String(item.status || 'Pending'),
                 reference: `WD-${String(item.id).padStart(6, '0')}`,
@@ -123,13 +126,12 @@ const WithdrawPage: React.FC = () => {
             : []
         );
 
-        const methodName = principal?.preferredPaymentMethod || 'Bank Transfer';
         const nextMethods: PaymentMethod[] = principal?.bankName || principal?.accountNumber || principal?.accountName
           ? [
               {
                 id: 1,
-                type: methodName.toLowerCase().includes('mobile') ? 'mobile' : 'bank',
-                name: principal.bankName || methodName,
+                type: 'bank',
+                name: principal.bankName || 'Paystack',
                 accountNumber: principal.accountNumber || '',
                 accountName: principal.accountName || '',
                 default: true,
@@ -146,6 +148,7 @@ const WithdrawPage: React.FC = () => {
         setWithdrawableBalance(0);
       } finally {
         setIsLoading(false);
+        setIsWalletLoading(false);
       }
     };
 
@@ -315,7 +318,13 @@ const WithdrawPage: React.FC = () => {
                       <form onSubmit={handleWithdrawal} className="flex flex-col gap-6">
                         {/* Balance Banner */}
                         <div>
-                          <div className="w-full rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white">
+                          <div className="relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white">
+                            {isWalletLoading && (
+                              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-950/70 backdrop-blur-sm">
+                                <LoadingSpinner className="h-7 w-7 text-white" />
+                                <p className="text-sm font-semibold text-white/90">Loading wallet balances...</p>
+                              </div>
+                            )}
                             <div className="text-xs uppercase tracking-[0.2em] text-white/70">
                               Wallet Summary
                             </div>
@@ -440,7 +449,7 @@ const WithdrawPage: React.FC = () => {
                         <div>
                           <p className="text-xs font-semibold text-slate-500 uppercase">Method</p>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {(['all', 'Bank Transfer', 'Mobile Money', 'Paystack', 'Flutterwave'] as const).map((value) => (
+                            {(['all', 'Paystack'] as const).map((value) => (
                               <button
                                 key={value}
                                 type="button"

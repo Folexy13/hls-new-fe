@@ -198,7 +198,13 @@ const MyProfilePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28 pt-6 px-4">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="relative mx-auto max-w-5xl space-y-6">
+        {loading && (
+          <div className="absolute inset-0 z-20 flex min-h-[420px] flex-col items-center justify-center gap-3 rounded-[28px] bg-white/75 backdrop-blur-sm">
+            <LoadingSpinner className="h-8 w-8 text-emerald-600" />
+            <p className="text-sm font-semibold text-slate-700">Loading your profile...</p>
+          </div>
+        )}
         <div className="rounded-[28px] bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-600 p-6 text-white shadow-xl">
           <p className="text-xs uppercase tracking-[0.3em] text-white/70">Benfek Profile</p>
           <h1 className="mt-2 text-3xl font-bold">{heading}</h1>

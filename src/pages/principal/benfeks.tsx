@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Table, TableBody, TableCaption, TableCell, 
-  TableHead, TableHeader, TableRow 
+import {
+  Table, TableBody, TableCaption, TableCell,
+  TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
-import { 
-  Pagination, PaginationContent, PaginationItem, 
-  PaginationLink, PaginationNext, PaginationPrevious 
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious
 } from '@/components/ui/pagination';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { MultiSelectCreatableField } from '@/components/MultiSelectCreatableField';
 import {
   Search, UserPlus, Filter, Download,
   ChevronDown, Eye, ArrowUpDown,
@@ -25,6 +26,15 @@ import {
 import Modal from '@/components/ui/modal';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+const HEALTH_FIELD_OPTIONS = {
+  allergies: ['Peanuts', 'Dust', 'Seafood', 'Dairy', 'Eggs', 'Penicillin', 'Pollen'],
+  scares: ['Hypertension episode', 'Asthma attack', 'Fainting spell', 'High blood sugar', 'Seizure episode'],
+  familyCondition: ['Diabetes', 'Hypertension', 'Asthma', 'Sickle cell', 'Heart disease'],
+  medications: ['Vitamin D', 'Omega-3', 'Paracetamol', 'Metformin', 'Lisinopril'],
+  hasCurrentCondition: ['Asthma', 'Hypertension', 'Diabetes', 'Ulcer', 'Arthritis'],
+} as const;
 
 // Define the Benfek type (based on QuizCode)
 type BenfekRecord = {
@@ -39,6 +49,7 @@ type BenfekRecord = {
   scares?: string;
   familyCondition?: string;
   medications?: string;
+  currentConditions?: string | string[];
   hasCurrentCondition: boolean;
 };
 
@@ -91,6 +102,26 @@ const AccordionSkeleton: React.FC = () => (
   </div>
 );
 
+const BenfekListLoader: React.FC = () => (
+  <div className="flex min-h-[45vh] items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white px-8 py-7 text-center shadow-sm">
+      <LoadingSpinner className="h-8 w-8 text-emerald-600" />
+      <div>
+        <p className="text-sm font-semibold text-slate-900">Preparing benfek list</p>
+        <p className="mt-1 text-xs text-slate-500">Fetching the latest records...</p>
+      </div>
+    </div>
+  </div>
+);
+
+const formatHealthValue = (value?: string | string[]) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join(', ');
+  }
+
+  return value?.trim() || '';
+};
+
 const BenfeksPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [benfeks, setBenfeks] = useState<BenfekRecord[]>([]);
@@ -104,10 +135,44 @@ const BenfeksPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [registrationFilter, setRegistrationFilter] = useState<'all' | 'registered' | 'not_registered'>('all');
   const [showRegistrationFilter, setShowRegistrationFilter] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<BenfekRecord> | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   const itemsPerPage = 10;
+
+  const handleEditBenfek = async () => {
+    if (!selectedBenfek || !editFormData) return;
+
+    setIsSubmittingEdit(true);
+    try {
+      const payload = {
+        allergies: editFormData.allergies,
+        scares: editFormData.scares,
+        familyCondition: editFormData.familyCondition,
+        medications: editFormData.medications,
+        currentConditions: editFormData.currentConditions,
+        hasCurrentCondition: editFormData.hasCurrentCondition,
+      };
+
+      await apiClient.put(`/api/v2/quiz-code/${selectedBenfek.id}`, payload);
+
+      setBenfeks(prev => prev.map(b =>
+        b.id === selectedBenfek.id ? { ...b, ...editFormData } : b
+      ));
+      setSelectedBenfek({ ...selectedBenfek, ...editFormData });
+      setIsEditMode(false);
+      toast.success('Benfek details updated successfully');
+    } catch (error) {
+      console.error('Failed to update benfek:', error);
+      const message = 'Failed to update benfek details';
+      toast.error(message);
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
 
   const fetchBenfeks = useCallback(async () => {
     setIsLoading(true);
@@ -215,20 +280,20 @@ const BenfeksPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8 pt-40 lg:pt-44">
-      <div className="fixed left-0 right-0 top-16 lg:top-20 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
+    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8 pt-[158px] lg:pt-[174px]">
+      <div className="fixed left-0 right-0 top-16 lg:top-20 z-40 bg-white pb-1 shadow-sm border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="py-3">
+          <div className="py-1">
             <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           </div>
 
-          <div className="border-t border-slate-200/80 py-3">
+          <div className="border-t border-slate-200/80 py-1">
             <div className="flex flex-row items-center justify-between gap-3">
               <div className="relative flex-1 min-w-0 sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   placeholder="Search benfeks..."
-                  className="pl-10 h-11 sm:h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                  className="pl-10 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -242,7 +307,7 @@ const BenfeksPage: React.FC = () => {
                     size="icon"
                     aria-label="Filter"
                     onClick={() => setShowRegistrationFilter((v) => !v)}
-                    className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                    className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
                   >
                     <Filter className="h-4 w-4" />
                   </Button>
@@ -279,7 +344,7 @@ const BenfeksPage: React.FC = () => {
                   variant="outline"
                   size="icon"
                   aria-label="Export"
-                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                  className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
                 >
                   <Download className="h-4 w-4" />
                 </Button>
@@ -288,7 +353,7 @@ const BenfeksPage: React.FC = () => {
                   variant="outline"
                   size="icon"
                   aria-label="Benfek"
-                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                  className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
                 >
                   <User className="h-4 w-4" />
                   <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : benfeks.length}</p>
@@ -330,10 +395,10 @@ const BenfeksPage: React.FC = () => {
       </div> */}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 -mt-5">
-        <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
+      <div className="relative z-0 max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
+        <Card className="-mt-16 overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
-          <div className="h-2 bg-white border-b" />
+          <div className="border-b" />
           {loadError && (
             <div className="bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-700">
               {loadError}
@@ -343,7 +408,7 @@ const BenfeksPage: React.FC = () => {
           {/* Desktop Table View - Hidden on mobile */}
           <div className="hidden md:block overflow-x-auto bg-white">
             {isLoading ? (
-              <TableSkeleton />
+              <BenfekListLoader />
             ) : benfeks.length === 0 ? (
               <EmptyState onAddClick={handleNavigateToAdd} />
             ) : (
@@ -415,7 +480,7 @@ const BenfeksPage: React.FC = () => {
           {/* Mobile Accordion View - Visible only on mobile */}
           <div className="md:hidden space-y-2 p-2">
             {isLoading ? (
-              <AccordionSkeleton />
+              <BenfekListLoader />
             ) : benfeks.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm">
                 <EmptyState onAddClick={handleNavigateToAdd} />
@@ -539,35 +604,104 @@ const BenfeksPage: React.FC = () => {
       {/* Add/View Benfek Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Benfek's Health Details"
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsEditMode(false);
+          setEditFormData(null);
+        }}
+        title={isEditMode ? "Edit Benfek Health Details" : "Benfek's Health Details"}
         size="lg"
       >
         {selectedBenfek ? (
           <div className="space-y-6">
-            {/* <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
-              <p className="text-blue-600 text-xs uppercase tracking-[0.2em] font-black mb-2">Code</p>
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-4xl font-black text-blue-700 tracking-widest font-mono">{selectedBenfek.code}</span>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-blue-100" onClick={() => copyCode(selectedBenfek.code)}>
-                  <Copy className="h-5 w-5 text-blue-600" />
-                </Button>
-              </div>
-              <p className="mt-4 text-sm text-blue-500 font-medium italic">Share this code with {selectedBenfek.benfekName} to complete registration.</p>
-            </div> */}
+            {(() => {
+              const currentConditions = formatHealthValue(selectedBenfek.currentConditions);
 
+              if (isEditMode) {
+                return (
+                  <>
+                    <div className="space-y-4">
+                      <MultiSelectCreatableField
+                        label="Allergies"
+                        placeholder="Select or add allergies"
+                        options={HEALTH_FIELD_OPTIONS.allergies}
+                        value={Array.isArray(editFormData?.allergies) ? editFormData.allergies : editFormData?.allergies ? [editFormData.allergies as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, allergies: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Health Scares"
+                        placeholder="Select or add health scares"
+                        options={HEALTH_FIELD_OPTIONS.scares}
+                        value={Array.isArray(editFormData?.scares) ? editFormData.scares : editFormData?.scares ? [editFormData.scares as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, scares: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Family Condition"
+                        placeholder="Select or add family conditions"
+                        options={HEALTH_FIELD_OPTIONS.familyCondition}
+                        value={Array.isArray(editFormData?.familyCondition) ? editFormData.familyCondition : editFormData?.familyCondition ? [editFormData.familyCondition as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, familyCondition: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Current Medications"
+                        placeholder="Select or add medications"
+                        options={HEALTH_FIELD_OPTIONS.medications}
+                        value={Array.isArray(editFormData?.medications) ? editFormData.medications : editFormData?.medications ? [editFormData.medications as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, medications: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Current Health Conditions"
+                        placeholder="Select or add current health conditions"
+                        options={HEALTH_FIELD_OPTIONS.hasCurrentCondition}
+                        value={Array.isArray(editFormData?.currentConditions) ? editFormData.currentConditions : editFormData?.currentConditions ? [editFormData.currentConditions as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, currentConditions: val }))}
+                      />
+                    </div>
+
+                    <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end gap-3 z-10">
+                      <Button
+                        variant="outline"
+                        className="rounded-full h-11 px-8"
+                        onClick={() => {
+                          setIsEditMode(false);
+                          setEditFormData(null);
+                        }}
+                        disabled={isSubmittingEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-full h-11 px-8 bg-blue-600 hover:bg-blue-700"
+                        onClick={handleEditBenfek}
+                        disabled={isSubmittingEdit}
+                      >
+                        {isSubmittingEdit ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </>
+                );
+              }
+
+              return (
+                <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <p className="text-xs text-gray-400 font-bold uppercase">Benfek Name</p>
                 <p className="text-lg font-bold text-gray-900">{selectedBenfek.benfekName}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Current Condition</p>
-                <p className="text-lg font-bold text-gray-900">{selectedBenfek.hasCurrentCondition ? 'Yes' : 'No'}</p>
-              </div>
             </div>
 
             <div className="space-y-4 pt-6">
+              {currentConditions && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Current Health Condition</p>
+                  <p className="text-gray-700 font-medium">{currentConditions}</p>
+                </div>
+              )}
               {selectedBenfek.allergies && (
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Allergies</p>
@@ -594,11 +728,29 @@ const BenfeksPage: React.FC = () => {
               )}
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end z-10">
-              <Button variant="outline" className="w-full sm:w-auto rounded-full h-11 px-8" onClick={() => setIsModalOpen(false)}>
+            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end gap-3 z-10">
+              <Button variant="outline" className="rounded-full h-11 px-8" onClick={() => setIsModalOpen(false)}>
                 Close
               </Button>
+              <Button
+                className="rounded-full h-11 px-8 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => {
+                  setIsEditMode(true);
+                  setEditFormData({
+                    allergies: Array.isArray(selectedBenfek.allergies) ? selectedBenfek.allergies : selectedBenfek.allergies ? selectedBenfek.allergies.split(',').map(s => s.trim()) : [],
+                    scares: Array.isArray(selectedBenfek.scares) ? selectedBenfek.scares : selectedBenfek.scares ? selectedBenfek.scares.split(',').map(s => s.trim()) : [],
+                    familyCondition: Array.isArray(selectedBenfek.familyCondition) ? selectedBenfek.familyCondition : selectedBenfek.familyCondition ? selectedBenfek.familyCondition.split(',').map(s => s.trim()) : [],
+                    medications: Array.isArray(selectedBenfek.medications) ? selectedBenfek.medications : selectedBenfek.medications ? selectedBenfek.medications.split(',').map(s => s.trim()) : [],
+                    currentConditions: Array.isArray(selectedBenfek.currentConditions) ? selectedBenfek.currentConditions : selectedBenfek.currentConditions ? selectedBenfek.currentConditions.split(',').map(s => s.trim()) : [],
+                  });
+                }}
+              >
+                Edit
+              </Button>
             </div>
+                </>
+              );
+            })()}
           </div>
         ) : null}
       </Modal>

@@ -161,7 +161,7 @@ const ArticlesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
       {/* Fixed Header (Back + Title) */}
       <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
@@ -178,7 +178,7 @@ const ArticlesPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-3">
         <Card className="overflow-hidden">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">

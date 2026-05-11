@@ -9,6 +9,7 @@ import { UserRole } from '../context/roles';
 import { commonNavigation, getNavigationByRole, NavigationItem } from '../utils/navigation';
 import { principalService } from '@/services/principalService';
 import { benfekService } from '@/services/benfekService';
+import BackToDashboardButton from '@/components/BackToDashboardButton';
 
 type PrincipalNotificationItem = {
   id: number;
@@ -82,6 +83,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         return '/';
     }
   }, [isAuthenticated, userRole]);
+  const showBenfekDashboardButton =
+    isAuthenticated &&
+    userRole === UserRole.BENFEK &&
+    location.pathname !== '/benfek/dashboard' &&
+    location.pathname !== '/benfek' &&
+    location.pathname !== '/benfek/Homepage' &&
+    location.pathname !== '/benfek/quiz-form';
   const isIOS = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -136,7 +144,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
-const onPointerDown = (event: PointerEvent) => {
+    const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
 
@@ -150,6 +158,23 @@ const onPointerDown = (event: PointerEvent) => {
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (!notificationMenuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      const elementTarget = event.target as Element | null;
+      if (elementTarget?.closest('[data-notification-menu="true"]')) return;
+      if (notificationButtonRef.current?.contains(target)) return;
+
+      setNotificationMenuOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [notificationMenuOpen]);
 
   // Scroll restoration: ensure new pages start at the top on navigation.
   useEffect(() => {
@@ -210,6 +235,7 @@ const onPointerDown = (event: PointerEvent) => {
   const principalNotificationMenu = (
     <div
       ref={notificationMenuRef}
+      data-notification-menu="true"
       className="fixed left-1/2 top-16 z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm -translate-x-1/2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl lg:absolute lg:left-auto lg:right-0 lg:top-full lg:w-80 lg:max-w-[calc(100vw-2rem)] lg:translate-x-0"
     >
       <div className="border-b border-slate-100 px-4 py-3">
@@ -540,6 +566,14 @@ const onPointerDown = (event: PointerEvent) => {
 
       {/* Main Content */}
       <main className="flex-1">
+        {showBenfekDashboardButton && (
+          <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 lg:px-8">
+            <BackToDashboardButton
+              dashboardPath="/benfek/dashboard"
+              className="text-black/90 hover:text-black/80"
+            />
+          </div>
+        )}
         {children}
       </main>
 

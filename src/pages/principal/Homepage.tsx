@@ -13,6 +13,7 @@ import {
   UserPlus,
   Pill,
   FileText,
+  TicketPercent,
   Mic,
   DollarSign,
   Settings,
@@ -66,10 +67,10 @@ const principalDashboardSections = [
   {
     title: 'Wallet',
     items: [
-      {
-        icon: <CreditCard className="h-6 w-6 text-emerald-600" />,
-        label: 'Account',
-        href: '/principal/account',
+       {
+        icon: <DollarSign className="h-6 w-6 text-emerald-600" />,
+        label: 'Withdraw',
+        href: '/principal/withdraw',
       },
       {
         icon: <TrendingUp className="h-6 w-6 text-emerald-600" />,
@@ -77,9 +78,10 @@ const principalDashboardSections = [
         href: '/principal/earnings',
       },
       {
-        icon: <DollarSign className="h-6 w-6 text-emerald-600" />,
-        label: 'Withdraw',
-        href: '/principal/withdraw',
+        icon: <TicketPercent className="h-6 w-6 text-emerald-600" />,
+        label: 'Voucher',
+        href: '/principal/voucher',
+        comingSoon: true,
       },
     ],
   },
@@ -377,7 +379,12 @@ const PrincipalHomepage: React.FC = () => {
                             <div className="flex h-9 w-9 items-center justify-center">
                               {item.icon}
                             </div>
-                            <span className="text-xs text-gray-700 leading-none">{item.label}</span>
+                            <span className="text-xs text-gray-700 leading-none">
+                              {item.label}
+                            </span>
+                            {item.comingSoon && (
+                              <span className="text-xs text-gray-500 leading-none">Coming soon</span>
+                            )}
                           </Link>
                         ))}
                       </div>

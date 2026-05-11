@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from './env';
 import { tokenManager } from '../utils/tokenManager';
+import { getSafeUserMessage } from '../utils/apiError';
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -54,6 +55,19 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const responseData = error.response?.data;
+
+    if (responseData?.message) {
+      responseData.message = getSafeUserMessage(responseData.message);
+    }
+
+    if (typeof responseData?.error === 'string') {
+      responseData.error = getSafeUserMessage(responseData.error);
+    }
+
+    if (responseData?.error?.details) {
+      delete responseData.error.details;
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

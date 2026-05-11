@@ -8,19 +8,112 @@ import { useStore } from '@/store/useStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, Bell, CreditCard, Lock, Upload, User } from 'lucide-react';
+import { AlertTriangle, Bell, Check, ChevronsUpDown, CreditCard, Lock, Upload, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { principalService } from '@/services/principalService';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocation } from 'react-router-dom';
 import { apiClient } from '@/config/axios';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 type MyProfilePageProps = {
   defaultTab?: 'profile' | 'settings';
 };
 
-const paymentMethodOptions = ['Bank Transfer', 'Paystack', 'Flutterwave', 'Mobile Money'];
+const healthcareProfessionOptions = [
+  'HLS AP',
+  'Acupuncturist',
+  'Anesthesiologist',
+  'Audiologist',
+  'Biomedical Engineer',
+  'Biomedical Scientist',
+  'Cardiologist',
+  'Chiropractor',
+  'Clinical Officer',
+  'Clinical Psychologist',
+  'Clinical Research Professional',
+  'Community Health Extension Worker',
+  'Community Health Officer',
+  'Community Health Worker',
+  'Dental Hygienist',
+  'Dental Technician',
+  'Dental Therapist',
+  'Dentist',
+  'Dermatologist',
+  'Dietetic Technician',
+  'Dietitian',
+  'Emergency Medical Technician',
+  'Environmental Health Officer',
+  'Epidemiologist',
+  'Exercise Physiologist',
+  'Family Medicine Physician',
+  'Genetic Counselor',
+  'Health Administrator',
+  'Health Coach',
+  'Health Economist',
+  'Health Educator',
+  'Health Information Manager',
+  'Healthcare Manager',
+  'Herbal/Traditional Medicine Practitioner',
+  'Hospital Administrator',
+  'Infection Prevention and Control Practitioner',
+  'Licensed Practical Nurse',
+  'Medical Doctor',
+  'Medical Laboratory Scientist',
+  'Medical Laboratory Technician',
+  'Medical Physicist',
+  'Medical Records Officer',
+  'Medical Sales Representative',
+  'Mental Health Counselor',
+  'Midwife',
+  'Nurse',
+  'Nurse Anesthetist',
+  'Nurse Practitioner',
+  'Nutritionist',
+  'Occupational Health Practitioner',
+  'Occupational Therapist',
+  'Ophthalmic Medical Technician',
+  'Ophthalmologist',
+  'Optician',
+  'Optometrist',
+  'Orthodontist',
+  'Orthopedic Surgeon',
+  'Orthotist/Prosthetist',
+  'Paramedic',
+  'Pathologist',
+  'Pediatrician',
+  'Pharmaceutical Scientist',
+  'Pharmacist',
+  'Pharmacy Technician',
+  'Physical Therapist',
+  'Physician Assistant',
+  'Physiotherapist',
+  'Podiatrist',
+  'Prosthodontist',
+  'Psychiatric Technician',
+  'Psychiatrist',
+  'Psychologist',
+  'Public Health Practitioner',
+  'Radiation Therapist',
+  'Radiographer',
+  'Radiologist',
+  'Radiologic Technologist',
+  'Registered Nurse',
+  'Researcher',
+  'Respiratory Therapist',
+  'Social Worker',
+  'Sonographer',
+  'Speech and Language Therapist',
+  'Speech-Language Pathologist',
+  'Surgeon',
+  'Surgical Assistant',
+  'Surgical Technologist',
+  'Veterinarian',
+];
 
 const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' }) => {
   const location = useLocation();
@@ -31,11 +124,15 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [resolvingAccount, setResolvingAccount] = useState(false);
+  const [professionOpen, setProfessionOpen] = useState(false);
+  const [bankOpen, setBankOpen] = useState(false);
+  const [accountResolveError, setAccountResolveError] = useState('');
   const [banks, setBanks] = useState<{name: string, code: string}[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const lastAccountLookupRef = useRef('');
 
   const [paymentForm, setPaymentForm] = useState({
-    preferredPaymentMethod: 'Bank Transfer',
+    preferredPaymentMethod: 'Paystack',
     bankName: '',
     accountNumber: '',
     accountName: '',
@@ -55,6 +152,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     profileImageUrl: '',
     profession: '',
     currentPlaceOfWork: '',
+    workCityAddress: '',
     licenseNumber: '',
     yearsOfExperience: '',
   });
@@ -82,11 +180,12 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       profileImageUrl: principal?.profileImageUrl || '',
       profession: principal?.profession || '',
       currentPlaceOfWork: principal?.currentPlaceOfWork || '',
+      workCityAddress: principal?.workCityAddress || '',
       licenseNumber: principal?.licenseNumber || '',
       yearsOfExperience: principal?.yearsOfExperience || '',
     });
     setPaymentForm({
-      preferredPaymentMethod: principal?.preferredPaymentMethod || 'Bank Transfer',
+      preferredPaymentMethod: principal?.preferredPaymentMethod || 'Paystack',
       bankName: principal?.bankName || '',
       accountNumber: principal?.accountNumber || '',
       accountName: principal?.accountName || '',
@@ -125,17 +224,40 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     
     const resolveAccount = async () => {
       const { bankName, accountNumber } = paymentForm;
-      if (bankName.trim().length > 2 && accountNumber.trim().length === 10) {
+      const selectedBank = banks.find((bank) => bank.name === bankName);
+      const lookupKey = `${selectedBank?.code || bankName}:${accountNumber}`;
+
+      if (!bankName || accountNumber.trim().length !== 10) {
+        setResolvingAccount(false);
+        return;
+      }
+
+      if (paymentForm.accountName.trim() || lookupKey === lastAccountLookupRef.current) {
+        return;
+      }
+
+      if (banks.length > 0 && !selectedBank) {
+        setAccountResolveError('Please choose a valid bank from the list.');
+        return;
+      }
+
+      if (bankName.trim().length > 2 && accountNumber.trim().length === 10 && selectedBank?.code) {
+        lastAccountLookupRef.current = lookupKey;
         setResolvingAccount(true);
+        setAccountResolveError('');
         try {
           const response = await apiClient.get(`/api/v2/wallet/resolve-account`, {
-            params: { bankName, accountNumber }
+            params: { bankName, bankCode: selectedBank?.code, accountNumber }
           });
           if (isMounted && response.data?.success && response.data?.data?.accountName) {
             setPaymentForm(prev => ({ ...prev, accountName: response.data.data.accountName }));
           }
-        } catch (error) {
-          // Keep silent
+        } catch (error: any) {
+          if (isMounted) {
+            lastAccountLookupRef.current = '';
+            setPaymentForm(prev => ({ ...prev, accountName: '' }));
+            setAccountResolveError(getApiErrorMessage(error, 'We could not confirm the account name. Please check the bank and account number, then try again.'));
+          }
         } finally {
           if (isMounted) setResolvingAccount(false);
         }
@@ -147,7 +269,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [paymentForm.bankName, paymentForm.accountNumber]);
+  }, [banks, paymentForm.bankName, paymentForm.accountNumber, paymentForm.accountName]);
 
   const initials = useMemo(() => {
     const sourceName = `${profileForm.firstName} ${profileForm.lastName}`.trim() || (user as any)?.name || '';
@@ -156,6 +278,22 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : '';
     return (first + last).toUpperCase() || 'DN';
   }, [profileForm.firstName, profileForm.lastName, user]);
+
+  const professionOptions = useMemo(() => {
+    const currentProfession = profileForm.profession.trim();
+    const hasCurrentProfession = healthcareProfessionOptions.some(
+      (profession) => profession.toLowerCase() === currentProfession.toLowerCase()
+    );
+
+    return currentProfession && !hasCurrentProfession
+      ? [currentProfession, ...healthcareProfessionOptions]
+      : healthcareProfessionOptions;
+  }, [profileForm.profession]);
+
+  const selectedBank = useMemo(
+    () => banks.find((bank) => bank.name === paymentForm.bankName),
+    [banks, paymentForm.bankName]
+  );
 
   const saveProfile = async () => {
     try {
@@ -205,26 +343,11 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     }
   };
 
-  const savePaymentMethod = async () => {
-    try {
-      setSavingSection('payment-method');
-      const principal = await principalService.updateMe({
-        preferredPaymentMethod: paymentForm.preferredPaymentMethod,
-      });
-      hydrateProfile(principal);
-      toast.success('Payment method updated');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update payment method');
-    } finally {
-      setSavingSection(null);
-    }
-  };
-
   const saveBankDetails = async () => {
     try {
       setSavingSection('bank-details');
       const principal = await principalService.updateMe({
-        preferredPaymentMethod: paymentForm.preferredPaymentMethod,
+        preferredPaymentMethod: 'Paystack',
         bankName: paymentForm.bankName,
         accountNumber: paymentForm.accountNumber,
         accountName: paymentForm.accountName,
@@ -312,7 +435,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-6 pt-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-2 pt-1">
           <TabsContent value="profile">
             <Card>
               <div className="p-6 border-b">
@@ -383,12 +506,60 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Profession</label>
-                      <Input value={profileForm.profession} onChange={(e) => setProfileForm((prev) => ({ ...prev, profession: e.target.value }))} placeholder="Enter profession" />
+                      <Popover open={professionOpen} onOpenChange={setProfessionOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={professionOpen}
+                            className="h-10 w-full justify-between border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-950 shadow-sm hover:bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                          >
+                            <span className={cn('truncate', !profileForm.profession && 'text-slate-500')}>
+                              {profileForm.profession || 'Search or select profession'}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-500" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search healthcare profession..." />
+                            <CommandList className="max-h-72 overflow-y-auto">
+                              <CommandEmpty>No profession found.</CommandEmpty>
+                              <CommandGroup>
+                                {professionOptions.map((profession) => (
+                                  <CommandItem
+                                    key={profession}
+                                    value={profession}
+                                    onSelect={() => {
+                                      setProfileForm((prev) => ({ ...prev, profession }));
+                                      setProfessionOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        profileForm.profession === profession ? 'opacity-100' : 'opacity-0'
+                                      )}
+                                    />
+                                    <span>{profession}</span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Current Place of Work</label>
                       <Input value={profileForm.currentPlaceOfWork} onChange={(e) => setProfileForm((prev) => ({ ...prev, currentPlaceOfWork: e.target.value }))} placeholder="Enter current place of work" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Work City Address</label>
+                      <Input value={profileForm.workCityAddress} onChange={(e) => setProfileForm((prev) => ({ ...prev, workCityAddress: e.target.value }))} placeholder="Enter work city address" />
                     </div>
 
                     <div>
@@ -413,10 +584,6 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
 
           <TabsContent value="settings">
             <Card>
-              <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">Account Settings</h3>
-                <p className="mt-1 text-sm text-gray-500">Manage your profile, payout setup, security, notifications, and support.</p>
-              </div>
               <div className="p-6">
                 <Accordion
                   type="single"
@@ -483,48 +650,66 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                     </AccordionTrigger>
                     <AccordionContent className="pb-4">
                       <div className="space-y-4">
-                        <div className="rounded-md border p-4 bg-gray-50 space-y-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Primary payout account</p>
-                            <p className="text-xs text-gray-500">Connect the account you want withdrawals paid into.</p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Preferred Payment Method</label>
-                            <select
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              value={paymentForm.preferredPaymentMethod}
-                              onChange={(e) => setPaymentForm((prev) => ({ ...prev, preferredPaymentMethod: e.target.value }))}
-                            >
-                              {paymentMethodOptions.map((option) => (
-                                <option key={option} value={option}>{option}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <Button variant="outline" size="sm" type="button" onClick={savePaymentMethod} disabled={savingSection === 'payment-method'}>
-                            {savingSection === 'payment-method' && <LoadingSpinner className="mr-2" />}
-                            {savingSection === 'payment-method' ? 'Saving...' : 'Change Payment Method'}
-                          </Button>
-                        </div>
-
                         <div className="space-y-3 rounded-md border p-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                            <select
-                              value={paymentForm.bankName}
-                              onChange={(e) => setPaymentForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <option value="" disabled>Select a bank</option>
-                              {banks.map((bank) => (
-                                <option key={bank.code} value={bank.name}>{bank.name}</option>
-                              ))}
-                            </select>
+                            <Popover open={bankOpen} onOpenChange={setBankOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={bankOpen}
+                                  className="h-10 w-full justify-between border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-950 shadow-sm hover:bg-white focus-visible:ring-0 focus-visible:ring-offset-0"
+                                >
+                                  <span className={cn('truncate', !paymentForm.bankName && 'text-slate-500')}>
+                                    {paymentForm.bankName || 'Search or select bank'}
+                                  </span>
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-500" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                  <CommandInput placeholder="Search bank name..." />
+                                  <CommandList className="max-h-72 overflow-y-auto">
+                                    <CommandEmpty>No bank found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {banks.map((bank) => (
+                                        <CommandItem
+                                          key={bank.code}
+                                          value={bank.name}
+                                          onSelect={() => {
+                                            setPaymentForm((prev) => ({ ...prev, bankName: bank.name, accountName: '' }));
+                                            setAccountResolveError('');
+                                            setBankOpen(false);
+                                          }}
+                                        >
+                                          <Check
+                                            className={cn(
+                                              'mr-2 h-4 w-4',
+                                              selectedBank?.code === bank.code ? 'opacity-100' : 'opacity-0'
+                                            )}
+                                          />
+                                          <span>{bank.name}</span>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-                            <Input value={paymentForm.accountNumber} onChange={(e) => setPaymentForm((prev) => ({ ...prev, accountNumber: e.target.value.replace(/[^0-9]/g, '').slice(0, 10) }))} placeholder="Enter 10-digit account number" />
+                            <Input
+                              value={paymentForm.accountNumber}
+                              onChange={(e) => {
+                                const accountNumber = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+                                setPaymentForm((prev) => ({ ...prev, accountNumber, accountName: '' }));
+                                setAccountResolveError('');
+                              }}
+                              placeholder="Enter 10-digit account number"
+                            />
                           </div>
                           <div className="relative">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
@@ -532,7 +717,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                               value={paymentForm.accountName} 
                               readOnly={true} 
                               onChange={(e) => setPaymentForm((prev) => ({ ...prev, accountName: e.target.value }))} 
-                              placeholder={resolvingAccount ? "Resolving..." : "Automatically fetched"} 
+                              placeholder={resolvingAccount ? "Resolving..." : ""} 
                               className="bg-gray-50 opacity-90 cursor-not-allowed" 
                             />
                             {resolvingAccount && (
@@ -540,10 +725,13 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                                 <LoadingSpinner className="h-4 w-4 text-blue-500" />
                               </div>
                             )}
+                            {accountResolveError && (
+                              <p className="mt-1 text-xs text-red-600">{accountResolveError}</p>
+                            )}
                           </div>
-                          <Button variant="outline" type="button" onClick={saveBankDetails} disabled={savingSection === 'bank-details' || resolvingAccount}>
+                          <Button type="button" onClick={saveBankDetails} disabled={savingSection === 'bank-details' || resolvingAccount || !paymentForm.accountName} className="bg-emerald-600 text-white hover:bg-emerald-700">
                             {savingSection === 'bank-details' && <LoadingSpinner className="mr-2" />}
-                            {savingSection === 'bank-details' ? 'Saving...' : 'Edit Bank Account Details'}
+                            {savingSection === 'bank-details' ? 'Saving...' : 'Update Bank Account Details'}
                           </Button>
                         </div>
                       </div>

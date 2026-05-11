@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { api } from "@/hooks/researcher/useApi";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export function AuthModal({ isOpen, onClose, onAuthenticated }: AuthModalProps) 
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error?.response?.data?.error || error?.message || "Login failed",
+        description: getApiErrorMessage(error, "Login failed. Please check your details and try again."),
         variant: "destructive",
       });
     }
@@ -92,10 +93,7 @@ export function AuthModal({ isOpen, onClose, onAuthenticated }: AuthModalProps) 
     } catch (error: any) {
       toast({
         title: "Registration failed",
-        description:
-          error?.response?.data?.error ||
-          error?.message ||
-          "An error occurred during registration",
+        description: getApiErrorMessage(error, "Registration failed. Please check your details and try again."),
         variant: "destructive",
       });
     }
