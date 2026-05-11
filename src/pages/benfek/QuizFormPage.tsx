@@ -965,6 +965,7 @@ const QuizFormPage: React.FC = () => {
         lastName,
         email,
         phone,
+        quizCode: validatedQuizCode || undefined,
         password: finalLogin.password,
         confirmPassword: finalLogin.confirmPassword,
       });

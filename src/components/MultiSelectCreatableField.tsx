@@ -79,7 +79,7 @@ export const MultiSelectCreatableField: React.FC<MultiSelectCreatableProps> = ({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+        <PopoverContent align="start" className="z-[120] w-[var(--radix-popover-trigger-width)] p-0">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder={`Search or add ${label.toLowerCase()}`}

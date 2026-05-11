@@ -40,9 +40,12 @@ import AddBenfekPage from "./pages/principal/add-benfek";
 import BenfeksPage from "./pages/principal/benfeks";
 import EarningsPage from "./pages/principal/earnings";
 import PodcastsPage from "./pages/principal/podcasts";
+import CreatePodcastPage from "./pages/principal/create-podcast";
 import MedicationsPage from "./pages/principal/medications";
 import PurchasesPage from "./pages/principal/purchases";
 import ArticlesPage from "./pages/principal/articles";
+import CreateArticlePage from "./pages/principal/create-article";
+import VoucherPage from "./pages/principal/VoucherPage";
 import WithdrawPage from "./pages/principal/withdraw";
 import MyProfilePage from "./pages/principal/my-profile";
 
@@ -289,6 +292,14 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/principal/podcasts/create"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreatePodcastPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
                   path="/principal/medications"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
@@ -318,6 +329,22 @@ const App = () => (
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <ArticlesPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/principal/articles/create"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreateArticlePage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/principal/voucher"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <VoucherPage />
                     </RoleBasedRoute>
                   }
                 />
