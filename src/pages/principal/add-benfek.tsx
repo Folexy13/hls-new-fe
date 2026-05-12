@@ -407,7 +407,7 @@ const AddBenfekPage: React.FC = () => {
       </div> */}
 
       {/* Fixed header background so scrolling content never shows between the back button and the tabs. */}
-      <div className="fixed left-0 right-0 top-[65px] z-30 h-[92px] bg-gray-50" />
+      <div className="fixed left-0 right-0 top-[65px] z-30 h-[78px] bg-gray-50" />
 
       <div className="fixed left-0 right-0 top-[65px] z-30 bg-transparent px-3 pt-2">
         <BackToDashboardButton
@@ -416,7 +416,7 @@ const AddBenfekPage: React.FC = () => {
         />
       </div>
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 sm:pt-14 lg:px-8 lg:pt-14 sm:pb-8">
         {isSuccess ? (
           <Card className="max-w-3xl mx-auto">
             <div className="p-6 flex flex-col items-center text-center">
@@ -452,13 +452,13 @@ const AddBenfekPage: React.FC = () => {
                 onValueChange={setActiveTab}
                 className="max-w-3xl mx-auto"
               >
-                <TabsList className="grid grid-cols-2 w-[92vw] bg-white shadow-sm border border-slate-200 fixed top-28 left-1/2 -translate-x-1/2 z-30">
+                <TabsList className="grid grid-cols-2 w-[92vw] bg-white shadow-sm border border-slate-200 fixed top-[104px] left-1/2 -translate-x-1/2 z-30">
                   <TabsTrigger value="manual">Manual Entry</TabsTrigger>
                   <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
                 </TabsList>
 
                 {/* Manual Entry Tab */}
-                <TabsContent value="manual">
+                <TabsContent value="manual" className="mt-0">
                   <Card className="border border-slate-200 shadow-sm">
                     <div className="p-6 border-b bg-white">
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -474,9 +474,9 @@ const AddBenfekPage: React.FC = () => {
                           </>
                         )}
                       </h3>
-                      {manualStep === 0 && (
+                      {manualStep === 1 && (
                         <p className="text-sm text-gray-500 mt-1">
-                          Enter the details of the benfek you want to add to your network.
+                          Add any current health condition and other health factors that may affect recommendations.
                         </p>
                       )}
                     </div>
@@ -627,6 +627,28 @@ const AddBenfekPage: React.FC = () => {
 
                           {manualStep === 1 && (
                             <div>
+                              <div className="mb-4">
+                                <FormField
+                                  control={form.control}
+                                  name="hasCurrentCondition"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        <MultiSelectCreatableField
+                                          label="Current Health Condition"
+                                          placeholder="Select or add current health conditions"
+                                          options={HEALTH_FIELD_OPTIONS.hasCurrentCondition}
+                                          value={field.value ?? []}
+                                          onChange={field.onChange}
+                                          description="Select every ongoing condition that applies, or create a new one."
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                               <FormField
                                 control={form.control}
@@ -704,28 +726,6 @@ const AddBenfekPage: React.FC = () => {
                                 )}
                               />
                               </div>
-
-                              <div className="mt-4">
-                                <FormField
-                                control={form.control}
-                                name="hasCurrentCondition"
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      <MultiSelectCreatableField
-                                        label="Current Health Condition"
-                                        placeholder="Select or add current health conditions"
-                                        options={HEALTH_FIELD_OPTIONS.hasCurrentCondition}
-                                        value={field.value ?? []}
-                                        onChange={field.onChange}
-                                        description="Select every ongoing condition that applies, or create a new one."
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              </div>
                             </div>
                           )}
 
@@ -778,7 +778,7 @@ const AddBenfekPage: React.FC = () => {
                 </TabsContent>
 
                 {/* Bulk Upload Tab */}
-                <TabsContent value="bulk">
+                <TabsContent value="bulk" className="mt-0">
                   <Card className="border border-slate-200 shadow-sm">
                     <div className="p-6 border-b bg-white">
                       <h3 className="text-lg font-semibold text-gray-900 flex items-center">

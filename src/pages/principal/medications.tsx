@@ -496,7 +496,7 @@ const MedicationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 min-h-screen bg-gray-50 pb-20 sm:pb-8 pt-[70px]">
+    <div className="flex-1 min-h-screen bg-gray-50 pb-20 sm:pb-8 pt-[100px]">
       {/* Fixed Header (Back + Title) */}
       <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
@@ -524,7 +524,7 @@ const MedicationsPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8 pt-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-2 pt-1">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
@@ -760,7 +760,7 @@ const MedicationsPage: React.FC = () => {
           </div>
 
           {/* Mobile Accordion View - Visible only on mobile */}
-          <div className="md:hidden space-y-2 p-2">
+          <div className="md:hidden space-y-2 px-2 pb-2 pt-[2px]">
             {isLoading ? (
               <AccordionSkeleton />
             ) : medications.length === 0 ? (

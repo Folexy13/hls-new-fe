@@ -8,8 +8,12 @@ export interface PrincipalProfilePayload {
   profileImageUrl?: string;
   profession?: string;
   currentPlaceOfWork?: string;
+  workCityAddress?: string;
   licenseNumber?: string;
   yearsOfExperience?: string;
+  referPharmacy?: boolean;
+  referredPharmacyName?: string;
+  referredPharmacyPhone?: string;
   preferredPaymentMethod?: string;
   bankName?: string;
   accountNumber?: string;

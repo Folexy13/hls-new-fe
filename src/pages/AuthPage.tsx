@@ -17,6 +17,7 @@ const SignInPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
   const { login, isAuthenticated, user } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,9 +60,10 @@ const SignInPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationMessage('');
     
     if (!email || !password) {
-      toast.error('Please fill in all fields');
+      setValidationMessage('Please fill in all fields');
       return;
     }
 
@@ -110,7 +112,7 @@ const SignInPage = () => {
       const from = location.state?.from?.pathname || redirectPath;
       navigate(from, { replace: true });
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Unable to sign in. Please try again.'));
+      setValidationMessage(getApiErrorMessage(error, 'Unable to sign in. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -130,9 +132,15 @@ const SignInPage = () => {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (validationMessage) setValidationMessage('');
+              }}
               placeholder="Enter your email"
               disabled={isLoading}
+              aria-invalid={Boolean(validationMessage)}
+              aria-describedby={validationMessage ? 'signin-validation-message' : undefined}
+              className={validationMessage ? 'border-red-500 focus-visible:ring-red-500' : undefined}
             />
           </div>
           <div>
@@ -142,9 +150,15 @@ const SignInPage = () => {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (validationMessage) setValidationMessage('');
+                }}
                 placeholder="Enter your password"
                 disabled={isLoading}
+                aria-invalid={Boolean(validationMessage)}
+                aria-describedby={validationMessage ? 'signin-validation-message' : undefined}
+                className={validationMessage ? 'border-red-500 pr-10 focus-visible:ring-red-500' : 'pr-10'}
               />
               <button
                 type="button"
@@ -156,6 +170,15 @@ const SignInPage = () => {
               </button>
             </div>
           </div>
+          {validationMessage && (
+            <div
+              id="signin-validation-message"
+              role="alert"
+              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"
+            >
+              {validationMessage}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <LoadingSpinner className="mr-2" />}
             {isLoading ? 'Signing In...' : 'Sign In'}

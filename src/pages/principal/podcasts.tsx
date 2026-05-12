@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -18,6 +19,7 @@ import {
   Pause, Clock, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
+import { contentService } from '@/services/contentService';
 
 // Define the Podcast type
 type Podcast = {
@@ -28,6 +30,8 @@ type Podcast = {
   duration: string;
   publishDate: string;
   status: string;
+  audioUrl?: string;
+  tags?: Record<string, string[]>;
   listens: number;
 };
 
@@ -55,6 +59,7 @@ const mockPodcasts: Podcast[] = Array(50).fill(0).map((_, i) => ({
 }));
 
 const PodcastsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,15 +73,32 @@ const PodcastsPage: React.FC = () => {
   
   const itemsPerPage = 10;
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setPodcasts(mockPodcasts);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const loadPodcasts = async () => {
+      setIsLoading(true);
+      try {
+        const rows = await contentService.getPrincipalPodcasts();
+        setPodcasts(rows.map((podcast: any) => ({
+          id: podcast.id,
+          title: podcast.title,
+          host: podcast.host || 'Principal',
+          category: podcast.category || 'Wellness',
+          duration: podcast.duration || 'Not set',
+          publishDate: podcast.createdAt ? new Date(podcast.createdAt).toLocaleDateString() : 'Recently',
+          status: podcast.status === 'published' ? 'Published' : podcast.status === 'scheduled' ? 'Scheduled' : podcast.status === 'archived' ? 'Archived' : 'Draft',
+          audioUrl: podcast.audioUrl || '',
+          tags: podcast.tags || {},
+          listens: Number(podcast.listens || 0),
+        })));
+      } catch (error) {
+        console.error('Failed to load podcasts:', error);
+        setPodcasts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPodcasts();
   }, []);
 
   // Handle sorting
@@ -158,14 +180,14 @@ const PodcastsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
       {/* Fixed Header (Back + Title) */}
       <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
           <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Podcasts</h1>
-            <Button className="flex items-center gap-2 h-9 px-4">
+            <Button className="flex items-center gap-2 h-9 px-4" onClick={() => navigate('/principal/podcasts/create')}>
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Podcast</span>
               <span className="sm:hidden">Create</span>
@@ -175,7 +197,7 @@ const PodcastsPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-3">
         <Card className="overflow-hidden">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
@@ -338,6 +360,11 @@ const PodcastsPage: React.FC = () => {
                         <div className="flex flex-col min-w-0 items-end md:items-center">
                           <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
                           <div className="mt-1">{renderStatusBadge(podcast.status)}</div>
+                        </div>
+                        <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
+                          {Object.values(podcast.tags || {}).flat().length > 0
+                            ? `Tags: ${Object.values(podcast.tags || {}).flat().join(', ')}`
+                            : 'Visible to all your Benfeks'}
                         </div>
                       </div>
                     </AccordionContent>

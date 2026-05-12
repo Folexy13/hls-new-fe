@@ -238,6 +238,14 @@ const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chew
 const addMoreButtonClass =
   'rounded-full border border-lime-500 bg-lime-300 px-4 py-1.5 text-xs font-extrabold text-lime-950 shadow-sm transition hover:bg-lime-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime-500 focus-visible:ring-offset-2';
 
+const addUniqueOption = (options: string[], value: string) => {
+  const normalizedValue = value.trim().toLowerCase();
+  if (!normalizedValue) return options;
+  return options.some((option) => option.trim().toLowerCase() === normalizedValue)
+    ? options
+    : [...options, value.trim()];
+};
+
 const getPersistedQuizValue = (key: string) => {
   const directValue = sessionStorage.getItem(key) || localStorage.getItem(key);
   if (directValue) return directValue;
@@ -271,8 +279,21 @@ const QuizFormPage: React.FC = () => {
     (location.state as { includeGenderAge?: boolean } | null)?.includeGenderAge
   );
   const [nutrientStep, setNutrientStep] = useState(includeGenderAge ? 0 : 1);
-  const [lifestyle, setLifestyle] = useState({ habit: [], fun: [], routine: [], career: '' });
-  const [preference, setPreference] = useState({ drugForm: [], budgetRange: '' });
+  const [lifestyle, setLifestyle] = useState<{ habit: string[]; fun: string[]; routine: string[]; career: string }>({
+    habit: [],
+    fun: [],
+    routine: [],
+    career: '',
+  });
+  const [preference, setPreference] = useState<{ drugForm: string[]; budgetRange: string }>({
+    drugForm: [],
+    budgetRange: '',
+  });
+  const [habitOptionList, setHabitOptionList] = useState<string[]>(habitOptions);
+  const [funOptionList, setFunOptionList] = useState<string[]>(funOptions);
+  const [desireOptionList, setDesireOptionList] = useState<string[]>(desireOptions);
+  const [careerOptionList, setCareerOptionList] = useState<string[]>(careerOptions);
+  const [drugFormOptionList, setDrugFormOptionList] = useState<string[]>(drugFormOptions);
   const [showCustomHabit, setShowCustomHabit] = useState(false);
   const [customHabit, setCustomHabit] = useState('');
   const [showCustomFun, setShowCustomFun] = useState(false);
@@ -431,28 +452,16 @@ const QuizFormPage: React.FC = () => {
     }
   };
 
-  const handleNutrientSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!finalGameCompleted) {
-      beginGame(null);
-      return;
-    }
-    if (!validatedQuizCode) {
-      toast.error('Missing quiz code. Please validate your code again.');
-      navigate('/assessment');
-      return;
-    }
-
+  const buildCompleteQuizPayload = () => {
     const budgetRangeMax = (() => {
       const matches = preference.budgetRange.match(/\d+/g);
       if (!matches || matches.length === 0) return 0;
       return Number(matches[matches.length - 1]);
     })();
 
-    const payload = {
+    return {
       code: validatedQuizCode,
       basics: {
-        // nickname: basic.nickname || undefined,
         weight: String(basic.weight || validatedBenfekWeight),
         height: String(basic.height || validatedBenfekHeight),
       },
@@ -467,6 +476,21 @@ const QuizFormPage: React.FC = () => {
         budget: budgetRangeMax,
       },
     };
+  };
+
+  const handleNutrientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!finalGameCompleted) {
+      beginGame(null);
+      return;
+    }
+    if (!validatedQuizCode) {
+      toast.error('Missing quiz code. Please validate your code again.');
+      navigate('/assessment');
+      return;
+    }
+
+    const payload = buildCompleteQuizPayload();
 
     if (!payload.preferences.budget || payload.preferences.budget <= 0) {
       toast.error('Please enter a valid budget.');
@@ -939,11 +963,19 @@ const QuizFormPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      if (validatedQuizCode) {
+        const quizPayload = buildCompleteQuizPayload();
+        if (quizPayload.preferences.budget > 0) {
+          await quizService.submitQuizData(quizPayload);
+        }
+      }
+
       const registerResponse = await apiClient.post('/api/v2/auth/register-benfek-unreferred', {
         firstName,
         lastName,
         email,
         phone,
+        quizCode: validatedQuizCode || undefined,
         password: finalLogin.password,
         confirmPassword: finalLogin.confirmPassword,
       });
@@ -1149,7 +1181,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openLifestyleSection === 'habit' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {habitOptions.map((option) => {
+                        {habitOptionList.map((option) => {
                           const selected = lifestyle.habit.includes(option);
                           return (
                             <button
@@ -1194,6 +1226,7 @@ const QuizFormPage: React.FC = () => {
                           onClick={() => {
                             const value = customHabit.trim();
                             if (!value) return;
+                            setHabitOptionList((prev) => addUniqueOption(prev, value));
                             setLifestyle((prev) => ({
                               ...prev,
                               habit: prev.habit.includes(value) ? prev.habit : [...prev.habit, value],
@@ -1224,7 +1257,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openLifestyleSection === 'fun' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {funOptions.map((option) => {
+                        {funOptionList.map((option) => {
                           const selected = lifestyle.fun.includes(option);
                           return (
                             <button
@@ -1269,6 +1302,7 @@ const QuizFormPage: React.FC = () => {
                           onClick={() => {
                             const value = customFun.trim();
                             if (!value) return;
+                            setFunOptionList((prev) => addUniqueOption(prev, value));
                             setLifestyle((prev) => ({
                               ...prev,
                               fun: prev.fun.includes(value) ? prev.fun : [...prev.fun, value],
@@ -1299,7 +1333,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openLifestyleSection === 'routine' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {desireOptions.map((option) => {
+                        {desireOptionList.map((option) => {
                           const selected = lifestyle.routine.includes(option);
                           return (
                             <button
@@ -1344,6 +1378,7 @@ const QuizFormPage: React.FC = () => {
                           onClick={() => {
                             const value = customRoutine.trim();
                             if (!value) return;
+                            setDesireOptionList((prev) => addUniqueOption(prev, value));
                             setLifestyle((prev) => ({
                               ...prev,
                               routine: prev.routine.includes(value)
@@ -1376,7 +1411,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openLifestyleSection === 'career' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {careerOptions.map((option) => (
+                        {careerOptionList.map((option) => (
                           <button
                             key={option}
                             type="button"
@@ -1411,6 +1446,7 @@ const QuizFormPage: React.FC = () => {
                           onClick={() => {
                             const value = customCareer.trim();
                             if (!value) return;
+                            setCareerOptionList((prev) => addUniqueOption(prev, value));
                             setLifestyle((prev) => ({ ...prev, career: value }));
                             setCustomCareer('');
                             setShowCustomCareer(false);
@@ -1452,7 +1488,7 @@ const QuizFormPage: React.FC = () => {
                     </button>
                     {openPreferenceSection === 'drugForm' && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {drugFormOptions.map((option) => {
+                        {drugFormOptionList.map((option) => {
                           const selected = preference.drugForm.includes(option);
                           return (
                             <button
@@ -1497,6 +1533,7 @@ const QuizFormPage: React.FC = () => {
                           onClick={() => {
                             const value = customDrugForm.trim();
                             if (!value) return;
+                            setDrugFormOptionList((prev) => addUniqueOption(prev, value));
                             setPreference((prev) => ({
                               ...prev,
                               drugForm: prev.drugForm.includes(value)

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -17,6 +18,7 @@ import {
   Plus, Edit, Trash2, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
+import { contentService } from '@/services/contentService';
 
 // Define the Article type
 type Article = {
@@ -26,6 +28,8 @@ type Article = {
   author: string;
   status: string;
   publishDate: string;
+  createdAt?: string;
+  tags?: Record<string, string[]>;
   views: number;
   likes: number;
 };
@@ -54,6 +58,7 @@ const mockArticles: Article[] = Array(50).fill(0).map((_, i) => ({
 }));
 
 const ArticlesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [articles, setArticles] = useState<Article[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,15 +71,32 @@ const ArticlesPage: React.FC = () => {
   
   const itemsPerPage = 10;
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setArticles(mockArticles);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const loadArticles = async () => {
+      setIsLoading(true);
+      try {
+        const rows = await contentService.getPrincipalArticles();
+        setArticles(rows.map((article: any) => ({
+          id: article.id,
+          title: article.title,
+          category: article.category,
+          author: article.author || 'Principal',
+          status: article.status === 'published' ? 'Published' : article.status === 'archived' ? 'Archived' : 'Draft',
+          publishDate: article.createdAt ? new Date(article.createdAt).toLocaleDateString() : 'Recently',
+          createdAt: article.createdAt,
+          tags: article.tags || {},
+          views: Number(article.views || 0),
+          likes: Number(article.likes || 0),
+        })));
+      } catch (error) {
+        console.error('Failed to load articles:', error);
+        setArticles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadArticles();
   }, []);
 
   // Handle sorting
@@ -161,14 +183,14 @@ const ArticlesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
       {/* Fixed Header (Back + Title) */}
       <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
           <BackToDashboardButton className="text-black/90 hover:text-black/80" />
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Articles</h1>
-            <Button className="flex items-center gap-2 h-9 px-4">
+            <Button className="flex items-center gap-2 h-9 px-4" onClick={() => navigate('/principal/articles/create')}>
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Create Article</span>
               <span className="sm:hidden">Create</span>
@@ -178,7 +200,7 @@ const ArticlesPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-3">
         <Card className="overflow-hidden">
           {/* Table Controls */}
           <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
@@ -277,10 +299,10 @@ const ArticlesPage: React.FC = () => {
                 }
                 className="space-y-2"
               >
-                {paginatedData.map((article, index) => (
+                {paginatedData.map((article) => (
                   <AccordionItem
                     key={article.id}
-                    value={`article-${index}`}
+                    value={`article-${article.id}`}
                     className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
                   >
                     <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
@@ -319,6 +341,11 @@ const ArticlesPage: React.FC = () => {
                           <div className="mt-1">{renderStatusBadge(article.status)}</div>
                         </div>
                         <div className="col-span-2 md:col-span-4 flex w-full items-center justify-between gap-3 justify-self-start">
+                          <div className="min-w-0 flex-1 text-xs text-slate-500">
+                            {Object.values(article.tags || {}).flat().length > 0
+                              ? `Tags: ${Object.values(article.tags || {}).flat().join(', ')}`
+                              : 'Visible to all your Benfeks'}
+                          </div>
                           <Button variant="ghost" size="sm" className="h-8 flex-1 px-3 text-sm font-semibold border">
                             Edit
                           </Button>

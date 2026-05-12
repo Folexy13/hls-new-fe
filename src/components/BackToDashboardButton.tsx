@@ -15,11 +15,15 @@ import {
 type BackToDashboardButtonProps = {
   isDirty?: boolean;
   className?: string;
+  dashboardPath?: string;
+  label?: string;
 };
 
 const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
   isDirty = false,
   className = '',
+  dashboardPath = '/principal',
+  label = 'Dashboard',
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -29,7 +33,7 @@ const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
       setOpen(true);
       return;
     }
-    navigate('/principal');
+    navigate(dashboardPath);
   };
 
   return (
@@ -40,7 +44,7 @@ const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
         className={`inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 ${className}`}
       >
         <ArrowLeft className="h-4 w-4" />
-        Dashboard
+        {label}
       </button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -53,7 +57,7 @@ const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Stay</AlertDialogCancel>
-            <AlertDialogAction onClick={() => navigate('/principal')}>
+            <AlertDialogAction onClick={() => navigate(dashboardPath)}>
               Leave page
             </AlertDialogAction>
           </AlertDialogFooter>

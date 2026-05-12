@@ -1,31 +1,78 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStore } from '../../store/useStore';
 import { useCart } from '../../hooks/useCart';
-import { Minus, Plus, Trash2, CreditCard, RefreshCw } from 'lucide-react';
+import { Trash2, CreditCard, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { apiClient } from '@/config/axios';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { paystackService } from '@/services/paystackService';
+import { getApiErrorMessage } from '@/utils/apiError';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { cartService } from '@/services/cartService';
 
 const CartPage = () => {
-  const { cartItems, cartTotal, updateCartQuantity, removeFromCart, clearCart, setCartFromBackend, user } = useStore();
+  const { clearCart, setCartFromBackend, user } = useStore();
   const { cart: apiCart, loading, error, refetch } = useCart();
-  const [showCheckout, setShowCheckout] = useState(false);
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState(false);
   const [clearingCart, setClearingCart] = useState(false);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
-    if (newQuantity > 0) {
-      updateCartQuantity(productId, newQuantity);
-    }
-  };
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const paymentMode = searchParams.get('payment');
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+
+    if (paymentMode !== 'cart' || !reference) return;
+
+    let cancelled = false;
+
+    const verifyCartPayment = async () => {
+      try {
+        setVerifyingPayment(true);
+        await paystackService.verifyCheckout(reference);
+        if (cancelled) return;
+        setPaymentSuccess(true);
+        setShowPaymentStatus(true);
+        setCartFromBackend([]);
+        await refetch();
+        toast.success('Payment successful. Your order has been placed.');
+      } catch (err) {
+        if (cancelled) return;
+        setPaymentSuccess(false);
+        setShowPaymentStatus(true);
+        toast.error(getApiErrorMessage(err, 'Could not verify payment. Please try again.'));
+      } finally {
+        if (!cancelled) {
+          setVerifyingPayment(false);
+          const cleanedParams = new URLSearchParams(location.search);
+          cleanedParams.delete('payment');
+          cleanedParams.delete('reference');
+          cleanedParams.delete('trxref');
+          navigate(
+            {
+              pathname: location.pathname,
+              search: cleanedParams.toString() ? `?${cleanedParams.toString()}` : '',
+            },
+            { replace: true }
+          );
+        }
+      }
+    };
+
+    verifyCartPayment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.search, navigate, refetch, setCartFromBackend]);
 
   const handleCheckout = async () => {
     if (!user || !user.email) {
@@ -34,38 +81,22 @@ const CartPage = () => {
     }
     try {
       setCheckingOut(true);
-      const response = await apiClient.post('/api/v2/paystack/checkout', {});
-      const url = response.data?.data?.authorization_url;
+      const callbackUrl = `${window.location.origin}/cart?payment=cart`;
+      const result = await paystackService.initializeCartCheckout(callbackUrl);
+      const url = result?.data?.authorization_url || result?.authorization_url;
       if (url) {
         window.location.href = url;
       } else {
         toast.error('Failed to initialize payment.');
       }
-    } catch (error) {
-      toast.error('Failed to initialize payment.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Failed to initialize payment.'));
       setCheckingOut(false);
     }
   };
 
-  const handlePayment = async () => {
-    setShowCheckout(false);
-    // TODO: Integrate Paystack payment here
-    // Simulate payment processing
-    setTimeout(async () => {
-      const success = Math.random() > 0.3; // 70% success rate
-      setPaymentSuccess(success);
-      setShowPaymentStatus(true);
-      if (success) {
-        await clearCart();
-        toast.success('Payment successful!');
-      } else {
-        toast.error('Payment failed. Please try again.');
-      }
-    }, 2000);
-  };
-
   // Show loading state
-  if (loading) {
+  if (loading || verifyingPayment) {
     return (
       <div className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -73,7 +104,7 @@ const CartPage = () => {
             <CardContent className="py-12">
               <div className="flex items-center justify-center space-x-2">
                 <RefreshCw className="h-6 w-6 animate-spin text-emerald-600" />
-                <span className="text-lg text-gray-600">Loading your cart...</span>
+                <span className="text-lg text-gray-600">{verifyingPayment ? 'Confirming your payment...' : 'Loading your cart...'}</span>
               </div>
             </CardContent>
           </Card>
@@ -150,9 +181,9 @@ const CartPage = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                      {item.supplement.image ? (
+                      {item.supplement.image || item.supplement.imageUrl ? (
                         <img 
-                          src={item.supplement.image} 
+                          src={item.supplement.image || item.supplement.imageUrl} 
                           alt={item.supplement.name}
                           className="w-full h-full object-cover"
                         />
@@ -163,13 +194,13 @@ const CartPage = () => {
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{item.supplement.name}</h3>
                       <p className="text-sm text-gray-600">{item.supplement.description}</p>
-                      <p className="text-lg font-bold text-emerald-600">${item.supplement.price}</p>
+                      <p className="text-lg font-bold text-emerald-600">₦{Number(item.supplement.price).toLocaleString()}</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-600">Qty: {item.quantity}</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900">${(item.supplement.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold text-gray-900">₦{Number(item.supplement.price * item.quantity).toLocaleString()}</p>
                     </div>
                     {/* Remove from cart button */}
                     <Button
@@ -181,19 +212,18 @@ const CartPage = () => {
                         const itemId = item.id.toString();
                         setRemovingItemId(itemId);
                         try {
-                          await removeFromCart(itemId);
-                          await refetch();
-                          if (apiCart && apiCart.items) {
-                            setCartFromBackend(apiCart.items.map(i => ({
+                          await cartService.removeCartItem(Number(itemId));
+                          const refreshedCart = await cartService.getCart();
+                          setCartFromBackend((refreshedCart.cart?.items || []).map(i => ({
                               id: i.supplement.id.toString(),
                               name: i.supplement.name,
                               price: i.supplement.price,
-                              image: i.supplement.image,
+                              image: i.supplement.image || i.supplement.imageUrl || '',
                               description: i.supplement.description,
                               category: 'supplement',
                               quantity: i.quantity
                             })));
-                          }
+                          await refetch();
                         } finally {
                           setRemovingItemId(null);
                         }
@@ -217,7 +247,7 @@ const CartPage = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${apiCartTotal.toFixed(2)}</span>
+                  <span>₦{apiCartTotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
@@ -226,7 +256,7 @@ const CartPage = () => {
                 <div className="border-t pt-4">
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>${apiCartTotal.toFixed(2)}</span>
+                    <span>₦{apiCartTotal.toLocaleString()}</span>
                   </div>
                 </div>
                 <Button className="w-full" onClick={handleCheckout} disabled={checkingOut}>

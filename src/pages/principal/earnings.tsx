@@ -18,6 +18,7 @@ import {
   Users, ShoppingCart, DollarSign, ArrowUp, Filter,
   Info, X
 } from 'lucide-react';
+import { principalService } from '@/services/principalService';
 
 // Define the Earning type
 type Earning = {
@@ -30,8 +31,35 @@ type Earning = {
   commission: string;
 };
 
+type PrincipalIncomeSummary = {
+  walletBalance?: number;
+  withdrawableBalance?: number;
+  unresolvedCredits?: Array<{
+    id: number;
+    packName?: string;
+    benfekName?: string;
+    supplement?: string;
+    principalShare?: number;
+    date?: string;
+    status?: string;
+  }>;
+  withdrawals?: {
+    totalCompleted?: number;
+    count?: number;
+  };
+};
+
+const formatNaira = (amount: number) =>
+  new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
+
+const EARNINGS_REFRESH_INTERVAL_MS = 30000;
+
 // Mock data for earnings
-const mockEarnings: Earning[] = Array(50).fill(0).map((_, i) => ({
+const mockEarnings: Earning[] = Array(0).fill(0).map((_, i) => ({
   id: i + 1,
   source: ['Product Sale', 'Subscription', 'Referral Bonus', 'Commission', 'Service Fee'][Math.floor(Math.random() * 5)],
   benfek: `Benfek ${Math.floor(Math.random() * 20) + 1}`,
@@ -43,25 +71,25 @@ const mockEarnings: Earning[] = Array(50).fill(0).map((_, i) => ({
 
 // Mock data for charts
 const monthlyEarnings = [
-  { month: 'Jan', amount: 120000 },
-  { month: 'Feb', amount: 145000 },
-  { month: 'Mar', amount: 165000 },
-  { month: 'Apr', amount: 140000 },
-  { month: 'May', amount: 180000 },
-  { month: 'Jun', amount: 210000 },
-  { month: 'Jul', amount: 250000 },
-  { month: 'Aug', amount: 220000 },
-  { month: 'Sep', amount: 270000 },
-  { month: 'Oct', amount: 290000 },
-  { month: 'Nov', amount: 310000 },
-  { month: 'Dec', amount: 350000 },
+  { month: 'Jan', amount: 0 },
+  { month: 'Feb', amount: 0 },
+  { month: 'Mar', amount: 0 },
+  { month: 'Apr', amount: 0 },
+  { month: 'May', amount: 0 },
+  { month: 'Jun', amount: 0 },
+  { month: 'Jul', amount: 0 },
+  { month: 'Aug', amount: 0 },
+  { month: 'Sep', amount: 0 },
+  { month: 'Oct', amount: 0 },
+  { month: 'Nov', amount: 0 },
+  { month: 'Dec', amount: 0 },
 ];
 
 const categoryBreakdown = [
-  { category: 'Medications', percentage: 45 },
-  { category: 'Consultations', percentage: 25 },
-  { category: 'Subscriptions', percentage: 20 },
-  { category: 'Services', percentage: 10 },
+  { category: 'Medications', percentage: 0 },
+  { category: 'Consultations', percentage: null },
+  { category: 'Subscriptions', percentage: null },
+  { category: 'Services', percentage: 0 },
 ];
 
 const topSupplements = [
@@ -89,26 +117,66 @@ const EarningsPage: React.FC = () => {
   const [viewTab, setViewTab] = useState<'statistics' | 'performance'>('statistics');
   const [openBenfekId, setOpenBenfekId] = useState<number | null>(null);
   const [activeSlideExplanation, setActiveSlideExplanation] = useState<null | 'summary' | 'category' | 'peer'>(null);
+  const [incomeSummary, setIncomeSummary] = useState<PrincipalIncomeSummary | null>(null);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockEarnings.length / itemsPerPage);
 
-  // Peer rating benchmarks (until wired to real analytics)
-  const peerCurrent = 68;
-  const peerPotential = 92;
-  const peerAverage = 50;
+  const peerCurrent = 0;
+  const peerPotential = 0;
+  const peerAverage = 0;
 
   const closeSlideExplanation = () => setActiveSlideExplanation(null);
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setEarnings(mockEarnings);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    let isMounted = true;
+
+    const loadIncomeSummary = async (showInitialLoading = false) => {
+      if (showInitialLoading) setIsLoading(true);
+
+      try {
+        const summary: PrincipalIncomeSummary = await principalService.getIncomeSummary();
+        if (!isMounted) return;
+
+        setIncomeSummary(summary);
+        setEarnings((summary.unresolvedCredits || []).map((credit) => ({
+          id: credit.id,
+          source: credit.packName || credit.supplement || 'Nutrient pack',
+          benfek: credit.benfekName || 'N/A',
+          amount: formatNaira(Number(credit.principalShare || 0)),
+          date: credit.date || 'N/A',
+          category: 'Medications',
+          commission: 'N/A',
+        })));
+      } catch {
+        if (!isMounted) return;
+        setIncomeSummary(null);
+        setEarnings([]);
+      } finally {
+        if (isMounted && showInitialLoading) setIsLoading(false);
+      }
+    };
+
+    loadIncomeSummary(true);
+
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadIncomeSummary(false);
+      }
+    }, EARNINGS_REFRESH_INTERVAL_MS);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadIncomeSummary(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(refreshTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Handle sorting
@@ -133,6 +201,13 @@ const EarningsPage: React.FC = () => {
     if (a[sortField as keyof Earning] > b[sortField as keyof Earning]) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
+  const totalEarnings = Number(incomeSummary?.walletBalance || 0);
+  const completedWithdrawals = Number(incomeSummary?.withdrawals?.totalCompleted || 0);
+  const monthlyAverage = 0;
+  const activeBenfeks = 0;
+  const totalOrders = incomeSummary?.unresolvedCredits?.length || 0;
 
   // Paginate data
   const paginatedData = sortedData.slice(
@@ -170,7 +245,7 @@ const EarningsPage: React.FC = () => {
 
   // Render bar chart (simplified version)
   const renderBarChart = () => {
-    const maxAmount = Math.max(...monthlyEarnings.map(item => item.amount));
+    const maxAmount = Math.max(1, ...monthlyEarnings.map(item => item.amount));
     
     return (
       <div className="h-64 flex items-end justify-between gap-1 mt-4">
@@ -203,7 +278,7 @@ const EarningsPage: React.FC = () => {
         <div className="h-full w-full rounded-full overflow-hidden">
           {categoryBreakdown.map((item, index) => {
             const startPercentage = cumulativePercentage;
-            cumulativePercentage += item.percentage;
+            cumulativePercentage += item.percentage || 0;
             
             const colors = ['bg-emerald-500', 'bg-blue-500', 'bg-purple-500', 'bg-amber-500'];
             
@@ -234,7 +309,9 @@ const EarningsPage: React.FC = () => {
         {categoryBreakdown.map((item, index) => (
           <div key={index} className="flex items-center">
             <div className={`h-3 w-3 rounded-sm ${colors[index % colors.length]} mr-2`}></div>
-            <span className="text-sm text-gray-600">{item.category} ({item.percentage}%)</span>
+            <span className="text-sm text-gray-600">
+              {item.category} ({item.percentage === null ? 'N/A' : `${item.percentage}%`})
+            </span>
           </div>
         ))}
       </div>
@@ -242,7 +319,7 @@ const EarningsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16 pt-[70px]">
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
       {/* Fixed Header (Back + Tabs) */}
       <div className="fixed left-0 right-0 top-[70px] z-30 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-1 space-y-3">
@@ -304,14 +381,14 @@ const EarningsPage: React.FC = () => {
       </div> */}
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-8">
           {viewTab === 'statistics' ? (
             <>
               {/* Banner Carousel */}
         <div className="mb-8">
           <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
             <Card className="min-w-full snap-start overflow-hidden">
-              <div className="relative h-[60vh] min-h-[400px] sm:h-52 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+              <div className="relative h-[42vh] min-h-[280px] sm:h-36 w-full rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
                 <Button
                   type="button"
                   variant="outline"
@@ -365,16 +442,16 @@ const EarningsPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="h-full w-full py-5 px-3 flex flex-col gap-6">
+                <div className="h-full w-full py-3 px-3 flex flex-col gap-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm uppercase tracking-[0.25em] text-white/70">Earnings Summary</div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                      { title: 'Total Earnings', value: '₦5,750,000', change: '+15%', icon: DollarSign },
-                      { title: 'Monthly Average', value: '₦250,000', change: '+8%', icon: Calendar },
-                      { title: 'Active Benfeks', value: '124', change: '+12%', icon: Users },
-                      { title: 'Total Orders', value: '1,450', change: '+18%', icon: ShoppingCart },
+                      { title: 'Total Earnings', value: formatNaira(totalEarnings), change: '0%', icon: DollarSign },
+                      { title: 'Monthly Average', value: formatNaira(monthlyAverage), change: '0%', icon: Calendar },
+                      { title: 'Active Benfeks', value: String(activeBenfeks), change: '0%', icon: Users },
+                      { title: 'Total Orders', value: String(totalOrders), change: '0%', icon: ShoppingCart },
                     ].map((stat) => (
                       <div key={stat.title} className="rounded-xl bg-white/10 border border-white/10 p-2">
                         <div className="flex items-center gap-2">
@@ -484,17 +561,17 @@ const EarningsPage: React.FC = () => {
                         className="relative h-28 w-28 rounded-full"
                         style={{
                           background: `conic-gradient(
-                            #10b981 0% 45%,
-                            #3b82f6 45% 70%,
-                            #a855f7 70% 90%,
-                            #f59e0b 90% 100%
+                            #10b981 0% 0%,
+                            #3b82f6 0% 0%,
+                            #a855f7 0% 0%,
+                            #f59e0b 0% 0%
                           )`,
                         }}
                       >
                         <div className="absolute inset-3 rounded-full bg-slate-950 border border-white/10 flex flex-col items-center justify-center text-center px-2">
                           <p className="text-[10px] uppercase tracking-wider text-white/60 font-semibold">Top</p>
-                          <p className="text-sm font-bold text-white leading-tight">Medications</p>
-                          <p className="text-xs font-semibold text-emerald-300">45%</p>
+                          <p className="text-sm font-bold text-white leading-tight">N/A</p>
+                          <p className="text-xs font-semibold text-emerald-300">0%</p>
                         </div>
                       </div>
                     </div>
@@ -508,12 +585,14 @@ const EarningsPage: React.FC = () => {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-3">
                                 <p className="text-xs font-semibold text-slate-900 truncate">{item.category}</p>
-                                <p className="text-xs font-bold text-slate-950">{item.percentage}%</p>
+                                <p className="text-xs font-bold text-slate-950">
+                                  {item.percentage === null ? 'N/A' : `${item.percentage}%`}
+                                </p>
                               </div>
                               <div className="mt-1 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
                                 <div
                                   className={`h-full ${colors[index % colors.length]}`}
-                                  style={{ width: `${item.percentage}%` }}
+                                  style={{ width: `${item.percentage || 0}%` }}
                                 />
                               </div>
                             </div>
