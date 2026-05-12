@@ -11,6 +11,9 @@ export interface PrincipalProfilePayload {
   workCityAddress?: string;
   licenseNumber?: string;
   yearsOfExperience?: string;
+  referPharmacy?: boolean;
+  referredPharmacyName?: string;
+  referredPharmacyPhone?: string;
   preferredPaymentMethod?: string;
   bankName?: string;
   accountNumber?: string;

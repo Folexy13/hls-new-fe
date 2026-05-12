@@ -155,6 +155,9 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     workCityAddress: '',
     licenseNumber: '',
     yearsOfExperience: '',
+    referPharmacy: false,
+    referredPharmacyName: '',
+    referredPharmacyPhone: '',
   });
 
   useEffect(() => {
@@ -183,6 +186,9 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       workCityAddress: principal?.workCityAddress || '',
       licenseNumber: principal?.licenseNumber || '',
       yearsOfExperience: principal?.yearsOfExperience || '',
+      referPharmacy: Boolean(principal?.referPharmacy),
+      referredPharmacyName: principal?.referredPharmacyName || '',
+      referredPharmacyPhone: principal?.referredPharmacyPhone || '',
     });
     setPaymentForm({
       preferredPaymentMethod: principal?.preferredPaymentMethod || 'Paystack',
@@ -301,6 +307,8 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       const principal = await principalService.updateMe({
         ...profileForm,
         profileImageUrl: profileForm.profileImageUrl.trim() || undefined,
+        referredPharmacyName: profileForm.referPharmacy ? profileForm.referredPharmacyName.trim() : '',
+        referredPharmacyPhone: profileForm.referPharmacy ? profileForm.referredPharmacyPhone.trim() : '',
       });
       hydrateProfile(principal);
       setUser({
@@ -555,6 +563,47 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Current Place of Work</label>
                       <Input value={profileForm.currentPlaceOfWork} onChange={(e) => setProfileForm((prev) => ({ ...prev, currentPlaceOfWork: e.target.value }))} placeholder="Enter current place of work" />
+                    </div>
+
+                    <div className="space-y-3 rounded-lg border border-slate-200 p-4">
+                      <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={profileForm.referPharmacy}
+                          onChange={(e) => {
+                            const referPharmacy = e.target.checked;
+                            setProfileForm((prev) => ({
+                              ...prev,
+                              referPharmacy,
+                              referredPharmacyName: referPharmacy ? prev.referredPharmacyName : '',
+                              referredPharmacyPhone: referPharmacy ? prev.referredPharmacyPhone : '',
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                        />
+                        Refer Pharmacy
+                      </label>
+
+                      {profileForm.referPharmacy && (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Referred Pharmacy Name</label>
+                            <Input
+                              value={profileForm.referredPharmacyName}
+                              onChange={(e) => setProfileForm((prev) => ({ ...prev, referredPharmacyName: e.target.value }))}
+                              placeholder="Enter pharmacy name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Pharmacy Phone</label>
+                            <Input
+                              value={profileForm.referredPharmacyPhone}
+                              onChange={(e) => setProfileForm((prev) => ({ ...prev, referredPharmacyPhone: e.target.value }))}
+                              placeholder="Enter pharmacy phone"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div>

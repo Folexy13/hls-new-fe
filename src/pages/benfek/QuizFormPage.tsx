@@ -452,28 +452,16 @@ const QuizFormPage: React.FC = () => {
     }
   };
 
-  const handleNutrientSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!finalGameCompleted) {
-      beginGame(null);
-      return;
-    }
-    if (!validatedQuizCode) {
-      toast.error('Missing quiz code. Please validate your code again.');
-      navigate('/assessment');
-      return;
-    }
-
+  const buildCompleteQuizPayload = () => {
     const budgetRangeMax = (() => {
       const matches = preference.budgetRange.match(/\d+/g);
       if (!matches || matches.length === 0) return 0;
       return Number(matches[matches.length - 1]);
     })();
 
-    const payload = {
+    return {
       code: validatedQuizCode,
       basics: {
-        // nickname: basic.nickname || undefined,
         weight: String(basic.weight || validatedBenfekWeight),
         height: String(basic.height || validatedBenfekHeight),
       },
@@ -488,6 +476,21 @@ const QuizFormPage: React.FC = () => {
         budget: budgetRangeMax,
       },
     };
+  };
+
+  const handleNutrientSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!finalGameCompleted) {
+      beginGame(null);
+      return;
+    }
+    if (!validatedQuizCode) {
+      toast.error('Missing quiz code. Please validate your code again.');
+      navigate('/assessment');
+      return;
+    }
+
+    const payload = buildCompleteQuizPayload();
 
     if (!payload.preferences.budget || payload.preferences.budget <= 0) {
       toast.error('Please enter a valid budget.');
@@ -960,6 +963,13 @@ const QuizFormPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      if (validatedQuizCode) {
+        const quizPayload = buildCompleteQuizPayload();
+        if (quizPayload.preferences.budget > 0) {
+          await quizService.submitQuizData(quizPayload);
+        }
+      }
+
       const registerResponse = await apiClient.post('/api/v2/auth/register-benfek-unreferred', {
         firstName,
         lastName,

@@ -736,12 +736,17 @@ const BenfeksPage: React.FC = () => {
                 className="rounded-full h-11 px-8 bg-emerald-600 hover:bg-emerald-700"
                 onClick={() => {
                   setIsEditMode(true);
+                  const parseHealthField = (field: string | string[] | undefined) => {
+                    if (Array.isArray(field)) return field;
+                    if (typeof field === 'string' && field.trim() !== '') return field.split(',').map(s => s.trim()).filter(Boolean);
+                    return [];
+                  };
                   setEditFormData({
-                    allergies: Array.isArray(selectedBenfek.allergies) ? selectedBenfek.allergies : selectedBenfek.allergies ? selectedBenfek.allergies.split(',').map(s => s.trim()) : [],
-                    scares: Array.isArray(selectedBenfek.scares) ? selectedBenfek.scares : selectedBenfek.scares ? selectedBenfek.scares.split(',').map(s => s.trim()) : [],
-                    familyCondition: Array.isArray(selectedBenfek.familyCondition) ? selectedBenfek.familyCondition : selectedBenfek.familyCondition ? selectedBenfek.familyCondition.split(',').map(s => s.trim()) : [],
-                    medications: Array.isArray(selectedBenfek.medications) ? selectedBenfek.medications : selectedBenfek.medications ? selectedBenfek.medications.split(',').map(s => s.trim()) : [],
-                    currentConditions: Array.isArray(selectedBenfek.currentConditions) ? selectedBenfek.currentConditions : selectedBenfek.currentConditions ? selectedBenfek.currentConditions.split(',').map(s => s.trim()) : [],
+                    allergies: parseHealthField(selectedBenfek.allergies),
+                    scares: parseHealthField(selectedBenfek.scares),
+                    familyCondition: parseHealthField(selectedBenfek.familyCondition),
+                    medications: parseHealthField(selectedBenfek.medications),
+                    currentConditions: parseHealthField(selectedBenfek.currentConditions),
                   });
                 }}
               >
