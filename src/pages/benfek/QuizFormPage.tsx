@@ -996,8 +996,17 @@ const QuizFormPage: React.FC = () => {
         },
       });
 
-      toast.success('Login details and game points saved.');
-      navigate('/benfek/dashboard');
+      tokenManager.clearTokens();
+      toast.success('Account created successfully. Please sign in.');
+      navigate('/auth/signin', {
+        state: {
+          prefill: {
+            email,
+            password: finalLogin.password,
+          },
+        },
+        replace: true,
+      });
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to save login details. Please try again.'));
     } finally {

@@ -565,6 +565,21 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                       <Input value={profileForm.currentPlaceOfWork} onChange={(e) => setProfileForm((prev) => ({ ...prev, currentPlaceOfWork: e.target.value }))} placeholder="Enter current place of work" />
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Work City Address</label>
+                      <Input value={profileForm.workCityAddress} onChange={(e) => setProfileForm((prev) => ({ ...prev, workCityAddress: e.target.value }))} placeholder="Enter work city address" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
+                      <Input value={profileForm.licenseNumber} onChange={(e) => setProfileForm((prev) => ({ ...prev, licenseNumber: e.target.value }))} placeholder="Enter license number" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                      <Input value={profileForm.yearsOfExperience} onChange={(e) => setProfileForm((prev) => ({ ...prev, yearsOfExperience: e.target.value }))} placeholder="Enter years of experience" />
+                    </div>
+
                     <div className="space-y-3 rounded-lg border border-slate-200 p-4">
                       <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
                         <input
@@ -604,21 +619,6 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Work City Address</label>
-                      <Input value={profileForm.workCityAddress} onChange={(e) => setProfileForm((prev) => ({ ...prev, workCityAddress: e.target.value }))} placeholder="Enter work city address" />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">License Number</label>
-                      <Input value={profileForm.licenseNumber} onChange={(e) => setProfileForm((prev) => ({ ...prev, licenseNumber: e.target.value }))} placeholder="Enter license number" />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
-                      <Input value={profileForm.yearsOfExperience} onChange={(e) => setProfileForm((prev) => ({ ...prev, yearsOfExperience: e.target.value }))} placeholder="Enter years of experience" />
                     </div>
 
                     <Button type="submit" disabled={savingSection === 'profile'}>

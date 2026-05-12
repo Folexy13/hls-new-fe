@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { MultiSelectCreatableField } from '@/components/MultiSelectCreatableField';
 import { contentService, ContentTags } from '@/services/contentService';
-import { HEALTH_FIELD_OPTIONS, emptyContentTags } from './contentOptions';
+import { emptyContentTags } from './contentOptions';
+import ContentTagBuilder from './ContentTagBuilder';
+import CreatableCategorySelect from './CreatableCategorySelect';
 import { toast } from 'sonner';
 
 const CreateArticlePage: React.FC = () => {
@@ -29,12 +30,12 @@ const CreateArticlePage: React.FC = () => {
     status: 'published' as 'draft' | 'published' | 'archived',
   });
 
-  const updateTags = (key: keyof ContentTags, value: string[]) => {
-    setTags((prev) => ({ ...prev, [key]: value }));
-  };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!form.category.trim()) {
+      toast.error('Please select or add a category');
+      return;
+    }
     setIsSaving(true);
 
     try {
@@ -50,7 +51,7 @@ const CreateArticlePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16 pt-[100px]">
+    <div className="min-h-screen bg-slate-50 pb-16 pt-[168px]">
       <div className="fixed left-0 right-0 top-[64px] z-30 bg-slate-50">
         <div className="mx-auto max-w-5xl px-4 py-3">
           <BackToDashboardButton className="text-black/90 hover:text-black/80" />
@@ -75,7 +76,10 @@ const CreateArticlePage: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
-              <Input value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Nutrition, Wellness, Medical" required />
+              <CreatableCategorySelect
+                value={form.category}
+                onChange={(category) => setForm((prev) => ({ ...prev, category }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
@@ -114,17 +118,8 @@ const CreateArticlePage: React.FC = () => {
         <Card className="p-5">
           <h2 className="text-base font-semibold text-slate-900">Benfek health tags</h2>
           <p className="mt-1 text-sm text-slate-500">Leave tags empty to show this article to all Benfeks you added.</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            {(Object.keys(HEALTH_FIELD_OPTIONS) as Array<keyof ContentTags>).map((key) => (
-              <MultiSelectCreatableField
-                key={key}
-                label={key.replace(/([A-Z])/g, ' $1')}
-                placeholder="Select matching tags"
-                options={HEALTH_FIELD_OPTIONS[key]}
-                value={tags[key] || []}
-                onChange={(value) => updateTags(key, value)}
-              />
-            ))}
+          <div className="mt-4">
+            <ContentTagBuilder tags={tags} onChange={setTags} />
           </div>
         </Card>
 

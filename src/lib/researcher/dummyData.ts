@@ -23,6 +23,7 @@ export interface Supplement {
   budgetRange?: string;
   expiryDate?: string;
   tags?: Record<string, string[]>;
+  rationale?: string;
   imageUrl: string;
   price: number;
 }

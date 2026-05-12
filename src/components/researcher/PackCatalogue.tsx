@@ -86,6 +86,13 @@ export function PackCatalogue({
     : !effectiveDeliveryAddress
       ? "Proceed to Payment"
       : "Proceed to Payment";
+  const itemRationales = items
+    .map((item) => ({
+      id: String(item.id),
+      name: item.name,
+      rationale: String((item as any).rationale || "").trim(),
+    }))
+    .filter((item) => item.rationale.length > 0);
 
   useEffect(() => {
     if (trimmedSavedDeliveryAddress) {
@@ -297,9 +304,22 @@ export function PackCatalogue({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5 text-sm leading-relaxed text-slate-600">
-            This selection is curated specifically for your profile. These supplements work
-            synergistically to address your identified HLS factors and support your long-term
-            health goals effectively within your convenience budget.
+            {itemRationales.length > 0 ? (
+              <div className="space-y-3">
+                {itemRationales.map((item) => (
+                  <div key={item.id} className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+                    <p className="font-semibold text-slate-800">{item.name}</p>
+                    <p className="mt-1 text-slate-600">{item.rationale}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>
+                This selection is curated specifically for your profile. These supplements work
+                synergistically to address your identified HLS factors and support your long-term
+                health goals effectively within your convenience budget.
+              </p>
+            )}
           </AccordionContent>
         </AccordionItem>
 

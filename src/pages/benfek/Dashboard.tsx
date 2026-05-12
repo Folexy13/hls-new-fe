@@ -14,6 +14,10 @@ import { benfekService } from '@/services/benfekService';
 import { cartService } from '@/services/cartService';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { useStore } from '@/store/useStore';
+import dashboardBanner1 from '@/images/dashboard/benfek-dashboard-banner-1.jpeg';
+import dashboardBanner2 from '@/images/dashboard/benfek-dashboard-banner-2.jpeg';
+import dashboardBanner3 from '@/images/dashboard/benfek-dashboard-banner-3.jpeg';
+import dashboardBanner4 from '@/images/dashboard/benfek-dashboard-banner-4.jpeg';
 
 type SavedPharmacy = {
   name: string;
@@ -114,9 +118,10 @@ const Dashboard = () => {
   };
 
   const bannerImages = useMemo(() => ([
-    'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1532009877282-3340270e0529?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1514996937319-344454492b37?q=80&w=1600&auto=format&fit=crop',
+    dashboardBanner1,
+    dashboardBanner2,
+    dashboardBanner3,
+    dashboardBanner4,
   ]), []);
 
   useEffect(() => {
@@ -163,7 +168,8 @@ const Dashboard = () => {
         packs.forEach((p: any) => {
           mapped[p.packId] = (p.items || []).map((i: any) => ({
             ...i.supplement,
-            qty: i.quantity
+            qty: i.quantity,
+            rationale: i.rationale || ''
           }));
           paymentStates[p.packId] = {
             isPaid: Boolean(p.payment?.isPaid),
@@ -658,8 +664,8 @@ const Dashboard = () => {
       <div className="max-w-6xl mx-auto pb-8 ">
         <div className="mb-6 flex justify-center">
           <div
-            className="relative overflow-hidden shadow-lg"
-            style={{ width: '100vw', maxWidth: '960px', height: 'calc(100vw / 2)' }}
+            className="relative w-full max-w-[960px] overflow-hidden shadow-lg"
+            style={{ aspectRatio: '16 / 5' }}
           >
             <div
               className="flex h-full transition-transform duration-700 ease-out"
@@ -667,11 +673,10 @@ const Dashboard = () => {
             >
               {bannerImages.map((src, index) => (
                 <div key={src} className="min-w-full h-full">
-                  <img src={src} alt={`Banner ${index + 1}`} className="h-full w-full object-cover" />
+                  <img src={src} alt={`Banner ${index + 1}`} className="h-full w-full object-fill" />
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
               {bannerImages.map((_, index) => (
                 <span
