@@ -41,6 +41,7 @@ import {
 import { researcherService } from "@/services/researcherService";
 import { canViewWholesaleDetails } from "@/utils/authClaims";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "@/config/env";
 
 export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: number }) {
   const SHEET_STORAGE_KEY = "researcher.sheet.supplements";
@@ -66,6 +67,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [newTags, setNewTags] = useState<Record<string, string[]>>({});
   const [newExpiryDate, setNewExpiryDate] = useState("");
   const [newImageUrl, setNewImageUrl] = useState<string>("");
+  const [newImagePreviewUrl, setNewImagePreviewUrl] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newWholesalers, setNewWholesalers] = useState<
     Array<{ name: string; price: number; contact: string; address: string }>
   >([]);
@@ -126,6 +129,8 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewTags({});
     setNewExpiryDate("");
     setNewImageUrl("");
+    setNewImagePreviewUrl("");
+    setIsUploadingImage(false);
     setNewWholesalers([]);
     setWholesalerName("");
     setWholesalerPrice("");
@@ -134,6 +139,38 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setTagCategory("hls_factors");
     setTagValue("");
     setTagValueMode("select");
+  };
+
+  const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      formData.append("folder", "researcher-supplements");
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.secure_url) {
+        throw new Error(data?.error?.message || "Image upload failed");
+      }
+
+      return data.secure_url as string;
+    } catch (error) {
+      console.error("Failed to upload supplement image:", error);
+      toast({
+        title: "Image upload failed",
+        description: "Please try another image or save without an uploaded image.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const addWholesaler = () => {
@@ -327,7 +364,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
 
   const handleAddNewSupplement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSavingSupplement) return;
+    if (isSavingSupplement || isUploadingImage) return;
 
     const name = newName.trim();
     const manufacturer = newManufacturer.trim();
@@ -534,6 +571,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewTags(tags);
     setNewExpiryDate(item.expiryDate || "");
     setNewImageUrl(item.imageUrl || "");
+    setNewImagePreviewUrl(item.imageUrl || "");
     setNewWholesalers(Array.isArray((item as any).wholesalers) ? (item as any).wholesalers : []);
     setWholesalerName("");
     setWholesalerPrice("");
@@ -981,19 +1019,33 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                     id="new-supplement-image"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    disabled={isUploadingImage}
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const reader = new FileReader();
                       reader.onload = () => {
-                        if (typeof reader.result === "string") setNewImageUrl(reader.result);
+                        if (typeof reader.result === "string") setNewImagePreviewUrl(reader.result);
                       };
                       reader.readAsDataURL(file);
+                      const uploadedUrl = await uploadImageToCloudinary(file);
+                      if (uploadedUrl) {
+                        setNewImageUrl(uploadedUrl);
+                        setNewImagePreviewUrl(uploadedUrl);
+                      } else {
+                        setNewImageUrl("");
+                      }
                     }}
                   />
-                  {newImageUrl ? (
+                  {isUploadingImage ? (
+                    <div className="mt-2 flex h-36 w-full items-center justify-center rounded-lg border bg-slate-50 text-sm text-slate-600">
+                      <LoadingSpinner className="mr-2" />
+                      Uploading image...
+                    </div>
+                  ) : null}
+                  {newImagePreviewUrl ? (
                     <img
-                      src={newImageUrl}
+                      src={newImagePreviewUrl}
                       alt="Supplement preview"
                       className="mt-2 h-36 w-full rounded-lg border object-cover"
                     />
@@ -1130,16 +1182,28 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 <Button
                   type="button"
                   variant="outline"
-                  disabled={isSavingSupplement}
+                  disabled={isSavingSupplement || isUploadingImage}
                   onClick={() => {
                     handleCloseAdd();
                   }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSavingSupplement} className="bg-researcher-primary hover:bg-researcher-secondary">
-                  {isSavingSupplement && <LoadingSpinner className="mr-2" />}
-                  {isSavingSupplement ? (editingId ? "Saving..." : "Adding...") : editingId ? "Save" : "Add"}
+                <Button
+                  type="submit"
+                  disabled={isSavingSupplement || isUploadingImage}
+                  className="bg-researcher-primary hover:bg-researcher-secondary"
+                >
+                  {(isSavingSupplement || isUploadingImage) && <LoadingSpinner className="mr-2" />}
+                  {isUploadingImage
+                    ? "Uploading..."
+                    : isSavingSupplement
+                      ? editingId
+                        ? "Saving..."
+                        : "Adding..."
+                      : editingId
+                        ? "Save"
+                        : "Add"}
                 </Button>
               </div>
             </form>
