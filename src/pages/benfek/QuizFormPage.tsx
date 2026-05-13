@@ -61,6 +61,7 @@ const LOW_VALUE_TTL = 800;
 const MID_VALUE_TTL = 700;
 const VERY_LOW_VALUE_TTL = 900;
 const PRE_GAME_COUNTDOWN = 0;
+const QUIZ_GAME_ENABLED = false;
 const MIN_X_BOUND = 8;
 const MAX_X_BOUND = 92;
 const DEFAULT_MIN_Y_BOUND = 32;
@@ -402,6 +403,16 @@ const QuizFormPage: React.FC = () => {
   }, [showGame]);
 
   const beginGame = (nextStep: number | null) => {
+    if (!QUIZ_GAME_ENABLED) {
+      if (nextStep === null) {
+        setFinalGameCompleted(true);
+        setNutrientStep(3);
+      } else {
+        setNutrientStep(nextStep);
+      }
+      return;
+    }
+
     setNextStepAfterGame(nextStep);
     setShowGame(true);
     setGameScore(0);
@@ -437,6 +448,10 @@ const QuizFormPage: React.FC = () => {
     if (nutrientStep < 2) {
       if (nutrientStep === 0) {
         setNutrientStep(1);
+        return;
+      }
+      if (!QUIZ_GAME_ENABLED) {
+        setNutrientStep(nutrientStep + 1);
         return;
       }
       beginGame(nutrientStep + 1);
