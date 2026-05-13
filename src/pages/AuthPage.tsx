@@ -13,14 +13,17 @@ import { getApiErrorMessage } from '@/utils/apiError';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const SignInPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const location = useLocation();
+  const signInState = location.state as
+    | { prefill?: { email?: string; password?: string }; from?: { pathname?: string } }
+    | null;
+  const [email, setEmail] = useState(signInState?.prefill?.email ?? '');
+  const [password, setPassword] = useState(signInState?.prefill?.password ?? '');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
   const { login, isAuthenticated, user } = useStore();
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Redirect authenticated users to their dashboard
   React.useEffect(() => {

@@ -63,6 +63,7 @@ export const researcherService = {
       selectedWholesalerContact?: string | null;
       selectedWholesalerAddress?: string | null;
       forceDispatchWithoutWholesaler?: boolean;
+      rationale?: string | null;
     }>;
     status?: string;
   }) {

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { canViewWholesaleDetails } from "@/utils/authClaims";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Textarea } from "@/components/ui/textarea";
 
 type SelectedSupplement = {
   id: string;
@@ -49,6 +50,7 @@ type SelectedSupplement = {
   selectedWholesalerAddress?: string | null;
   forceDispatchWithoutWholesaler?: boolean;
   tags?: Record<string, string[]>;
+  rationale?: string;
   qty?: number;
   imageUrl: string;
   price: number;
@@ -190,6 +192,13 @@ export default function ResearcherSelectedSupplementsPage() {
     setViewingSupplement((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
   };
 
+  const updateSupplementRationale = (id: string, rationale: string) => {
+    setSelected((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, rationale } : item))
+    );
+    setViewingSupplement((prev) => (prev && prev.id === id ? { ...prev, rationale } : prev));
+  };
+
   const handleRemoveFromSheet = (id: string) => {
     setSelected((prev) => prev.filter((s) => s.id !== id));
     setSelectedSheetIds((prev) => {
@@ -233,6 +242,7 @@ export default function ResearcherSelectedSupplementsPage() {
         selectedWholesalerContact: item.selectedWholesalerContact || null,
         selectedWholesalerAddress: item.selectedWholesalerAddress || null,
         forceDispatchWithoutWholesaler: Boolean(item.forceDispatchWithoutWholesaler),
+        rationale: item.rationale || null,
         originalId: item.id,
       }))
       .filter((item) => Number.isFinite(item.id) && item.id > 0);
@@ -246,7 +256,7 @@ export default function ResearcherSelectedSupplementsPage() {
           code,
           packId: selectedPackId,
           packName: selectedPackName,
-          items: items.map(({ id, quantity, selectedWholesalerName, selectedWholesalerPrice, selectedWholesalerContact, selectedWholesalerAddress, forceDispatchWithoutWholesaler }) => ({
+          items: items.map(({ id, quantity, selectedWholesalerName, selectedWholesalerPrice, selectedWholesalerContact, selectedWholesalerAddress, forceDispatchWithoutWholesaler, rationale }) => ({
             id,
             quantity,
             selectedWholesalerName,
@@ -254,6 +264,7 @@ export default function ResearcherSelectedSupplementsPage() {
             selectedWholesalerContact,
             selectedWholesalerAddress,
             forceDispatchWithoutWholesaler,
+            rationale,
           })),
           status: "draft",
         });
@@ -488,6 +499,15 @@ export default function ResearcherSelectedSupplementsPage() {
               <p className="text-sm text-slate-600 leading-relaxed">
                 {viewingSupplement.description}
               </p>
+              <div className="space-y-2 rounded-md border border-emerald-100 bg-emerald-50/60 p-3">
+                <p className="text-[10px] text-emerald-700 uppercase font-bold tracking-wide">Rationale</p>
+                <Textarea
+                  value={viewingSupplement.rationale || ""}
+                  onChange={(event) => updateSupplementRationale(viewingSupplement.id, event.target.value)}
+                  placeholder="Explain why this supplement belongs in the selected Benfek pack..."
+                  className="min-h-24 bg-white text-sm"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="bg-slate-50 p-2 rounded-md border border-slate-100">
                   <span className="text-[10px] text-slate-400 block uppercase font-bold">Dosage</span>

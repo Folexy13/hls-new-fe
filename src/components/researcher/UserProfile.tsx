@@ -271,10 +271,6 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                   )}
                   {userDetails.quiz && (
                     <div className="col-span-2 grid grid-cols-2 gap-4 mt-2 pt-4 border-t">
-                      <div className="col-span-2">
-                        <Label className="text-muted-foreground text-xs">Nickname</Label>
-                        <p className="text-sm font-medium">{formatValue(userDetails.quiz.basics?.nickname)}</p>
-                      </div>
                       <div>
                         <Label className="text-muted-foreground text-xs">Weight</Label>
                         <p className="text-sm font-medium">{formatValue(userDetails.quiz.basics?.weight)}</p>
