@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
 import { contentService } from '@/services/contentService';
+import { toast } from 'sonner';
 
 // Define the Podcast type
 type Podcast = {
@@ -60,6 +61,7 @@ const mockPodcasts: Podcast[] = Array(50).fill(0).map((_, i) => ({
 
 const PodcastsPage: React.FC = () => {
   const navigate = useNavigate();
+  const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -111,13 +113,44 @@ const PodcastsPage: React.FC = () => {
     }
   };
 
-  // Toggle play/pause
-  const togglePlay = (id: number) => {
-    if (playingId === id) {
-      setPlayingId(null);
-    } else {
-      setPlayingId(id);
+  const pauseOtherPodcasts = (activeId: number) => {
+    Object.entries(audioRefs.current).forEach(([id, audio]) => {
+      if (Number(id) !== activeId && audio && !audio.paused) audio.pause();
+    });
+  };
+
+  const playPodcastAudio = async (podcast: Podcast) => {
+    if (!podcast.audioUrl) {
+      toast.error('No audio file is attached to this podcast');
+      return;
     }
+
+    const audio = audioRefs.current[podcast.id];
+    if (!audio) {
+      toast.error('Audio player is not ready yet');
+      return;
+    }
+
+    try {
+      pauseOtherPodcasts(podcast.id);
+      await audio.play();
+      setPlayingId(podcast.id);
+    } catch (error) {
+      console.error(error);
+      setPlayingId(null);
+      toast.error('Unable to play this podcast audio');
+    }
+  };
+
+  // Toggle play/pause without resetting the current playback position.
+  const togglePlay = async (podcast: Podcast) => {
+    if (playingId === podcast.id) {
+      audioRefs.current[podcast.id]?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    await playPodcastAudio(podcast);
   };
 
   // Filter and sort data
@@ -302,40 +335,33 @@ const PodcastsPage: React.FC = () => {
                     value={`podcast-${podcast.id}`}
                     className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
                   >
-                    <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
-                      <div className="flex w-full justify-between flex-row items-center gap-2 text-left sm:items-center">
-                        <div className="flex w-full items-center gap-2 justify-start min-w-0">
-                          <Mic className="h-5 w-5 text-slate-400" />
-                          <span className="text-sm font-semibold text-slate-900 truncate w-[90%]">
+                    <div className="flex items-center gap-2">
+                      <AccordionTrigger className="min-w-0 flex-1 rounded-lg bg-white py-4 text-left hover:no-underline hover:bg-slate-50/70">
+                        <div className="flex w-full items-center gap-2 min-w-0">
+                          <Mic className="h-5 w-5 shrink-0 text-slate-400" />
+                          <span className="truncate text-sm font-semibold text-slate-900">
                             {podcast.title}
                           </span>
                         </div>
-                        <div className="ml-auto flex w-1/3 justify-end text-right">
-                          <div className="inline-flex items-center justify-end gap-2">
-                            {/* <Eye className="h-4 w-4 text-slate-500" /> */}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={`h-8 w-8 rounded-full ${
-                                playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-slate-700'
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                togglePlay(podcast.id);
-                              }}
-                              aria-label={playingId === podcast.id ? 'Pause podcast' : 'Play podcast'}
-                            >
-                              {playingId === podcast.id ? (
-                                <Pause className="h-4 w-4" />
-                              ) : (
-                                <Play className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-4 pt-2">
+                      </AccordionTrigger>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 shrink-0 rounded-full ${
+                          playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-slate-700'
+                        }`}
+                        onClick={() => togglePlay(podcast)}
+                        aria-label={playingId === podcast.id ? 'Pause podcast' : 'Play podcast'}
+                      >
+                        {playingId === podcast.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <AccordionContent forceMount className="pb-4 pt-2 data-[state=closed]:hidden">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
                         <div className="flex flex-col min-w-0">
                           <p className="text-xs font-bold text-slate-500 uppercase">Podcast ID</p>
@@ -366,6 +392,30 @@ const PodcastsPage: React.FC = () => {
                             ? `Tags: ${Object.values(podcast.tags || {}).flat().join(', ')}`
                             : 'Visible to all your Benfeks'}
                         </div>
+                        {podcast.audioUrl ? (
+                          <div className="col-span-2 md:col-span-4">
+                            <audio
+                              ref={(node) => {
+                                audioRefs.current[podcast.id] = node;
+                              }}
+                              className="w-full"
+                              controls
+                              src={podcast.audioUrl}
+                              onPlay={() => {
+                                pauseOtherPodcasts(podcast.id);
+                                setPlayingId(podcast.id);
+                              }}
+                              onPause={() => {
+                                if (playingId === podcast.id) setPlayingId(null);
+                              }}
+                              onEnded={() => {
+                                if (playingId === podcast.id) setPlayingId(null);
+                              }}
+                            >
+                              Your browser does not support audio playback.
+                            </audio>
+                          </div>
+                        ) : null}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

@@ -45,6 +45,21 @@ export const contentService = {
     return response.data?.data;
   },
 
+  async getPrincipalArticle(id: number | string) {
+    const response = await apiClient.get(`/api/v2/content/principal/articles/${id}`);
+    return response.data?.data?.article;
+  },
+
+  async updatePrincipalArticle(id: number | string, payload: PrincipalArticlePayload) {
+    const response = await apiClient.patch(`/api/v2/content/principal/articles/${id}`, payload);
+    return response.data?.data;
+  },
+
+  async deletePrincipalArticle(id: number | string) {
+    const response = await apiClient.delete(`/api/v2/content/principal/articles/${id}`);
+    return response.data?.data;
+  },
+
   async getPrincipalPodcasts() {
     const response = await apiClient.get("/api/v2/content/principal/podcasts");
     return response.data?.data?.podcasts ?? [];

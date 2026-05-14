@@ -45,7 +45,7 @@ const ProductPage: React.FC = () => {
           id: String(data.id),
           name: data.name,
           price: data.price,
-          image: data.image || '/placeholder.svg',
+          image: data.image || data.imageUrl || '/placeholder.svg',
           description: data.description,
           category: 'supplement',
           vendor: 'HLS',

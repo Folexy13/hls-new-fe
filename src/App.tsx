@@ -100,6 +100,7 @@ const App = () => (
                 <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
                 <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
                 <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
                 <Route path="/assessment" element={<AssessmentPage/>} />
                 <Route path="/quiz" element={<QuizPage />} />
@@ -210,18 +211,6 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                <Route
-                  path="/product/:id"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <ProductPage />
-                    </RoleBasedRoute>
-                  }
-                />
-
                 {/* Principal Routes */}
                 <Route
                   path="/principal"
@@ -341,6 +330,14 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/principal/articles/:id/edit"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreateArticlePage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
                   path="/principal/voucher"
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
@@ -422,11 +419,7 @@ const App = () => (
 
                 <Route
                   path="/cart"
-                  element={
-                    <RoleBasedRoute allowedRoles={[UserRole.BENFEK]}>
-                      <CartPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<CartPage />}
                 />
 
                 {/* Dashboard only for Principal */}

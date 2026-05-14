@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
 import { contentService } from '@/services/contentService';
+import { toast } from 'sonner';
 
 // Define the Article type
 type Article = {
@@ -65,7 +66,8 @@ const ArticlesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [openArticleId, setOpenArticleId] = useState()
+  const [openArticleId, setOpenArticleId] = useState<number | null>(null);
+  const [deletingArticleId, setDeletingArticleId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Under Review' | 'Archived'>('all');
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   
@@ -179,6 +181,24 @@ const ArticlesPage: React.FC = () => {
       case 'Draft':
       default:
         return 'text-slate-400';
+    }
+  };
+
+  const handleDeleteArticle = async (article: Article) => {
+    const shouldDelete = window.confirm(`Delete "${article.title}"? This cannot be undone.`);
+    if (!shouldDelete) return;
+
+    setDeletingArticleId(article.id);
+    try {
+      await contentService.deletePrincipalArticle(article.id);
+      setArticles((prev) => prev.filter((item) => item.id !== article.id));
+      if (openArticleId === article.id) setOpenArticleId(null);
+      toast.success('Article deleted');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete article');
+    } finally {
+      setDeletingArticleId(null);
     }
   };
 
@@ -346,11 +366,24 @@ const ArticlesPage: React.FC = () => {
                               ? `Tags: ${Object.values(article.tags || {}).flat().join(', ')}`
                               : 'Visible to all your Benfeks'}
                           </div>
-                          <Button variant="ghost" size="sm" className="h-8 flex-1 px-3 text-sm font-semibold border">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/principal/articles/${article.id}/edit`)}
+                            className="h-8 flex-1 px-3 text-sm font-semibold border"
+                          >
                             Edit
                           </Button>
-                          <Button variant="ghost" size="sm" className="border h-8 flex-1 px-3 text-sm font-semibold text-red-600 hover:text-red-700">
-                            Delete
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteArticle(article)}
+                            disabled={deletingArticleId === article.id}
+                            className="border h-8 flex-1 px-3 text-sm font-semibold text-red-600 hover:text-red-700"
+                          >
+                            {deletingArticleId === article.id ? 'Deleting...' : 'Delete'}
                           </Button>
                         </div>
                       </div>

@@ -9,12 +9,19 @@ interface UseCartReturn {
   refetch: () => Promise<void>;
 }
 
-export const useCart = (): UseCartReturn => {
+export const useCart = (enabled = true): UseCartReturn => {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCart = useCallback(async () => {
+    if (!enabled) {
+      setCart(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -27,7 +34,7 @@ export const useCart = (): UseCartReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     fetchCart();

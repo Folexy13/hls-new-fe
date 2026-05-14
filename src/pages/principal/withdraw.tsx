@@ -65,6 +65,10 @@ type PaymentMethod = {
   default: boolean;
 };
 
+const MIN_WITHDRAWAL_AMOUNT = 100;
+
+const parseWithdrawalAmount = (value: string) => Number(value.replace(/,/g, '').trim());
+
 const WithdrawPage: React.FC = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
@@ -159,9 +163,25 @@ const WithdrawPage: React.FC = () => {
   const handleWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
     const method = displayedMethods[0];
-    const amount = Number(withdrawAmount);
+    const amount = parseWithdrawalAmount(withdrawAmount);
 
     if (!method || !Number.isFinite(amount) || amount <= 0) {
+      toast.error('Enter a valid withdrawal amount');
+      return;
+    }
+
+    if (amount < MIN_WITHDRAWAL_AMOUNT) {
+      toast.error(`Minimum withdrawal amount is ₦${MIN_WITHDRAWAL_AMOUNT.toLocaleString()}.00`);
+      return;
+    }
+
+    if (false && amount < MIN_WITHDRAWAL_AMOUNT) {
+      toast.error('Minimum withdrawal amount is ₦10,000.00');
+      return;
+    }
+
+    if (amount > withdrawableBalance) {
+      toast.error('Withdrawal amount exceeds your withdrawable balance');
       return;
     }
 
@@ -178,6 +198,7 @@ const WithdrawPage: React.FC = () => {
       setWithdrawAmount('');
     }).catch((error) => {
       console.error('Withdrawal failed:', error);
+      toast.error(error?.response?.data?.message || 'Failed to submit withdrawal request');
     }).finally(() => {
       setIsLoading(false);
     });
@@ -808,7 +829,7 @@ const WithdrawPage: React.FC = () => {
                                 />
                               </div>
                               <p className="mt-1 text-xs text-gray-500">
-                                Minimum withdrawal amount: ₦10,000.00
+                                Minimum withdrawal amount: ₦{MIN_WITHDRAWAL_AMOUNT.toLocaleString()}.00
                               </p>
                             </div>
                             {/* Submit Button */}
@@ -816,7 +837,12 @@ const WithdrawPage: React.FC = () => {
                               <Button 
                                 type="submit" 
                                 className="w-full"
-                                disabled={isLoading || !withdrawAmount}
+                                disabled={
+                                  isLoading ||
+                                  !withdrawAmount ||
+                                  parseWithdrawalAmount(withdrawAmount) < MIN_WITHDRAWAL_AMOUNT ||
+                                  parseWithdrawalAmount(withdrawAmount) > withdrawableBalance
+                                }
                               >
                                 {isLoading ? (
                                   <div className="flex items-center">
