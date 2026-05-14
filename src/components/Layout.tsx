@@ -291,7 +291,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <img src={logo} alt="HLS Logo" className="h-8" />
           </Link>
           <div className="flex items-center space-x-4">
-            {isAuthenticated && userRole === UserRole.BENFEK && (
+            {(!isAuthenticated || userRole === UserRole.BENFEK) && (
               <Link to="/cart" className="relative p-2">
                 <ShoppingCart className="h-6 w-6 text-gray-600" />
                 {cartItemCount > 0 && (
@@ -391,6 +391,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   {item.name}
                 </Link>
               ))}
+
+              {!isAuthenticated && (
+                <Link
+                  to="/cart"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    location.pathname === '/cart'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <ShoppingCart className="h-5 w-5 mr-3" />
+                  Cart
+                  {cartItemCount > 0 && (
+                    <span className="ml-auto bg-emerald-500 text-white text-xs rounded-full px-2 py-0.5">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               
               {isAuthenticated && (
                 <>
@@ -509,6 +529,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </nav>
 
             <div className="flex items-center space-x-4">
+              {!isAuthenticated && (
+                <Link
+                  to="/cart"
+                  className="relative p-2 text-gray-600 transition-colors hover:text-emerald-600"
+                  aria-label="Cart"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-emerald-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               {isAuthenticated && (
                 <div className="relative">
                   <button

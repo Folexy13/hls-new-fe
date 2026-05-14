@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,10 +14,6 @@ import { apiClient } from '@/config/axios';
 import doctor from '../images/hero-doctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
-import vitamins from '../images/vitamins.png'
-import vitamins2 from '../images/vitamins2.png'
-import vitamins3 from '../images/vitamins3.png'
-import vitamins4 from '../images/vitamins4.png'
 import patient from '../images/patient.jpg'
 import bose from '../images/avwenagha-bose.jpg'
 import joy from '../images/joy.jpeg'
@@ -26,6 +22,7 @@ import samson from '../images/samson-ojo.jpeg'
 import nick from '../images/nick-ozonuma.jpg'
 import eriscyl from '../images/ericsyl-john.jpg'
 import mimi from '../images/mimi-gloria.jpg'
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 import {
   Carousel,
@@ -36,7 +33,17 @@ import {
 } from "../components/ui/carousel"
 
 const Homepage: React.FC = () => {
-  const { user, isAuthenticated } = useStore();
+  const { user, isAuthenticated, addToCart } = useStore();
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Array<{
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    description: string;
+    category: string;
+  }>>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [showReferralDialog, setShowReferralDialog] = useState(false);
@@ -54,6 +61,48 @@ const Homepage: React.FC = () => {
   const handleQuizStart = () => {
     setShowReferralDialog(true);
   };
+
+  const handleAddToCart = async (event: React.MouseEvent, product: any) => {
+    event.stopPropagation();
+    setAddingProductId(product.id);
+    try {
+      await addToCart(product);
+      toast.success('Added to cart');
+    } catch {
+      toast.error('Failed to add to cart');
+    } finally {
+      setAddingProductId(null);
+    }
+  };
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setIsLoadingProducts(true);
+        const response = await apiClient.get('/api/v2/supplements/all');
+        const supplements = response.data?.data?.supplements || [];
+        const mapped = supplements
+          .map((item: any) => ({
+            id: String(item.id),
+            name: item.name || 'Supplement',
+            price: Number(item.price || 0),
+            image: item.image || item.imageUrl || '/placeholder.svg',
+            description: item.description || 'Premium supplement from HLS.',
+            category: item.category || item.dosageForm || 'supplement',
+          }))
+          .filter((item: any) => item.id && item.name)
+          .slice(0, 8);
+        setProducts(mapped);
+      } catch (error) {
+        console.error('Failed to load featured products:', error);
+        setProducts([]);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
 
   // Check if user is logged in and redirect to their role-specific homepage
   useEffect(() => {
@@ -241,41 +290,6 @@ const Homepage: React.FC = () => {
     setExpandedTestimonials((prev) => ({ ...prev, [index]: !prev[index] }));
   };
 
-  const products = [
-    {
-      id: '1',
-      name: 'Vitamin D3 Complex',
-      price: 14999,
-      image: vitamins,
-      description: 'High-potency vitamin D3 for bone health and immune support',
-      category: 'vitamin' as const
-    },
-    {
-      id: '2',
-      name: 'Omega-3 Fish Oil',
-      price: 17499,
-      image: vitamins2,
-      description: 'Pure omega-3 fatty acids for heart and brain health',
-      category: 'supplement' as const
-    },
-    {
-      id: '3',
-      name: 'Magnesium Glycinate',
-      price: 12499,
-      image: vitamins3,
-      description: 'Highly absorbable magnesium for muscle and nerve function',
-      category: 'mineral' as const
-    },
-    {
-      id: '4',
-      name: 'Whey Protein Isolate',
-      price: 24999,
-      image: vitamins4,
-      description: 'Premium protein for muscle building and recovery',
-      category: 'protein' as const
-    }
-  ];
-
   const faqs = [
     {
       question: "How does the HLS quiz work?",
@@ -308,14 +322,14 @@ const Homepage: React.FC = () => {
       title: "5 Signs You Might Need Vitamin D",
       excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
       date: "March 10, 2024",
-      image: vitamins2
+      image: "/placeholder.svg"
     },
     {
       id: 3,
       title: "Optimizing Recovery with Magnesium",
       excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
       date: "March 5, 2024",
-      image: vitamins3
+      image: "/placeholder.svg"
     }
   ];
 
@@ -439,42 +453,77 @@ const Homepage: React.FC = () => {
             </div>
           </div>
 
-          <Carousel className="w-full">
-            <CarouselContent className="-ml-3 sm:-ml-4">
-              {products.map((product) => (
+          {isLoadingProducts ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">
+              <LoadingSpinner className="text-emerald-600" />
+              Loading products...
+            </div>
+          ) : products.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              No products are available yet.
+            </div>
+          ) : (
+            <Carousel className="w-full">
+              <CarouselContent className="-ml-3 sm:-ml-4">
+                {products.map((product) => (
                 <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
-                    <Link to={`/product/${product.id}`}>
-                      <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-white p-5 border-b border-gray-100">
+                  <div
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => navigate(`/product/${product.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') navigate(`/product/${product.id}`);
+                    }}
+                    className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <div className="relative">
+                      <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-5 border-b border-slate-100">
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="max-h-full max-w-full object-contain"
+                          className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>
-                    </Link>
+                      <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm">
+                        {product.category}
+                      </span>
+                    </div>
                     <div className="p-4 sm:p-5 flex flex-1 flex-col">
-                      <div className='flex flex-row justify-between'>
-                        <h3 className="text-sm sm:text-lg font-medium text-gray-900 mb-2 leading-snug">{product.name}</h3>
-                        {/* <p className="text-gray-700 text-sm leading-6 mb-5 hidden sm:block flex-1">{product.description}</p> */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 [&>span]:hidden">
+                          <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
+                          <p className="mt-2 min-h-[40px] text-xs sm:text-sm leading-5 text-slate-600 line-clamp-2">{product.description}</p>
                         <span className="text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
-                      </div>
-                      <div className="mt-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        </div>
+                        <div className="shrink-0 text-right">
                         {/* <span className="text-lg sm:text-xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span> */}
-                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors text-sm font-semibold">
-                          Add to Cart
-                        </button>
+                        <span className="block text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                        <span className="mt-2 flex items-center justify-end gap-1 text-xs font-medium text-slate-500">
+                          <Eye className="h-3.5 w-3.5" />
+                          Details
+                        </span>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(event) => handleAddToCart(event, product)}
+                        disabled={addingProductId === product.id}
+                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                      >
+                        {addingProductId === product.id ? <LoadingSpinner /> : <ShoppingCart className="h-4 w-4" />}
+                        {addingProductId === product.id ? 'Adding...' : 'Add to Cart'}
+                      </button>
                     </div>
                   </div>
                 </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="hidden sm:block">
-              <CarouselPrevious />
-              <CarouselNext />
-            </div>
-          </Carousel>
+                ))}
+              </CarouselContent>
+              <div className="hidden sm:block">
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            </Carousel>
+          )}
         </div>
       </section>
 

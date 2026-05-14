@@ -143,38 +143,51 @@ export const useStore = create<StoreState>()(
         set({ quizData: data, quizCompleted: true }),
 
       addToCart: async (product) => {
-        try {
-          await cartService.addItemToCart(Number(product.id), 1);
-          set((state) => {
-            const existingItem = state.cartItems.find(item => item.id === product.id);
-            let newCartItems;
-            if (existingItem) {
-              newCartItems = state.cartItems.map(item =>
+        const addLocalItem = () => set((state) => {
+          const existingItem = state.cartItems.find(item => item.id === product.id);
+          const newCartItems = existingItem
+            ? state.cartItems.map(item =>
                 item.id === product.id
                   ? { ...item, quantity: item.quantity + 1 }
                   : item
-              );
-            } else {
-              newCartItems = [...state.cartItems, { ...product, quantity: 1 }];
-            }
-            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-            return { cartItems: newCartItems, cartTotal };
-          });
+              )
+            : [...state.cartItems, { ...product, quantity: 1 }];
+          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+          return { cartItems: newCartItems, cartTotal };
+        });
+
+        if (!get().isAuthenticated) {
+          addLocalItem();
+          return;
+        }
+
+        try {
+          await cartService.addItemToCart(Number(product.id), 1);
+          addLocalItem();
         } catch (error) {
           console.error('Failed to add item to cart:', error);
+          throw error;
         }
       },
 
       removeFromCart: async (productId) => {
+        const removeLocalItem = () => set((state) => {
+          const newCartItems = state.cartItems.filter(item => item.id !== productId);
+          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+          return { cartItems: newCartItems, cartTotal };
+        });
+
+        if (!get().isAuthenticated) {
+          removeLocalItem();
+          return;
+        }
+
         try {
           await cartService.removeCartItem(Number(productId));
-          set((state) => {
-            const newCartItems = state.cartItems.filter(item => item.id !== productId);
-            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-            return { cartItems: newCartItems, cartTotal };
-          });
+          removeLocalItem();
         } catch (error) {
           console.error('Failed to remove item from cart:', error);
+          throw error;
         }
       },
 
@@ -183,15 +196,22 @@ export const useStore = create<StoreState>()(
         const state = get();
         const item = state.cartItems.find(item => item.id === productId);
         if (!item) return;
+        const updateLocalItem = () => set((state) => {
+          const newCartItems = state.cartItems.map(item =>
+            item.id === productId ? { ...item, quantity } : item
+          );
+          const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+          return { cartItems: newCartItems, cartTotal };
+        });
+
+        if (!state.isAuthenticated) {
+          updateLocalItem();
+          return;
+        }
+
         try {
           await cartService.updateCartItem(Number(productId), quantity);
-          set((state) => {
-            const newCartItems = state.cartItems.map(item =>
-              item.id === productId ? { ...item, quantity } : item
-            );
-            const cartTotal = newCartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-            return { cartItems: newCartItems, cartTotal };
-          });
+          updateLocalItem();
         } catch (error) {
           console.error('Failed to update cart item quantity:', error);
           // Optionally, show a toast or error message here
@@ -199,6 +219,11 @@ export const useStore = create<StoreState>()(
       },
 
       clearCart: async () => {
+        if (!get().isAuthenticated) {
+          set({ cartItems: [], cartTotal: 0 });
+          return;
+        }
+
         try {
           await cartService.clearCart();
           set({ cartItems: [], cartTotal: 0 });

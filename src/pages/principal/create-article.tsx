@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FileText, Save } from 'lucide-react';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,9 @@ import { toast } from 'sonner';
 
 const CreateArticlePage: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [tags, setTags] = useState<ContentTags>(emptyContentTags);
   const [form, setForm] = useState({
@@ -30,6 +33,36 @@ const CreateArticlePage: React.FC = () => {
     status: 'published' as 'draft' | 'published' | 'archived',
   });
 
+  useEffect(() => {
+    if (!id) return;
+
+    const loadArticle = async () => {
+      setIsLoading(true);
+      try {
+        const article = await contentService.getPrincipalArticle(id);
+        setForm({
+          title: article?.title || '',
+          category: article?.category || '',
+          description: article?.description || '',
+          excerpt: article?.excerpt || '',
+          content: article?.content || '',
+          imageUrl: article?.imageUrl || '',
+          readTime: article?.readTime || '',
+          status: (article?.status || 'published') as 'draft' | 'published' | 'archived',
+        });
+        setTags(article?.tags || emptyContentTags);
+      } catch (error) {
+        console.error(error);
+        toast.error('Failed to load article');
+        navigate('/principal/articles');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadArticle();
+  }, [id, navigate]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.category.trim()) {
@@ -39,8 +72,13 @@ const CreateArticlePage: React.FC = () => {
     setIsSaving(true);
 
     try {
-      await contentService.createPrincipalArticle({ ...form, tags });
-      toast.success('Article created');
+      if (id) {
+        await contentService.updatePrincipalArticle(id, { ...form, tags });
+        toast.success('Article updated');
+      } else {
+        await contentService.createPrincipalArticle({ ...form, tags });
+        toast.success('Article created');
+      }
       navigate('/principal/articles');
     } catch (error) {
       console.error(error);
@@ -60,14 +98,18 @@ const CreateArticlePage: React.FC = () => {
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Create Article</h1>
-              <p className="text-sm text-slate-500">Publish guidance for matching Benfek health profiles.</p>
+              <h1 className="text-xl font-bold text-slate-900">{isEditing ? 'Edit Article' : 'Create Article'}</h1>
+              <p className="text-sm text-slate-500">{isEditing ? 'Update guidance for matching Benfek health profiles.' : 'Publish guidance for matching Benfek health profiles.'}</p>
             </div>
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-5 px-4">
+        {isLoading ? (
+          <Card className="p-5 text-sm text-slate-500">Loading article...</Card>
+        ) : (
+        <>
         <Card className="p-5">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
@@ -126,9 +168,11 @@ const CreateArticlePage: React.FC = () => {
         <div className="flex justify-end">
           <Button type="submit" disabled={isSaving} className="gap-2">
             {isSaving ? <LoadingSpinner /> : <Save className="h-4 w-4" />}
-            {isSaving ? 'Saving...' : 'Create Article'}
+            {isSaving ? 'Saving...' : isEditing ? 'Update Article' : 'Create Article'}
           </Button>
         </div>
+        </>
+        )}
       </form>
     </div>
   );
