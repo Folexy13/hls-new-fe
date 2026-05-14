@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { cartService, Cart, CartItem } from '../services/cartService';
+import { useState, useEffect, useCallback } from 'react';
+import { cartService, Cart } from '../services/cartService';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 interface UseCartReturn {
   cart: Cart | null;
@@ -8,29 +9,36 @@ interface UseCartReturn {
   refetch: () => Promise<void>;
 }
 
-export const useCart = (): UseCartReturn => {
+export const useCart = (enabled = true): UseCartReturn => {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
+    if (!enabled) {
+      setCart(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       const response = await cartService.getCart();
       setCart(response.cart);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch cart';
+      const errorMessage = getApiErrorMessage(err, 'Failed to fetch cart');
       setError(errorMessage);
       console.error('Error fetching cart:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [enabled]);
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [fetchCart]);
 
   return {
     cart,

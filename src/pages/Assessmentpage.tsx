@@ -9,7 +9,12 @@ import { apiClient } from '@/config/axios';
 interface QuizCodeResponse {
   code?: string;
   benfekName?: string;
+  benfekEmail?: string;
   benfekPhone?: string;
+  benfekAge?: string;
+  benfekGender?: string;
+  benfekWeight?: string;
+  benfekHeight?: string;
   principalName?: string;
 }
 
@@ -44,7 +49,12 @@ const AssessmentPage: React.FC = () => {
       setQuizData({
         code: quizCodeData?.code || quizCode,
         benfekName: quizCodeData?.benfekName || '',
+        benfekEmail: quizCodeData?.benfekEmail || '',
         benfekPhone: quizCodeData?.benfekPhone || '',
+        benfekAge: quizCodeData?.benfekAge || '',
+        benfekGender: quizCodeData?.benfekGender || '',
+        benfekWeight: quizCodeData?.benfekWeight || '',
+        benfekHeight: quizCodeData?.benfekHeight || '',
         principalName: quizCodeData?.createdBy
           ? `${quizCodeData.createdBy.firstName} ${quizCodeData.createdBy.lastName}`.trim()
           : '',
@@ -60,16 +70,48 @@ const AssessmentPage: React.FC = () => {
     }
   };
 
-  const handleProceed = () => {
+  const handleConfirmIdentity = () => {
     if (!quizData) return;
 
-    // Save validated quiz details temporarily
-    sessionStorage.setItem('validatedQuizCode', quizData.code || '');
-    sessionStorage.setItem('validatedBenfekName', quizData.benfekName || '');
-    sessionStorage.setItem('validatedBenfekPhone', quizData.benfekPhone || '');
+    const entries = {
+      validatedQuizCode: quizData.code || '',
+      validatedBenfekName: quizData.benfekName || '',
+      validatedBenfekEmail: quizData.benfekEmail || '',
+      validatedBenfekPhone: quizData.benfekPhone || '',
+      validatedBenfekAge: quizData.benfekAge || '',
+      validatedBenfekGender: quizData.benfekGender || '',
+      validatedBenfekWeight: quizData.benfekWeight || '',
+      validatedBenfekHeight: quizData.benfekHeight || '',
+    };
 
-    // Move to next step
+    Object.entries(entries).forEach(([key, value]) => {
+      sessionStorage.setItem(key, value);
+      localStorage.setItem(key, value);
+    });
+
     navigate('/benfek/quiz-form');
+  };
+
+  const handleRejectIdentity = () => {
+    setQuizCode('');
+    setQuizData(null);
+    setIsValidated(false);
+    setErrorMessage('');
+
+    [
+      'validatedQuizCode',
+      'validatedBenfekName',
+      'validatedBenfekEmail',
+      'validatedBenfekPhone',
+      'validatedBenfekAge',
+      'validatedBenfekGender',
+      'validatedBenfekWeight',
+      'validatedBenfekHeight',
+      'validatedQuizData',
+    ].forEach((key) => {
+      sessionStorage.removeItem(key);
+      localStorage.removeItem(key);
+    });
   };
 
   return (
@@ -87,7 +129,15 @@ const AssessmentPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-5 sm:p-6 bg-white space-y-5">
+          <form
+            className="p-5 sm:p-6 bg-white space-y-5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!isValidated) {
+                handleValidateCode();
+              }
+            }}
+          >
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Quiz Code</label>
               <Input
@@ -132,32 +182,50 @@ const AssessmentPage: React.FC = () => {
             )}
 
             <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleValidateCode}
-                disabled={isLoading}
-                className="w-full h-11 rounded-xl"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Validating...
-                  </span>
-                ) : (
-                  'Validate Code'
-                )}
-              </Button>
-
-              {isValidated && (
+              {!isValidated && (
                 <Button
-                  variant="outline"
-                  onClick={handleProceed}
+                  type="submit"
+                  disabled={isLoading}
                   className="w-full h-11 rounded-xl"
                 >
-                  Continue
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Validating...
+                    </span>
+                  ) : (
+                    'Validate Code'
+                  )}
                 </Button>
               )}
+
+              {isLoading && isValidated && (
+                <div className="flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Validating...
+                </div>
+              )}
+
+              {isValidated && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleConfirmIdentity}
+                    className="w-full h-11 rounded-xl"
+                  >
+                    Yes, it is me
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleRejectIdentity}
+                    className="w-full h-11 rounded-xl border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                  >
+                    No, it is not me
+                  </Button>
+                </>
+              )}
             </div>
-          </div>
+          </form>
         </Card>
       </div>
     </div>

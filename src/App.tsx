@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -14,8 +14,7 @@ import { UserRole } from "./context/roles";
 
 // Pages
 import Homepage from "./pages/Homepage";
-import BenfekHomepage from "./pages/benfek/Homepage";
-import AboutPage from "./pages/benfek/AboutPage";
+import AboutPage from "./pages/AboutPage";
 import QuizPage from "./pages/benfek/QuizPage";
 import AuthPage from "./pages/AuthPage";
 import SupportPage from "./pages/benfek/SupportPage";
@@ -23,11 +22,14 @@ import Dashboard from "./pages/benfek/Dashboard";
 import CartPage from "./pages/benfek/CartPage";
 import PodcastPage from "./pages/benfek/PodcastPage";
 import BlogPage from "./pages/benfek/BlogPage";
+import BenfekArticlesPage from "./pages/benfek/ArticlesPage";
 import NotFound from "./pages/benfek/NotFound";
 import MarketplacePage from "./pages/benfek/MarketplacePage";
 import ProductPage from "./pages/benfek/ProductPage";
 import QuizFormPage from "./pages/benfek/QuizFormPage";
-import ProtectedRoute from "./components/ProtectedRoute";
+import BenfekMyProfilePage from "./pages/benfek/MyProfilePage";
+import BenfekBonusPage from "./pages/benfek/BonusPage";
+import BenfekAccountPage from "./pages/benfek/AccountPage";
 import PrincipalHomepage from "./pages/principal/Homepage";
 import WholesalerHomepage from "./pages/wholesaler/Homepage";
 import AssessmentPage from "./pages/Assessmentpage";
@@ -38,22 +40,24 @@ import AddBenfekPage from "./pages/principal/add-benfek";
 import BenfeksPage from "./pages/principal/benfeks";
 import EarningsPage from "./pages/principal/earnings";
 import PodcastsPage from "./pages/principal/podcasts";
+import CreatePodcastPage from "./pages/principal/create-podcast";
 import MedicationsPage from "./pages/principal/medications";
 import PurchasesPage from "./pages/principal/purchases";
 import ArticlesPage from "./pages/principal/articles";
+import CreateArticlePage from "./pages/principal/create-article";
+import VoucherPage from "./pages/principal/VoucherPage";
 import WithdrawPage from "./pages/principal/withdraw";
-import UsersPage from "./pages/principal/users";
+import MyProfilePage from "./pages/principal/my-profile";
 
 // Import Wholesaler pages
 import WholesalerEarningsPage from "./pages/wholesaler/earnings";
 import WholesalerAddProductPage from "./pages/wholesaler/add-product";
 import WholesalerProductsPage from "./pages/wholesaler/products";
 import WholesalerOrdersPage from "./pages/wholesaler/orders";
-import SettingsPage from "./pages/principal/settings";
-import AddProductPage from "./pages/wholesaler/add-product";
-import OrdersPage from "./pages/wholesaler/orders";
-import ProductsPage from "./pages/wholesaler/products";
 import ResearcherAuthPage from "./pages/researcher/ResearcherAuthpage";
+import ResearcherHomepage from "./pages/researcher/Homepage";
+import ResearcherNotFound from "./pages/researcher/NotFound";
+import ResearcherSelectedSupplementsPage from "./pages/researcher/SelectedSupplements";
 import AuthSignupPage from "./pages/AuthsignupPage";
 import PrincipalSignupPage from "./pages/principal/principalSignupPage";
 import WholesalerSignupPage from "./pages/wholesaler/WholesalerSignupPage";
@@ -75,18 +79,32 @@ const App = () => (
                 <Route path="/" element={<Homepage />} />
                 <Route path="/auth/*" element={<AuthPage />} />
                 <Route path="/researcher/auth/*" element={<ResearcherAuthPage />} />
+                <Route
+                  path="/researcher"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.RESEARCHER]} fallbackPath="/">
+                      <ResearcherHomepage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/researcher/gallery/selected"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.RESEARCHER]} fallbackPath="/">
+                      <ResearcherSelectedSupplementsPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route path="/researcher/*" element={<ResearcherNotFound />} />
                 <Route path="/auth/signup" element={<AuthSignupPage />} />
                 <Route path="/auth/signup/principal" element={<PrincipalSignupPage />} />
                 <Route path="/auth/signup/wholesaler" element={<WholesalerSignupPage />} />
-                <Route path="/principal" element={<PrincipalHomepage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
                 <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
-                <Route path="/principal/add-benfek" element={<AddBenfekPage />} />
-                <Route path="/principal/users" element={<UsersPage />} />
-                 <Route path="/assessment" element={<AssessmentPage/>} />
-                 <Route path="/principal/benfeks" element={<BenfeksPage />} />
-                 <Route path="/quiz" element={<QuizPage />} />
-                 <Route path="/benfek/quiz-form" element={<QuizFormPage />} />
+                <Route path="/assessment" element={<AssessmentPage/>} />
+                <Route path="/quiz" element={<QuizPage />} />
+                <Route path="/benfek/quiz-form" element={<QuizFormPage />} />
 
 
                 {/* Role-based protected routes */}
@@ -98,30 +116,29 @@ const App = () => (
                       allowedRoles={[UserRole.BENFEK]}
                       fallbackPath="/"
                     >
-                      <BenfekHomepage />
+                      <Navigate to="/benfek/dashboard" replace />
                     </RoleBasedRoute>
                   }
                 />
                 <Route
-                  path="/benfek/dashboard"
-                  element={
-                    // <RoleBasedRoute
-                    //   allowedRoles={[UserRole.BENFEK]}
-                    //   fallbackPath="/"
-                    // >
-                      <Dashboard />
-                    // </RoleBasedRoute>
-                  }
+                  path="/benfek/Homepage"
+                  element={<Navigate to="/benfek/dashboard" replace />}
                 />
                 <Route
-                  path="/about"
+                  path="/benfek/dashboard"
                   element={
                     <RoleBasedRoute
                       allowedRoles={[UserRole.BENFEK]}
                       fallbackPath="/"
                     >
-                      <AboutPage />
+                      <Dashboard />
                     </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/about"
+                  element={
+                    <AboutPage />
                   }
                 />
                 
@@ -136,6 +153,53 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
+
+                <Route
+                  path="/benfek/my-profile"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekMyProfilePage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
+                  path="/benfek/account"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekAccountPage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
+                  path="/benfek/bonus"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekBonusPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/blog"
+                  element={
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.BENFEK]}
+                      fallbackPath="/"
+                    >
+                      <BenfekArticlesPage />
+                    </RoleBasedRoute>
+                  }
+                />
                 <Route
                   path="/blog/:id"
                   element={
@@ -147,139 +211,146 @@ const App = () => (
                     </RoleBasedRoute>
                   }
                 />
-                {/* <Route
-                  path="/marketplace"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <MarketplacePage />
-                    </RoleBasedRoute>
-                  }
-                /> */}
-                <Route
-                  path="/product/:id"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <ProductPage />
-                    </RoleBasedRoute>
-                  }
-                />
-
                 {/* Principal Routes */}
                 <Route
                   path="/principal"
                   element={
-                    // <RoleBasedRoute
-                    //   allowedRoles={[UserRole.PRINCIPAL]}
-                    //   fallbackPath="/"
-                    // >
+                    <RoleBasedRoute
+                      allowedRoles={[UserRole.PRINCIPAL]}
+                      fallbackPath="/"
+                    >
                       <PrincipalHomepage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
                 <Route
                   path="/principal/Homepage"
-                  element={<PrincipalHomepage />}
+                  element={<Navigate to="/principal" replace />}
                 />
 
-                {/* Principal Account Route */}
                 <Route
                   path="/principal/account"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <AccountPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Add Benfek Route */}
-                {/* <Route
+                <Route
                   path="/principal/add-benfek"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <AddBenfekPage />
                     </RoleBasedRoute>
                   }
-                /> */}
-                {/* Principal Benfeks Route */}
-                {/* <Route
+                />
+                <Route
+                  path="/principal/users"
+                  element={<Navigate to="/principal/my-profile" replace />}
+                />
+                <Route
+                  path="/principal/my-profile"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <MyProfilePage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
                   path="/principal/benfeks"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <BenfeksPage />
                     </RoleBasedRoute>
                   }
-                /> */}
-                {/* Principal Earnings Route */}
+                />
                 <Route
                   path="/principal/earnings"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <EarningsPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Podcasts Route */}
                 <Route
                   path="/principal/podcasts"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <PodcastsPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Medications Route */}
-                {/* <Route
+                <Route
+                  path="/principal/podcasts/create"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreatePodcastPage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
                   path="/principal/medications"
                   element={
-                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <MedicationsPage />
                     </RoleBasedRoute>
                   }
-                /> */}
-                <Route
-                  path="/principal/medications"
-                  element={<MedicationsPage />}
                 />
 
-                {/* Principal Settings Route */}
                 <Route
                   path="/principal/settings"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
-                      <SettingsPage />
-                    // </RoleBasedRoute>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <MyProfilePage defaultTab="settings" />
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Purchases Route */}
                 <Route
                   path="/principal/purchases"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <PurchasesPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Articles Route */}
                 <Route
                   path="/principal/articles"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <ArticlesPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
-                {/* Principal Withdraw Route */}
+                <Route
+                  path="/principal/articles/create"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreateArticlePage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/principal/articles/:id/edit"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <CreateArticlePage />
+                    </RoleBasedRoute>
+                  }
+                />
+                <Route
+                  path="/principal/voucher"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
+                      <VoucherPage />
+                    </RoleBasedRoute>
+                  }
+                />
                 <Route
                   path="/principal/withdraw"
                   element={
-                    // <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}>
+                    <RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]} fallbackPath="/">
                       <WithdrawPage />
-                    // </RoleBasedRoute>
+                    </RoleBasedRoute>
                   }
                 />
 
@@ -348,11 +419,7 @@ const App = () => (
 
                 <Route
                   path="/cart"
-                  element={
-                    <RoleBasedRoute allowedRoles={[UserRole.BENFEK]}>
-                      <CartPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<CartPage />}
                 />
 
                 {/* Dashboard only for Principal */}

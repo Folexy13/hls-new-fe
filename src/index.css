@@ -100,4 +100,53 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    @apply border-slate-300 bg-white text-slate-950 placeholder:text-slate-500 shadow-sm;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none;
+  }
+}
+
+@layer utilities {
+  form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+  form input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+  form select:focus,
+  form select:focus-visible,
+  form textarea:focus,
+  form textarea:focus-visible,
+  form button[role="combobox"]:focus,
+  form button[role="combobox"]:focus-visible,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+  select:focus,
+  select:focus-visible,
+  textarea:focus,
+  textarea:focus-visible {
+    border-color: rgb(203 213 225) !important;
+    box-shadow: none !important;
+    outline: none !important;
+    --tw-ring-color: transparent !important;
+    --tw-ring-offset-width: 0px !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+  }
+}
+
+/* Researcher app helpers (ported from `hls-researcher-app`). */
+.supplement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .supplement-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
 }

@@ -2,6 +2,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from './env';
 import { tokenManager } from '../utils/tokenManager';
+import { getSafeUserMessage } from '../utils/apiError';
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -11,11 +12,34 @@ export const apiClient = axios.create({
   },
 });
 
+let refreshPromise: Promise<{ accessToken: string; refreshToken: string }> | null = null;
+
+export const refreshAuthTokens = async (): Promise<{ accessToken: string; refreshToken: string }> => {
+  const refreshToken = tokenManager.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/api/v2/auth/refresh`, { refreshToken })
+      .then((response) => {
+        const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
+        tokenManager.setTokens(accessToken, newRefreshToken);
+        return { accessToken, refreshToken: newRefreshToken };
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
 // Request interceptor to add bearer token
 apiClient.interceptors.request.use(
   (config) => {
     const token = tokenManager.getAccessToken();
-    // alert(`Token: ${token}`); // Debugging line to check token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,34 +55,35 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const responseData = error.response?.data;
+
+    if (responseData?.message) {
+      responseData.message = getSafeUserMessage(responseData.message);
+    }
+
+    if (typeof responseData?.error === 'string') {
+      responseData.error = getSafeUserMessage(responseData.error);
+    }
+
+    if (responseData?.error?.details) {
+      delete responseData.error.details;
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = tokenManager.getRefreshToken();
-      console.log('Attempting to refresh token with:', refreshToken);
-      if (refreshToken) {
-        try {
-          const response = await axios.post(`${API_BASE_URL}/api/v2/auth/refresh`, {
-            refreshToken
-          });
-          console.log('Token refreshed successfully:', response.data);
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data.tokens;
-          tokenManager.setTokens(accessToken, newRefreshToken);
+      try {
+        const { accessToken } = await refreshAuthTokens();
 
-          // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          console.error('Token refresh failed, logging out:', refreshError);
-          tokenManager.clearTokens();
-          window.location.href = '/auth/signin';
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // No refresh token available, force logout
+        // Retry original request with new token
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        console.error('Token refresh failed, logging out:', refreshError);
         tokenManager.clearTokens();
         window.location.href = '/auth/signin';
+        return Promise.reject(refreshError);
       }
     }
 

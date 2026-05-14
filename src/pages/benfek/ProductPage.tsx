@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
 import { apiClient } from '@/config/axios';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 type Product = {
   id: string;
@@ -12,6 +13,7 @@ type Product = {
   price: number;
   image: string;
   description: string;
+  category: 'vitamin' | 'mineral' | 'protein' | 'supplement';
   vendor: string;
   rating: number;
   reviews: number;
@@ -43,8 +45,9 @@ const ProductPage: React.FC = () => {
           id: String(data.id),
           name: data.name,
           price: data.price,
-          image: data.image || '/placeholder.svg',
+          image: data.image || data.imageUrl || '/placeholder.svg',
           description: data.description,
+          category: 'supplement',
           vendor: 'HLS',
           rating: 4.8,
           reviews: 120,
@@ -76,7 +79,8 @@ const ProductPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4 text-center text-gray-600">
+      <div className="min-h-screen bg-gray-50 py-8 px-4 text-center text-gray-600 flex items-center justify-center gap-2">
+        <LoadingSpinner className="text-emerald-600" />
         Loading product...
       </div>
     );
@@ -177,7 +181,12 @@ const ProductPage: React.FC = () => {
                   }
                 }}
               >
-                {adding ? 'Adding...' : 'Add to Cart'}
+                {adding ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner />
+                    Adding...
+                  </span>
+                ) : 'Add to Cart'}
               </button>
               <button className="w-full border border-gray-300 text-gray-700 py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />

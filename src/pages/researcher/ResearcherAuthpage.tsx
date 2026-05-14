@@ -1,5 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import { Eye, EyeOff } from "lucide-react";
+import { authService } from "@/services/authService";
+import { tokenManager } from "@/utils/tokenManager";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const ResearcherAuthPage = () => {
   const navigate = useNavigate();
@@ -10,6 +16,9 @@ const ResearcherAuthPage = () => {
     password: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -19,7 +28,7 @@ const ResearcherAuthPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -28,18 +37,40 @@ const ResearcherAuthPage = () => {
       !formData.password ||
       !formData.confirmPassword
     ) {
-      alert("Please fill in all fields");
+      toast.error("Please fill in all fields");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
-    // Temporary flow
-    // Later this is where backend signup logic will go
-    navigate("/researcher");
+    const [firstName = "", ...rest] = formData.fullName.trim().split(/\s+/);
+
+    setIsLoading(true);
+    try {
+      const result = await authService.register({
+        firstName,
+        lastName: rest.join(" ") || firstName,
+        email: formData.email,
+        password: formData.password,
+        role: "researcher",
+      });
+
+      if (result.tokens?.accessToken && result.tokens?.refreshToken) {
+        tokenManager.setTokens(result.tokens.accessToken, result.tokens.refreshToken);
+      }
+
+      localStorage.setItem("isAuthenticated", "true");
+      localStorage.setItem("user", JSON.stringify(result.user));
+      toast.success("Researcher account created successfully!");
+      navigate("/researcher");
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Failed to create researcher account."));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,6 +102,7 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Enter your full name"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
@@ -85,6 +117,7 @@ const ResearcherAuthPage = () => {
               onChange={handleChange}
               placeholder="Enter your email"
               className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+              disabled={isLoading}
             />
           </div>
 
@@ -92,35 +125,63 @@ const ResearcherAuthPage = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password
             </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirm your password"
+                className="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
+            disabled={isLoading}
             className="w-full h-11 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors"
           >
-            Create Researcher Account
+            {isLoading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <LoadingSpinner />
+                Creating Account...
+              </span>
+            ) : "Create Researcher Account"}
           </button>
         </form>
 

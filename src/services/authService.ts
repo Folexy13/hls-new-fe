@@ -10,6 +10,7 @@ export interface RegisterRequest {
   lastName: string;
   email: string;
   password: string;
+  role?: string;
 }
 
 export interface AuthResponse {
@@ -28,40 +29,13 @@ export interface AuthResponse {
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    try {
-      const response = await apiClient.post("/api/v2/auth/login", credentials);
-      const data = response.data.data;
-      const token = data.token || data.access_token;
-      console.log("Login response:", data);
-      // if (token) {
-      //   localStorage.setItem('token', token);
-      //   console.log('Login successful, token stored:', token);
-      // } else {
-      //   console.warn('No token found in login response:', data);
-      // }
-      return data;
-    } catch (error) {
-      console.error("Login error:", error);
-      throw error;
-    }
+    const response = await apiClient.post("/api/v2/auth/login", credentials);
+    return response.data.data;
   },
 
   async register(userData: RegisterRequest): Promise<AuthResponse> {
-    try {
-      const response = await apiClient.post("/api/v2/auth/register", userData);
-      const data = response.data.data;
-      const token = data.token || data.access_token;
-      if (token) {
-        localStorage.setItem("token", token);
-        console.log("Registration successful, token stored:", token);
-      } else {
-        console.warn("No token found in registration response:", data);
-      }
-      return data;
-    } catch (error) {
-      console.error("Registration error:", error);
-      throw error;
-    }
+    const response = await apiClient.post("/api/v2/auth/register", userData);
+    return response.data.data;
   },
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
@@ -75,5 +49,15 @@ export const authService = {
     await apiClient.post("/api/v2/auth/logout", {
       refreshToken,
     });
+  },
+
+  async forgotPassword(email: string): Promise<any> {
+    const response = await apiClient.post("/api/v2/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  async resetPassword(token: string, newPassword?: string): Promise<AuthResponse> {
+    const response = await apiClient.post("/api/v2/auth/reset-password", { token, newPassword });
+    return response.data.data;
   },
 };

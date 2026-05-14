@@ -5,15 +5,15 @@
   "description": "Your complete health and wellness companion",
   "icons": [
     {
-      "src": "/placeholder.svg",
+      "src": "/logo.jpg",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg",
+      "src": "/logo.jpg",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ],

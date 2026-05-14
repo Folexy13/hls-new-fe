@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Table, TableBody, TableCaption, TableCell, 
-  TableHead, TableHeader, TableRow 
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+  Table, TableBody, TableCaption, TableCell,
+  TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
-import { 
-  Pagination, PaginationContent, PaginationItem, 
-  PaginationLink, PaginationNext, PaginationPrevious 
+import {
+  Pagination, PaginationContent, PaginationItem,
+  PaginationLink, PaginationNext, PaginationPrevious
 } from '@/components/ui/pagination';
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger
@@ -16,14 +16,25 @@ import { Button } from '@/components/ui/button';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { MultiSelectCreatableField } from '@/components/MultiSelectCreatableField';
 import {
   Search, UserPlus, Filter, Download,
   ChevronDown, Eye, ArrowUpDown,
-  Copy, CheckCircle, Plus
+  Copy, CheckCircle, Plus,
+  User
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+
+const HEALTH_FIELD_OPTIONS = {
+  allergies: ['Peanuts', 'Dust', 'Seafood', 'Dairy', 'Eggs', 'Penicillin', 'Pollen'],
+  scares: ['Hypertension episode', 'Asthma attack', 'Fainting spell', 'High blood sugar', 'Seizure episode'],
+  familyCondition: ['Diabetes', 'Hypertension', 'Asthma', 'Sickle cell', 'Heart disease'],
+  medications: ['Vitamin D', 'Omega-3', 'Paracetamol', 'Metformin', 'Lisinopril'],
+  hasCurrentCondition: ['Asthma', 'Hypertension', 'Diabetes', 'Ulcer', 'Arthritis'],
+} as const;
 
 // Define the Benfek type (based on QuizCode)
 type BenfekRecord = {
@@ -38,6 +49,7 @@ type BenfekRecord = {
   scares?: string;
   familyCondition?: string;
   medications?: string;
+  currentConditions?: string | string[];
   hasCurrentCondition: boolean;
 };
 
@@ -90,6 +102,26 @@ const AccordionSkeleton: React.FC = () => (
   </div>
 );
 
+const BenfekListLoader: React.FC = () => (
+  <div className="flex min-h-[45vh] items-center justify-center bg-white">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-100 bg-white px-8 py-7 text-center shadow-sm">
+      <LoadingSpinner className="h-8 w-8 text-emerald-600" />
+      <div>
+        <p className="text-sm font-semibold text-slate-900">Preparing benfek list</p>
+        <p className="mt-1 text-xs text-slate-500">Fetching the latest records...</p>
+      </div>
+    </div>
+  </div>
+);
+
+const formatHealthValue = (value?: string | string[]) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean).join(', ');
+  }
+
+  return value?.trim() || '';
+};
+
 const BenfeksPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [benfeks, setBenfeks] = useState<BenfekRecord[]>([]);
@@ -101,31 +133,76 @@ const BenfeksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBenfek, setSelectedBenfek] = useState<BenfekRecord | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [registrationFilter, setRegistrationFilter] = useState<'all' | 'registered' | 'not_registered'>('all');
+  const [showRegistrationFilter, setShowRegistrationFilter] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editFormData, setEditFormData] = useState<Partial<BenfekRecord> | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const itemsPerPage = 10;
 
-  // Fetch benfeks from API
+  const handleEditBenfek = async () => {
+    if (!selectedBenfek || !editFormData) return;
+
+    setIsSubmittingEdit(true);
+    try {
+      const payload = {
+        allergies: editFormData.allergies,
+        scares: editFormData.scares,
+        familyCondition: editFormData.familyCondition,
+        medications: editFormData.medications,
+        currentConditions: editFormData.currentConditions,
+        hasCurrentCondition: editFormData.hasCurrentCondition,
+      };
+
+      await apiClient.put(`/api/v2/quiz-code/${selectedBenfek.id}`, payload);
+
+      setBenfeks(prev => prev.map(b =>
+        b.id === selectedBenfek.id ? { ...b, ...editFormData } : b
+      ));
+      setSelectedBenfek({ ...selectedBenfek, ...editFormData });
+      setIsEditMode(false);
+      toast.success('Benfek details updated successfully');
+    } catch (error) {
+      console.error('Failed to update benfek:', error);
+      const message = 'Failed to update benfek details';
+      toast.error(message);
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const fetchBenfeks = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const response = await apiClient.get('/api/v2/quiz-code/benfeks');
+      const data = response.data?.data?.benfeks || [];
+      setBenfeks(data);
+    } catch (error) {
+      console.error('Failed to fetch benfeks:', error);
+      const message = 'Failed to load benfeks';
+      setLoadError(message);
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch benfeks from API (and refetch after returning from "Add Benfek")
   useEffect(() => {
-    const fetchBenfeks = async () => {
-      setIsLoading(true);
-      setLoadError(null);
-      try {
-        const response = await apiClient.get('/api/v2/quiz-code/benfeks');
-        const data = response.data?.data?.benfeks || [];
-        setBenfeks(data);
-      } catch (error) {
-        console.error('Failed to fetch benfeks:', error);
-        const message = 'Failed to load benfeks';
-        setLoadError(message);
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const needsRefresh =
+      (location.state as any)?.refresh ||
+      sessionStorage.getItem('benfeksNeedsRefresh') === '1';
+
+    if (needsRefresh) {
+      sessionStorage.removeItem('benfeksNeedsRefresh');
+    }
 
     fetchBenfeks();
-  }, []);
+  }, [fetchBenfeks, location.key, location.state]);
 
   console.log(benfeks)
 
@@ -148,11 +225,27 @@ const BenfeksPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = benfeks.filter(benfek =>
-    benfek.benfekName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    benfek.benfekPhone.includes(searchTerm) ||
-    benfek.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueBenfeks = useMemo(() => {
+    const seen = new Set<string>();
+    return benfeks.filter((benfek) => {
+      const key = benfek.code ?? String(benfek.id);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [benfeks]);
+
+  const filteredData = uniqueBenfeks.filter((benfek) => {
+    const matchesSearch =
+      benfek.benfekName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      benfek.benfekPhone.includes(searchTerm) ||
+      benfek.code.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRegistration =
+      registrationFilter === 'all' ? true : benfek.registrationStatus === registrationFilter;
+
+    return matchesSearch && matchesRegistration;
+  });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
@@ -181,15 +274,99 @@ const BenfeksPage: React.FC = () => {
       <span className={`px-3 py-1 rounded-full text-xs font-bold ${
         isRegistered ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
       }`}>
-        {isRegistered ? 'Registered' : 'Not Registered'}
+        {isRegistered ? 'Registered' : 'Pending'}
       </span>
     );
   };
 
   return (
-    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white sticky top-0 z-20 sm:relative">
+    <div className="flex-1 bg-slate-50 pb-20 sm:pb-8 pt-[158px] lg:pt-[174px]">
+      <div className="fixed left-0 right-0 top-16 lg:top-20 z-40 bg-white pb-1 shadow-sm border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="py-1">
+            <BackToDashboardButton className="text-black/90 hover:text-black/80" />
+          </div>
+
+          <div className="border-t border-slate-200/80 py-1">
+            <div className="flex flex-row items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-0 sm:max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search benfeks..."
+                  className="pl-10 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="relative">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Filter"
+                    onClick={() => setShowRegistrationFilter((v) => !v)}
+                    className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                  >
+                    <Filter className="h-4 w-4" />
+                  </Button>
+
+                  {showRegistrationFilter && (
+                    <div className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                      {[
+                        { label: 'All', value: 'all' as const },
+                        { label: 'Registered', value: 'registered' as const },
+                        { label: 'Pending', value: 'not_registered' as const },
+                      ].map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setRegistrationFilter(opt.value);
+                            setCurrentPage(1);
+                            setShowRegistrationFilter(false);
+                          }}
+                          className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                            registrationFilter === opt.value
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Export"
+                  className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Benfek"
+                  className="h-10 w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <User className="h-4 w-4" />
+                  <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : benfeks.length}</p>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white sticky top-0 z-20 sm:relative">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
+          
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <BackToDashboardButton className="mb-3 text-white/80 hover:text-white" />
@@ -215,34 +392,13 @@ const BenfeksPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
+      <div className="relative z-0 max-w-7xl mx-auto px-0 sm:px-6 lg:px-8">
+        <Card className="-mt-16 overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search benfeks..."
-                className="pl-10 h-11 sm:h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
-                <Filter className="h-4 w-4" />
-                <span>Filter</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
-                <Download className="h-4 w-4" />
-                <span>Export</span>
-              </Button>
-            </div>
-          </div>
+          <div className="border-b" />
           {loadError && (
             <div className="bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-700">
               {loadError}
@@ -252,12 +408,11 @@ const BenfeksPage: React.FC = () => {
           {/* Desktop Table View - Hidden on mobile */}
           <div className="hidden md:block overflow-x-auto bg-white">
             {isLoading ? (
-              <TableSkeleton />
+              <BenfekListLoader />
             ) : benfeks.length === 0 ? (
               <EmptyState onAddClick={handleNavigateToAdd} />
             ) : (
               <Table>
-                <TableCaption>A list of your registered and pending benfeks.</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">ID</TableHead>
@@ -325,7 +480,7 @@ const BenfeksPage: React.FC = () => {
           {/* Mobile Accordion View - Visible only on mobile */}
           <div className="md:hidden space-y-2 p-2">
             {isLoading ? (
-              <AccordionSkeleton />
+              <BenfekListLoader />
             ) : benfeks.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm">
                 <EmptyState onAddClick={handleNavigateToAdd} />
@@ -333,45 +488,88 @@ const BenfeksPage: React.FC = () => {
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {paginatedData.map((benfek) => (
-                  <AccordionItem key={benfek.id} value={`benfek-${benfek.id}`} className="border-0 bg-white rounded-xl shadow-sm overflow-hidden">
-                    <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-gray-50 transition-colors text-left">
-                      <div className="flex items-center gap-4 w-full text-left">
-                        <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
+                  <AccordionItem
+                    key={benfek.id}
+                    value={`benfek-${benfek.id}`}
+                    className="rounded-xl border border-slate-200 bg-slate-50/40 overflow-hidden"
+                  >
+                    <AccordionTrigger className="rounded-xl bg-white px-4 py-4 hover:no-underline">
+                      <div className="flex w-full items-center gap-3 text-left min-w-0">
+                        {/* <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
                           {benfek.benfekName.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 truncate text-base text-left">{benfek.benfekName}</p>
-                          <p className="text-sm text-gray-500 mt-0.5 text-left">{benfek.benfekPhone}</p>
-                          <div className="mt-2 flex items-center gap-2">
+                        </div> */}
+                        <div className="flex flex-1 min-w-0 items-center justify-between gap-3 pr-2">
+                          <p className="flex-1 min-w-0 font-bold text-gray-900 truncate text-base text-left">
+                            {benfek.benfekName}
+                          </p>
+                          {/* <p className="text-sm text-gray-500 mt-0.5 text-left">{benfek.benfekPhone}</p> */}
+                          <div className="flex shrink-0 items-center gap-2">
                             {renderStatusBadge(benfek.registrationStatus)}
                           </div>
                         </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4 bg-white">
-                      <div className="space-y-4 pt-2">
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                          <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Quiz Access Code</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-2xl font-black text-blue-600 tracking-widest font-mono">{benfek.code}</span>
-                            <Button size="sm" className="rounded-full bg-white border-gray-200 text-gray-600 hover:bg-gray-100" onClick={() => copyCode(benfek.code)}>
-                              <Copy className="h-4 w-4 mr-2" /> Copy
+                    <AccordionContent className="px-4 pb-4 pt-2">
+                      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-700">
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Code
+                          </span>
+                          <div className="flex items-center gap-2 self-start">
+                            <span className="font-mono text-sm font-black tracking-widest text-blue-600 whitespace-nowrap">
+                              {benfek.code}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                              onClick={() => copyCode(benfek.code)}
+                              aria-label="Copy code"
+                            >
+                              <Copy className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500 text-xs font-semibold">CREATED</p>
-                            <p className="font-bold text-gray-900">{new Date(benfek.createdAt).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500 text-xs font-semibold">CONDITION</p>
-                            <p className="font-bold text-gray-900">{benfek.hasCurrentCondition ? 'Yes' : 'No'}</p>
-                          </div>
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Created
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {new Date(benfek.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                        <div className="flex gap-2 pt-2">
-                          <Button variant="outline" size="sm" className="flex-1 rounded-full h-10 border-gray-200" onClick={() => { setSelectedBenfek(benfek); setIsModalOpen(true); }}>
-                            <Eye className="h-4 w-4 mr-2" /> Details
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Phone
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {benfek.benfekPhone}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start justify-between gap-4">
+                          <span className="text-xs font-semibold uppercase text-slate-500">
+                            Condition
+                          </span>
+                          <span className="font-semibold text-slate-900 whitespace-nowrap">
+                            {benfek.hasCurrentCondition ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-start">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full rounded-full h-10 border-gray-200"
+                            onClick={() => {
+                              setSelectedBenfek(benfek);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> Health Details
                           </Button>
                         </div>
                       </div>
@@ -385,9 +583,9 @@ const BenfeksPage: React.FC = () => {
           {/* Pagination */}
           {!isLoading && benfeks.length > 0 && (
             <div className="p-4 bg-white border-t flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-500">
+              {/* <div className="text-sm text-gray-500">
                 Showing {`${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {filteredData.length} entries
-              </div>
+              </div> */}
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
@@ -406,43 +604,104 @@ const BenfeksPage: React.FC = () => {
       {/* Add/View Benfek Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Benfek Details"
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsEditMode(false);
+          setEditFormData(null);
+        }}
+        title={isEditMode ? "Edit Benfek Health Details" : "Benfek's Health Details"}
         size="lg"
       >
         {selectedBenfek ? (
           <div className="space-y-6">
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-center">
-              <p className="text-blue-600 text-xs uppercase tracking-[0.2em] font-black mb-2">Quiz Access Code</p>
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-4xl font-black text-blue-700 tracking-widest font-mono">{selectedBenfek.code}</span>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-blue-100" onClick={() => copyCode(selectedBenfek.code)}>
-                  <Copy className="h-5 w-5 text-blue-600" />
-                </Button>
-              </div>
-              <p className="mt-4 text-sm text-blue-500 font-medium italic">Share this code with {selectedBenfek.benfekName} to complete registration.</p>
-            </div>
+            {(() => {
+              const currentConditions = formatHealthValue(selectedBenfek.currentConditions);
 
+              if (isEditMode) {
+                return (
+                  <>
+                    <div className="space-y-4">
+                      <MultiSelectCreatableField
+                        label="Allergies"
+                        placeholder="Select or add allergies"
+                        options={HEALTH_FIELD_OPTIONS.allergies}
+                        value={Array.isArray(editFormData?.allergies) ? editFormData.allergies : editFormData?.allergies ? [editFormData.allergies as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, allergies: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Health Scares"
+                        placeholder="Select or add health scares"
+                        options={HEALTH_FIELD_OPTIONS.scares}
+                        value={Array.isArray(editFormData?.scares) ? editFormData.scares : editFormData?.scares ? [editFormData.scares as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, scares: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Family Condition"
+                        placeholder="Select or add family conditions"
+                        options={HEALTH_FIELD_OPTIONS.familyCondition}
+                        value={Array.isArray(editFormData?.familyCondition) ? editFormData.familyCondition : editFormData?.familyCondition ? [editFormData.familyCondition as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, familyCondition: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Current Medications"
+                        placeholder="Select or add medications"
+                        options={HEALTH_FIELD_OPTIONS.medications}
+                        value={Array.isArray(editFormData?.medications) ? editFormData.medications : editFormData?.medications ? [editFormData.medications as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, medications: val }))}
+                      />
+
+                      <MultiSelectCreatableField
+                        label="Current Health Conditions"
+                        placeholder="Select or add current health conditions"
+                        options={HEALTH_FIELD_OPTIONS.hasCurrentCondition}
+                        value={Array.isArray(editFormData?.currentConditions) ? editFormData.currentConditions : editFormData?.currentConditions ? [editFormData.currentConditions as string] : []}
+                        onChange={(val) => setEditFormData(prev => ({ ...prev, currentConditions: val }))}
+                      />
+                    </div>
+
+                    <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end gap-3 z-10">
+                      <Button
+                        variant="outline"
+                        className="rounded-full h-11 px-8"
+                        onClick={() => {
+                          setIsEditMode(false);
+                          setEditFormData(null);
+                        }}
+                        disabled={isSubmittingEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        className="rounded-full h-11 px-8 bg-blue-600 hover:bg-blue-700"
+                        onClick={handleEditBenfek}
+                        disabled={isSubmittingEdit}
+                      >
+                        {isSubmittingEdit ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                  </>
+                );
+              }
+
+              return (
+                <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <p className="text-xs text-gray-400 font-bold uppercase">Benfek Name</p>
                 <p className="text-lg font-bold text-gray-900">{selectedBenfek.benfekName}</p>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Phone Number</p>
-                <p className="text-lg font-bold text-gray-900">{selectedBenfek.benfekPhone}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Registration Status</p>
-                <div className="pt-1">{renderStatusBadge(selectedBenfek.isUsed)}</div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-400 font-bold uppercase">Current Condition</p>
-                <p className="text-lg font-bold text-gray-900">{selectedBenfek.hasCurrentCondition ? 'Yes' : 'No'}</p>
-              </div>
             </div>
 
-            <div className="space-y-4 border-t pt-6">
+            <div className="space-y-4 pt-6">
+              {currentConditions && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-xs text-gray-400 font-bold uppercase mb-1">Current Health Condition</p>
+                  <p className="text-gray-700 font-medium">{currentConditions}</p>
+                </div>
+              )}
               {selectedBenfek.allergies && (
                 <div className="bg-gray-50 p-4 rounded-xl">
                   <p className="text-xs text-gray-400 font-bold uppercase mb-1">Allergies</p>
@@ -469,11 +728,34 @@ const BenfeksPage: React.FC = () => {
               )}
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end z-10">
-              <Button variant="outline" className="w-full sm:w-auto rounded-full h-11 px-8" onClick={() => setIsModalOpen(false)}>
+            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t flex justify-end gap-3 z-10">
+              <Button variant="outline" className="rounded-full h-11 px-8" onClick={() => setIsModalOpen(false)}>
                 Close
               </Button>
+              <Button
+                className="rounded-full h-11 px-8 bg-emerald-600 hover:bg-emerald-700"
+                onClick={() => {
+                  setIsEditMode(true);
+                  const parseHealthField = (field: string | string[] | undefined) => {
+                    if (Array.isArray(field)) return field;
+                    if (typeof field === 'string' && field.trim() !== '') return field.split(',').map(s => s.trim()).filter(Boolean);
+                    return [];
+                  };
+                  setEditFormData({
+                    allergies: parseHealthField(selectedBenfek.allergies),
+                    scares: parseHealthField(selectedBenfek.scares),
+                    familyCondition: parseHealthField(selectedBenfek.familyCondition),
+                    medications: parseHealthField(selectedBenfek.medications),
+                    currentConditions: parseHealthField(selectedBenfek.currentConditions),
+                  });
+                }}
+              >
+                Edit
+              </Button>
             </div>
+                </>
+              );
+            })()}
           </div>
         ) : null}
       </Modal>

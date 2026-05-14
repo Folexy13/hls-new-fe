@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -14,8 +15,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Filter, Download, Eye, ArrowUpDown,
-  ChevronDown, Plus, Edit, Trash2, FileText
+  Plus, Edit, Trash2, FileText, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
+import { contentService } from '@/services/contentService';
+import { toast } from 'sonner';
 
 // Define the Article type
 type Article = {
@@ -25,6 +29,8 @@ type Article = {
   author: string;
   status: string;
   publishDate: string;
+  createdAt?: string;
+  tags?: Record<string, string[]>;
   views: number;
   likes: number;
 };
@@ -53,25 +59,46 @@ const mockArticles: Article[] = Array(50).fill(0).map((_, i) => ({
 }));
 
 const ArticlesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [articles, setArticles] = useState<Article[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [openArticleId, setOpenArticleId] = useState<number | null>(null);
+  const [deletingArticleId, setDeletingArticleId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Under Review' | 'Archived'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockArticles.length / itemsPerPage);
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setArticles(mockArticles);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const loadArticles = async () => {
+      setIsLoading(true);
+      try {
+        const rows = await contentService.getPrincipalArticles();
+        setArticles(rows.map((article: any) => ({
+          id: article.id,
+          title: article.title,
+          category: article.category,
+          author: article.author || 'Principal',
+          status: article.status === 'published' ? 'Published' : article.status === 'archived' ? 'Archived' : 'Draft',
+          publishDate: article.createdAt ? new Date(article.createdAt).toLocaleDateString() : 'Recently',
+          createdAt: article.createdAt,
+          tags: article.tags || {},
+          views: Number(article.views || 0),
+          likes: Number(article.likes || 0),
+        })));
+      } catch (error) {
+        console.error('Failed to load articles:', error);
+        setArticles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadArticles();
   }, []);
 
   // Handle sorting
@@ -85,11 +112,18 @@ const ArticlesPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = articles.filter(article => 
-    article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    article.author.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = articles.filter((article) => {
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.author.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' ? true : article.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Article] < b[sortField as keyof Article]) return sortDirection === 'asc' ? -1 : 1;
@@ -103,32 +137,10 @@ const ArticlesPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  // Generate pagination items
-  const getPaginationItems = () => {
-    const items = [];
-    const maxVisiblePages = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            onClick={() => setCurrentPage(i)} 
-            isActive={currentPage === i}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    return items;
+  const getVisiblePages = () => {
+    if (totalPages <= 3) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 1, totalPages - 2));
+    return [start, start + 1, start + 2];
   };
 
   // Render status badge
@@ -158,222 +170,295 @@ const ArticlesPage: React.FC = () => {
     );
   };
 
+  const statusIconColor = (status: string) => {
+    switch (status) {
+      case 'Published':
+        return 'text-emerald-500';
+      case 'Archived':
+        return 'text-blue-500';
+      case 'Under Review':
+        return 'text-amber-500';
+      case 'Draft':
+      default:
+        return 'text-slate-400';
+    }
+  };
+
+  const handleDeleteArticle = async (article: Article) => {
+    const shouldDelete = window.confirm(`Delete "${article.title}"? This cannot be undone.`);
+    if (!shouldDelete) return;
+
+    setDeletingArticleId(article.id);
+    try {
+      await contentService.deletePrincipalArticle(article.id);
+      setArticles((prev) => prev.filter((item) => item.id !== article.id));
+      if (openArticleId === article.id) setOpenArticleId(null);
+      toast.success('Article deleted');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to delete article');
+    } finally {
+      setDeletingArticleId(null);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      {/* Page Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <BackToDashboardButton className="mb-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Articles</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your health articles and publications
-              </p>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Article
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
+      {/* Fixed Header (Back + Title) */}
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
+          <BackToDashboardButton className="text-black/90 hover:text-black/80" />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Articles</h1>
+            <Button className="flex items-center gap-2 h-9 px-4" onClick={() => navigate('/principal/articles/create')}>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Article</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-3">
         <Card className="overflow-hidden">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+          <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0 sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search articles..."
-                className="pl-8"
+                className="pl-10 h-11 sm:h-10 bg-gray-100 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filter</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'Published', value: 'Published' as const },
+                      { label: 'Draft', value: 'Draft' as const },
+                      { label: 'Under Review', value: 'Under Review' as const },
+                      { label: 'Archived', value: 'Archived' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setCurrentPage(1);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Export"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Articles count"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
+                <FileText className="h-4 w-4" />
+                <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : articles.length}</p>
               </Button>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableCaption>A list of all articles.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('id')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      ID
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('title')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Title
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('category')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Category
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('author')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Author
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Status
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('views')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Views
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('publishDate')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Published
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array(itemsPerPage).fill(0).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : paginatedData.length > 0 ? (
-                  // Actual data
-                  paginatedData.map((article) => (
-                    <TableRow key={article.id}>
-                      <TableCell className="font-medium">{article.id}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium truncate max-w-[200px]">{article.title}</span>
+          {/* Articles List (Accordion) */}
+          <div className="p-4 space-y-2">
+            {isLoading ? (
+              Array(itemsPerPage).fill(0).map((_, index) => (
+                <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : paginatedData.length > 0 ? (
+              <Accordion
+                type="single"
+                collapsible
+                value={openArticleId ? `article-${openArticleId}` : undefined}
+                onValueChange={(value) =>
+                  setOpenArticleId(value ? Number(value.replace('article-', '')) : null)
+                }
+                className="space-y-2"
+              >
+                {paginatedData.map((article) => (
+                  <AccordionItem
+                    key={article.id}
+                    value={`article-${article.id}`}
+                    className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
+                  >
+                    <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
+                      <div className="flex w-full justify-between flex-row items-center gap-2 text-left sm:items-center">
+                        <div className="flex w-full items-center gap-2 justify-start min-w-0">
+                          <FileText className={`h-5 w-5 ${statusIconColor(article.status)}`} />
+                          <span className="text-sm font-semibold text-slate-900 truncate w-[90%]">
+                            {article.title}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{article.category}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{article.author}</TableCell>
-                      <TableCell>{renderStatusBadge(article.status)}</TableCell>
-                      <TableCell className="hidden md:table-cell">{article.views.toLocaleString()}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{article.publishDate}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="h-4 w-4" />
+                        <div className="ml-auto flex w-1/3 justify-end text-right">
+                          <Eye className="h-4 w-4 text-slate-500" />
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4 pt-2">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
+                        <div className="flex flex-col min-w-0 items-start text-left">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Category</p>
+                          <p className="mt-1 text-slate-700">{article.category}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Author</p>
+                          <p className="mt-1 text-slate-700">{article.author}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-start text-left">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Views</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{article.views.toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Published</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{article.publishDate}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 justify-self-start">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
+                          <div className="mt-1">{renderStatusBadge(article.status)}</div>
+                        </div>
+                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-between gap-3 justify-self-start">
+                          <div className="min-w-0 flex-1 text-xs text-slate-500">
+                            {Object.values(article.tags || {}).flat().length > 0
+                              ? `Tags: ${Object.values(article.tags || {}).flat().join(', ')}`
+                              : 'Visible to all your Benfeks'}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/principal/articles/${article.id}/edit`)}
+                            className="h-8 flex-1 px-3 text-sm font-semibold border"
+                          >
+                            Edit
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
-                            <Trash2 className="h-4 w-4" />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteArticle(article)}
+                            disabled={deletingArticleId === article.id}
+                            className="border h-8 flex-1 px-3 text-sm font-semibold text-red-600 hover:text-red-700"
+                          >
+                            {deletingArticleId === article.id ? 'Deleting...' : 'Delete'}
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  // No results
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      No articles found. Try adjusting your search.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                No articles found. Try adjusting your search.
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
           <div className="p-4 bg-white border-t">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-500 order-2 sm:order-1">
+            <div className="flex flex-row items-center justify-between gap-3">
+              <div className="min-w-0 flex-1 text-xs sm:text-sm text-gray-500 truncate">
                 Showing {isLoading ? '...' : `${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {isLoading ? '...' : filteredData.length} entries
               </div>
-              <Pagination className="order-1 sm:order-2">
-                <PaginationContent>
+              <Pagination className="shrink-0 w-auto">
+                <PaginationContent className="flex-nowrap justify-end overflow-x-auto no-scrollbar max-w-[55vw] sm:max-w-none">
                   <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
+                    <PaginationLink
+                      href="#"
+                      aria-label="First page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </PaginationLink>
                   </PaginationItem>
-                  
-                  {getPaginationItems()}
-                  
                   <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                    />
+                    <PaginationLink
+                      href="#"
+                      aria-label="Previous page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.max(1, prev - 1)); }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationLink>
+                  </PaginationItem>
+
+                  {getVisiblePages().map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                        isActive={currentPage === page}
+                        className="h-9 w-9"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      aria-label="Next page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.min(totalPages, prev + 1)); }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationLink>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      aria-label="Last page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </PaginationLink>
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>

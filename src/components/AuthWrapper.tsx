@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { authService } from '../services/authService';
+import { refreshAuthTokens } from '../config/axios';
 import { tokenManager } from '../utils/tokenManager';
 import { cartService } from '../services/cartService';
 
@@ -14,26 +14,29 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // If user is already authenticated from persisted state and has valid tokens, skip refresh
+      const refreshToken = tokenManager.getRefreshToken();
+      const hasRefreshSession = !!refreshToken && !tokenManager.isTokenExpired();
+      const accessToken = tokenManager.getAccessToken();
+
+      // If user is already authenticated from persisted state and has tokens available, keep session.
       if (isAuthenticated && user && tokenManager.hasValidTokens()) {
         console.log('User already authenticated from persisted state');
         setIsLoading(false);
         return;
       }
 
-      const refreshToken = tokenManager.getRefreshToken();
-      
-      // Only try to refresh if we have a token but no authenticated user
-      if (refreshToken && !tokenManager.isTokenExpired() && !isAuthenticated) {
+      // Recover the session whenever a non-expired refresh token exists, even if
+      // access token state or persisted auth state is temporarily out of sync.
+      if (hasRefreshSession && (!isAuthenticated || !user || !accessToken)) {
         try {
-          const response = await authService.refreshToken(refreshToken);
-          tokenManager.setTokens(response.tokens.accessToken, response.tokens.refreshToken);
+          const { accessToken } = await refreshAuthTokens();
+          const claims = JSON.parse(atob(accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
           // Update user state after successful token refresh
           setUser({
-            id: response.user.id,
-            email: response.user.email,
-            name: `${response.user.firstName} ${response.user.lastName}`,
-            role: response.user.role,
+            id: String(claims.userId),
+            email: String(claims.email || ''),
+            name: '',
+            role: String(claims.role || ''),
             isAuthenticated: true,
           });
           // Fetch cart from backend and sync store
@@ -58,8 +61,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
           tokenManager.clearTokens();
           logout();
         }
-      } else if (!tokenManager.hasValidTokens() && isAuthenticated) {
-        // Tokens expired but user thinks they're authenticated - log them out
+      } else if (!hasRefreshSession && isAuthenticated) {
+        // No recoverable session remains, so clear the persisted auth state.
         logout();
       }
       

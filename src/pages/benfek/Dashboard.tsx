@@ -1,127 +1,204 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu, Search, Newspaper, Tv, ShoppingCart, Pill, Layers, ArrowRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot, ShoppingCart, Plus } from 'lucide-react';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import logo from '../../images/logo.jpg';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { apiClient } from '@/config/axios';
+import { PackCatalogue } from '@/components/researcher/PackCatalogue';
+import { packCategories } from '@/lib/researcher/dummyData';
+import { toast } from 'react-toastify';
+import { paystackService } from '@/services/paystackService';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { benfekService } from '@/services/benfekService';
+import { cartService } from '@/services/cartService';
+import { getApiErrorMessage } from '@/utils/apiError';
+import { useStore } from '@/store/useStore';
+import dashboardBanner1 from '@/images/dashboard/benfek-dashboard-banner-1.jpeg';
+import dashboardBanner2 from '@/images/dashboard/benfek-dashboard-banner-2.jpeg';
+import dashboardBanner3 from '@/images/dashboard/benfek-dashboard-banner-3.jpeg';
+import dashboardBanner4 from '@/images/dashboard/benfek-dashboard-banner-4.jpeg';
+
+type SavedPharmacy = {
+  name: string;
+  phone: string;
+};
+
+type PharmacySelectionSnapshot = {
+  name: string | null;
+  phone: string | null;
+};
+
+type PendingPackCheckout = {
+  packId: string;
+  catalogueId: string;
+  returnPath: string;
+};
+
+type PackPaymentState = {
+  isPaid: boolean;
+  status: string | null;
+  paidAt: string | null;
+  paystackReference: string | null;
+  orderId: number | null;
+  orderStatus: string | null;
+};
+
+const PENDING_PACK_CHECKOUT_KEY = 'benfek.pending.pack.checkout';
+const VERIFIED_PACK_REFERENCE_KEY = 'benfek.verified.pack.reference';
+
+const getCallbackOrigin = () => window.location.origin;
 
 const Dashboard = () => {
-  const [messageOpen, setMessageOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const setCartFromBackend = useStore((state) => state.setCartFromBackend);
   const [searchValue, setSearchValue] = useState('');
   const [bannerIndex, setBannerIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'pharmacy' | 'nutrient'>('pharmacy');
   const [pharmacySearch, setPharmacySearch] = useState('');
   const [selectedPharmacy, setSelectedPharmacy] = useState<string | null>(null);
+  const [selectedPharmacyPhone, setSelectedPharmacyPhone] = useState<string | null>(null);
+  const [customPharmacyPhone, setCustomPharmacyPhone] = useState('');
+  const [savedPharmacies, setSavedPharmacies] = useState<SavedPharmacy[]>(() => {
+    try {
+      const raw = localStorage.getItem('benfek.saved.pharmacies');
+      const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is SavedPharmacy => {
+            const value = item as SavedPharmacy;
+            return !!value?.name && !!value?.phone;
+          })
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const [showPharmacyModal, setShowPharmacyModal] = useState(false);
   const [pharmacyModalDismissed, setPharmacyModalDismissed] = useState(false);
+  const [hasShownPharmacyModal, setHasShownPharmacyModal] = useState(false);
+  const [showNutrientNotice, setShowNutrientNotice] = useState(false);
+  const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
+  const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
+  const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
+  const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
+  const [packItems, setPackItems] = useState<Record<string, any[]>>({});
+  const [packPaymentStates, setPackPaymentStates] = useState<Record<string, PackPaymentState>>({});
+  const [isPayingForPack, setIsPayingForPack] = useState(false);
+  const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
+  const [isHydratingPharmacy, setIsHydratingPharmacy] = useState(true);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [savedDeliveryAddress, setSavedDeliveryAddress] = useState('');
+  const [pharmacyModalSnapshot, setPharmacyModalSnapshot] = useState<PharmacySelectionSnapshot | null>(null);
+  const tabMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const adminMessages = [
-    { id: 'msg-1', title: 'Welcome to HLS', body: 'Your assessment is complete. Start exploring your personalized recommendations.' },
-    { id: 'msg-2', title: 'New Supplement Drop', body: 'Check out the new immunity stack curated for your profile.' },
-    { id: 'msg-3', title: 'Reminder', body: 'Set your account password to unlock your reward points.' },
-  ];
+  const setPendingPackCheckout = (value: PendingPackCheckout) => {
+    try {
+      sessionStorage.setItem(PENDING_PACK_CHECKOUT_KEY, JSON.stringify(value));
+    } catch {
+      // ignore storage failures
+    }
+  };
+
+  const getPendingPackCheckout = (): PendingPackCheckout | null => {
+    try {
+      const raw = sessionStorage.getItem(PENDING_PACK_CHECKOUT_KEY);
+      return raw ? (JSON.parse(raw) as PendingPackCheckout) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearPendingPackCheckout = () => {
+    try {
+      sessionStorage.removeItem(PENDING_PACK_CHECKOUT_KEY);
+    } catch {
+      // ignore storage failures
+    }
+  };
 
   const bannerImages = useMemo(() => ([
-    'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1532009877282-3340270e0529?q=80&w=1600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1514996937319-344454492b37?q=80&w=1600&auto=format&fit=crop',
+    dashboardBanner1,
+    dashboardBanner2,
+    dashboardBanner3,
+    dashboardBanner4,
   ]), []);
-  const pharmacyItems = useMemo(
-    () => [
-      {
-        id: 'supp-1',
-        title: 'Feroglobin Liquid',
-        price: '₦24.99',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.34.jpeg',
-      },
-      {
-        id: 'supp-2',
-        title: 'Lung Defense',
-        price: '₦31.50',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35.jpeg',
-      },
-      {
-        id: 'supp-3',
-        title: 'Wellwoman 50+',
-        price: '₦18.99',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.35 (1).jpeg',
-      },
-      {
-        id: 'supp-4',
-        title: 'Wellwoman 70+',
-        price: '₦22.00',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36.jpeg',
-      },
-      {
-        id: 'supp-5',
-        title: 'Osteocare Chewable',
-        price: '₦29.75',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (1).jpeg',
-      },
-      {
-        id: 'supp-6',
-        title: 'Jointace Max',
-        price: '₦16.40',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.36 (2).jpeg',
-      },
-      {
-        id: 'supp-7',
-        title: 'Wellman 50+',
-        price: '₦27.90',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37.jpeg',
-      },
-      {
-        id: 'supp-8',
-        title: 'Cod Liver Oil',
-        price: '₦19.60',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (1).jpeg',
-      },
-      {
-        id: 'supp-9',
-        title: 'Nectamin Liquid',
-        price: '₦21.20',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (2).jpeg',
-      },
-      {
-        id: 'supp-10',
-        title: 'Cardioace Max',
-        price: '₦26.50',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 22.32.37 (3).jpeg',
-      },
-      {
-        id: 'supp-11',
-        title: 'Prenatal Gummies',
-        price: '₦23.40',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30.jpeg',
-      },
-      {
-        id: 'supp-12',
-        title: 'Tocovid SupraBio',
-        price: '₦28.15',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (1).jpeg',
-      },
-      {
-        id: 'supp-13',
-        title: 'Move Free Joint',
-        price: '₦19.75',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (2).jpeg',
-      },
-      {
-        id: 'supp-14',
-        title: 'Vitamin E 1000IU',
-        price: '₦17.90',
-        image: '/src/images/card/WhatsApp Image 2026-03-31 at 23.16.30 (3).jpeg',
-      },
-    ],
-    []
-  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchSupplements = async () => {
+      try {
+        const response = await apiClient.get('/api/v2/supplements');
+        const data = response.data?.data?.supplements || [];
+        const mapped = (data as Array<Record<string, unknown>>)
+          .map((item) => {
+            const stock = (item.stock as number) ?? 0;
+            return {
+              id: String(item.id ?? ''),
+              title: String(item.name ?? ''),
+              price: `₦${Number(item.price ?? 0).toLocaleString()}`,
+              image: (item.imageUrl as string) || (item.image as string) || '/placeholder.svg',
+              stock,
+            };
+          })
+          // Do not show out-of-stock items in benfek dashboard.
+          .filter((item) => item.id && item.title && item.stock > 0)
+          .map(({ stock, ...rest }) => rest);
+
+        if (mounted) setApiPharmacyItems(mapped);
+      } catch {
+        if (mounted) setApiPharmacyItems([]);
+      }
+    };
+
+    fetchSupplements();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchPacks = async () => {
+      try {
+        const response = await apiClient.get('/api/v2/benfek/packs');
+        const packs = response.data?.data || [];
+        const mapped: Record<string, any[]> = {};
+        const paymentStates: Record<string, PackPaymentState> = {};
+        packs.forEach((p: any) => {
+          mapped[p.packId] = (p.items || []).map((i: any) => ({
+            ...i.supplement,
+            qty: i.quantity,
+            rationale: i.rationale || ''
+          }));
+          paymentStates[p.packId] = {
+            isPaid: Boolean(p.payment?.isPaid),
+            status: p.payment?.status ?? null,
+            paidAt: p.payment?.paidAt ?? null,
+            paystackReference: p.payment?.paystackReference ?? null,
+            orderId: p.payment?.orderId ?? null,
+            orderStatus: p.payment?.orderStatus ?? null,
+          };
+        });
+        setPackItems(mapped);
+        setPackPaymentStates(paymentStates);
+      } catch (error) {
+        console.error('Failed to fetch packs:', error);
+        setPackItems({});
+        setPackPaymentStates({});
+      }
+    };
+
+    if (activeTab === 'nutrient') fetchPacks();
+  }, [activeTab]);
+
+  const pharmacyItems = apiPharmacyItems;
   const filteredPharmacyItems = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
     if (!query) return pharmacyItems;
     return pharmacyItems.filter((item) => item.title.toLowerCase().includes(query));
   }, [pharmacyItems, searchValue]);
-  const pharmacyDirectory = useMemo(
+  const defaultPharmacyDirectory = useMemo(
     () => [
       'Greenleaf Pharmacy',
       'Sunrise Health Pharmacy',
@@ -138,11 +215,110 @@ const Dashboard = () => {
     ],
     []
   );
+  const pharmacyDirectory = useMemo(() => {
+    const savedNames = savedPharmacies.map((pharmacy) => pharmacy.name);
+    return Array.from(new Set([...defaultPharmacyDirectory, ...savedNames]));
+  }, [defaultPharmacyDirectory, savedPharmacies]);
   const filteredPharmacyDirectory = useMemo(() => {
     const query = pharmacySearch.trim().toLowerCase();
-    if (!query) return [];
+    if (!query) return pharmacyDirectory;
     return pharmacyDirectory.filter((name) => name.toLowerCase().includes(query));
   }, [pharmacyDirectory, pharmacySearch]);
+  const savedPharmacyByName = useMemo(() => {
+    return new Map(savedPharmacies.map((pharmacy) => [pharmacy.name.toLowerCase(), pharmacy]));
+  }, [savedPharmacies]);
+  const pharmacySearchName = pharmacySearch.trim();
+  const isExistingPharmacyOption = useMemo(() => {
+    const normalized = pharmacySearchName.toLowerCase();
+    if (!normalized) return false;
+    return pharmacyDirectory.some((name) => name.toLowerCase() === normalized);
+  }, [pharmacyDirectory, pharmacySearchName]);
+  const shouldShowCustomPharmacyPhone =
+    pharmacySearchName.length > 0 && filteredPharmacyDirectory.length === 0 && !isExistingPharmacyOption && !selectedPharmacy;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('benfek.saved.pharmacies', JSON.stringify(savedPharmacies));
+    } catch {
+      // ignore storage failures
+    }
+  }, [savedPharmacies]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSavedPharmacy = async () => {
+      try {
+        const profile = await benfekService.getProfile();
+        const savedName = profile?.preferredPharmacyName?.trim();
+        const savedPhone = profile?.preferredPharmacyPhone?.trim();
+        const savedDeliveryAddress = profile?.deliveryAddress?.trim();
+
+        if (!mounted) return;
+
+        setDeliveryAddress(savedDeliveryAddress || '');
+        setSavedDeliveryAddress(savedDeliveryAddress || '');
+
+        if (savedName) {
+          setSelectedPharmacy(savedName);
+          setSelectedPharmacyPhone(savedPhone || null);
+
+          if (savedPhone) {
+            setSavedPharmacies((prev) => {
+              const withoutDuplicate = prev.filter(
+                (pharmacy) => pharmacy.name.toLowerCase() !== savedName.toLowerCase()
+              );
+              return [...withoutDuplicate, { name: savedName, phone: savedPhone }];
+            });
+          }
+        }
+      } catch {
+        // Keep the dashboard usable if profile hydration fails.
+      } finally {
+        if (mounted) {
+          setIsHydratingPharmacy(false);
+        }
+      }
+    };
+
+    loadSavedPharmacy();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const selectPharmacy = (name: string) => {
+    const saved = savedPharmacyByName.get(name.toLowerCase());
+    setSelectedPharmacy(name);
+    setSelectedPharmacyPhone(saved?.phone || null);
+    setPharmacySearch('');
+    setCustomPharmacyPhone('');
+  };
+
+  const openPharmacyModal = () => {
+    setPharmacyModalSnapshot({
+      name: selectedPharmacy,
+      phone: selectedPharmacyPhone,
+    });
+    setShowPharmacyModal(true);
+  };
+
+  const handlePharmacyModalOpenChange = (open: boolean) => {
+    if (!open) {
+      if (pharmacyModalSnapshot) {
+        setSelectedPharmacy(pharmacyModalSnapshot.name);
+        setSelectedPharmacyPhone(pharmacyModalSnapshot.phone);
+      }
+      setPharmacySearch('');
+      setCustomPharmacyPhone('');
+      setShowPharmacyModal(false);
+      return;
+    }
+
+    setShowPharmacyModal(true);
+  };
+
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(filteredPharmacyItems.length / itemsPerPage));
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,10 +331,14 @@ const Dashboard = () => {
     setCurrentPage(1);
   }, [searchValue]);
   useEffect(() => {
-    if (!selectedPharmacy && !pharmacyModalDismissed) {
+    if (activeTab !== 'pharmacy') return;
+    if (isHydratingPharmacy || selectedPharmacy || pharmacyModalDismissed || hasShownPharmacyModal) return;
+    const timer = window.setTimeout(() => {
       setShowPharmacyModal(true);
-    }
-  }, [selectedPharmacy, pharmacyModalDismissed]);
+      setHasShownPharmacyModal(true);
+    }, 3000);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, isHydratingPharmacy, selectedPharmacy, pharmacyModalDismissed, hasShownPharmacyModal]);
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
@@ -197,20 +377,295 @@ const Dashboard = () => {
     []
   );
 
+  const promoIdToPackId = useMemo(
+    () => ({
+      'promo-1': 'economic',
+      'promo-2': 'doctors_choice',
+      'promo-3': 'premium_offer',
+    }),
+    []
+  );
+
+  const packIdToPromoId = useMemo(
+    () => ({
+      economic: 'promo-1',
+      doctors_choice: 'promo-2',
+      premium_offer: 'promo-3',
+    }),
+    []
+  );
+
   useEffect(() => {
+    if (showPharmacyModal) return;
     const timer = window.setInterval(() => {
       setBannerIndex((prev) => (prev + 1) % bannerImages.length);
     }, 4500);
     return () => window.clearInterval(timer);
-  }, [bannerImages.length]);
+  }, [bannerImages.length, showPharmacyModal]);
+
+  useEffect(() => {
+    if (activeTab !== 'nutrient' || !activeCatalogueId) return;
+
+    window.requestAnimationFrame(() => {
+      tabMenuRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }, [activeTab, activeCatalogueId]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const paymentMode = searchParams.get('payment');
+    if (paymentMode === 'pack') return;
+
+    const pendingCheckout = getPendingPackCheckout();
+    if (!pendingCheckout) return;
+
+    if (pendingCheckout.returnPath === location.pathname) {
+      setActiveTab('nutrient');
+      setActiveCatalogueId(pendingCheckout.catalogueId);
+    }
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const paymentMode = searchParams.get('payment');
+    const reference = searchParams.get('reference') || searchParams.get('trxref');
+    const packId = searchParams.get('packId');
+    const catalogueId = searchParams.get('catalogueId');
+
+    if (paymentMode !== 'pack' || !reference) return;
+
+    const lastVerifiedReference = sessionStorage.getItem(VERIFIED_PACK_REFERENCE_KEY);
+    if (lastVerifiedReference === reference) {
+      const cleanedParams = new URLSearchParams(location.search);
+      cleanedParams.delete('payment');
+      cleanedParams.delete('reference');
+      cleanedParams.delete('trxref');
+      cleanedParams.delete('packId');
+      cleanedParams.delete('catalogueId');
+      navigate(
+        {
+          pathname: location.pathname,
+          search: cleanedParams.toString() ? `?${cleanedParams.toString()}` : '',
+        },
+        { replace: true }
+      );
+      return;
+    }
+
+    let cancelled = false;
+
+    const verifyPackPayment = async () => {
+      try {
+        setIsPayingForPack(true);
+        const result = await paystackService.verifyCheckout(reference);
+        if (cancelled) return;
+
+        sessionStorage.setItem(VERIFIED_PACK_REFERENCE_KEY, reference);
+        toast.success(`Payment successful for ${result?.packName || 'your nutrient pack'}.`);
+        setActiveTab('nutrient');
+        if (result?.packId) {
+          setPackPaymentStates((prev) => ({
+            ...prev,
+            [String(result.packId)]: {
+              isPaid: true,
+              status: result?.status ?? 'success',
+              paidAt: new Date().toISOString(),
+              paystackReference: reference,
+              orderId: result?.orderId ? Number(result.orderId) : null,
+              orderStatus: 'paid',
+            },
+          }));
+        }
+        const pendingCheckout = getPendingPackCheckout();
+        const resolvedCatalogueId =
+          catalogueId ||
+          pendingCheckout?.catalogueId ||
+          (packId ? packIdToPromoId[packId as keyof typeof packIdToPromoId] : null);
+
+        if (resolvedCatalogueId) {
+          setActiveCatalogueId(resolvedCatalogueId);
+        }
+
+        clearPendingPackCheckout();
+      } catch (error: any) {
+        if (cancelled) return;
+        toast.error(error?.response?.data?.message || 'Could not verify pack payment.');
+      } finally {
+        if (!cancelled) {
+          setIsPayingForPack(false);
+          const cleanedParams = new URLSearchParams(location.search);
+          cleanedParams.delete('payment');
+          cleanedParams.delete('reference');
+          cleanedParams.delete('trxref');
+          cleanedParams.delete('packId');
+          cleanedParams.delete('catalogueId');
+          navigate(
+            {
+              pathname: location.pathname,
+              search: cleanedParams.toString() ? `?${cleanedParams.toString()}` : '',
+            },
+            { replace: true }
+          );
+        }
+      }
+    };
+
+    verifyPackPayment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.search, navigate, packIdToPromoId]);
+
+  const handlePackCheckout = async (
+    packId: string,
+    addressOverride?: string,
+    options?: { saveAddress?: boolean }
+  ) => {
+    try {
+      if (packPaymentStates[packId]?.isPaid) {
+        toast.info('This nutrient pack has already been paid for.');
+        return;
+      }
+
+      const resolvedAddress = (addressOverride ?? deliveryAddress).trim();
+      if (!resolvedAddress) {
+        toast.error('Please enter a delivery address before paying for this pack.');
+        return;
+      }
+
+      setIsPayingForPack(true);
+      if (options?.saveAddress && resolvedAddress !== savedDeliveryAddress.trim()) {
+        await benfekService.updateProfile({ deliveryAddress: resolvedAddress });
+        setDeliveryAddress(resolvedAddress);
+        setSavedDeliveryAddress(resolvedAddress);
+      }
+      const currentCatalogueId =
+        activeCatalogueId ||
+        packIdToPromoId[packId as keyof typeof packIdToPromoId] ||
+        '';
+
+      setPendingPackCheckout({
+        packId,
+        catalogueId: currentCatalogueId,
+        returnPath: location.pathname,
+      });
+
+      const callbackOrigin = getCallbackOrigin();
+      const callbackUrl = `${callbackOrigin}${location.pathname}?payment=pack&packId=${encodeURIComponent(packId)}&catalogueId=${encodeURIComponent(currentCatalogueId)}`;
+      const result = await paystackService.initializePackCheckout(packId, resolvedAddress, callbackUrl);
+      const authorizationUrl = result?.authorization_url;
+
+      if (!authorizationUrl) {
+        toast.error('Could not initialize pack payment.');
+        setIsPayingForPack(false);
+        return;
+      }
+
+      window.location.href = authorizationUrl;
+    } catch (error: any) {
+      setIsPayingForPack(false);
+      toast.error(error?.response?.data?.message || 'Could not initialize pack payment.');
+    }
+  };
+
+  const handleReorderPack = (packId: string) => {
+    setPackPaymentStates((prev) => ({
+      ...prev,
+      [packId]: {
+        ...(prev[packId] || {
+          status: null,
+          paidAt: null,
+          paystackReference: null,
+          orderId: null,
+          orderStatus: null,
+        }),
+        isPaid: false,
+      },
+    }));
+  };
+
+  const handleAddPharmacyItemToCart = async (item: { id: string; title: string }) => {
+    try {
+      setAddingToCartId(item.id);
+      const response = await cartService.addItemToCart(Number(item.id), 1);
+      const cart = response?.data?.cart;
+      if (cart?.items) {
+        setCartFromBackend(cart.items.map((cartItem: any) => ({
+          id: String(cartItem.supplement.id),
+          name: cartItem.supplement.name,
+          price: Number(cartItem.supplement.price || 0),
+          image: cartItem.supplement.image || cartItem.supplement.imageUrl || '',
+          description: cartItem.supplement.description || '',
+          category: 'supplement',
+          quantity: Number(cartItem.quantity || 1),
+        })));
+      }
+      toast.success(`${item.title} added to cart.`);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Could not add this item to cart. Please try again.'));
+    } finally {
+      setAddingToCartId(null);
+    }
+  };
+
+  const handleContinueWithPharmacy = async () => {
+    const customName = pharmacySearchName;
+    const customPhone = customPharmacyPhone.trim();
+    const shouldCreateCustomPharmacy =
+      !selectedPharmacy &&
+      customName.length > 0 &&
+      filteredPharmacyDirectory.length === 0 &&
+      !isExistingPharmacyOption;
+
+    const resolvedPharmacyName = shouldCreateCustomPharmacy ? customName : selectedPharmacy;
+    const resolvedPharmacyPhone = shouldCreateCustomPharmacy
+      ? customPhone
+      : selectedPharmacyPhone || undefined;
+
+    if (!resolvedPharmacyName) return;
+    if (shouldCreateCustomPharmacy && !resolvedPharmacyPhone) return;
+
+    try {
+      setIsSavingPharmacy(true);
+
+      if (shouldCreateCustomPharmacy && resolvedPharmacyPhone) {
+        setSavedPharmacies((prev) => {
+          const withoutDuplicate = prev.filter(
+            (pharmacy) => pharmacy.name.toLowerCase() !== resolvedPharmacyName.toLowerCase()
+          );
+          return [...withoutDuplicate, { name: resolvedPharmacyName, phone: resolvedPharmacyPhone }];
+        });
+        setSelectedPharmacy(resolvedPharmacyName);
+        setSelectedPharmacyPhone(resolvedPharmacyPhone);
+      }
+
+      await benfekService.updateProfile({
+        preferredPharmacyName: resolvedPharmacyName,
+        preferredPharmacyPhone: resolvedPharmacyPhone,
+      });
+      setPharmacySearch('');
+      setCustomPharmacyPhone('');
+      setPharmacyModalSnapshot(null);
+      setShowPharmacyModal(false);
+      setPharmacyModalDismissed(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to save selected pharmacy');
+    } finally {
+      setIsSavingPharmacy(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-6xl mx-auto pb-8 ">
         <div className="mb-6 flex justify-center">
           <div
-            className="relative overflow-hidden shadow-lg"
-            style={{ width: '100vw', maxWidth: '960px', height: 'calc(100vw / 2)' }}
+            className="relative w-full max-w-[960px] overflow-hidden shadow-lg"
+            style={{ aspectRatio: '16 / 5' }}
           >
             <div
               className="flex h-full transition-transform duration-700 ease-out"
@@ -218,11 +673,10 @@ const Dashboard = () => {
             >
               {bannerImages.map((src, index) => (
                 <div key={src} className="min-w-full h-full">
-                  <img src={src} alt={`Banner ${index + 1}`} className="h-full w-full object-cover" />
+                  <img src={src} alt={`Banner ${index + 1}`} className="h-full w-full object-fill" />
                 </div>
               ))}
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
               {bannerImages.map((_, index) => (
                 <span
@@ -235,55 +689,109 @@ const Dashboard = () => {
         </div>
 
         <div className="max-w-6xl mx-auto">
-          <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md py-3">
-            <div className="flex flex-col items-center px-4">
+          <div ref={tabMenuRef} className="sticky top-0 z-30 bg-white/80 backdrop-blur-md py-3">
+            <div className="flex flex-col items-center px-2">
               <div className="w-full max-w-3xl rounded-full border border-emerald-100 bg-white/70 backdrop-blur-md shadow-lg shadow-emerald-100/50 flex overflow-hidden">
               <button
                 type="button"
                 onClick={() => setActiveTab('pharmacy')}
-                className={`flex-1 rounded-l-full rounded-r-none px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
+                className={`flex-1 rounded-l-full rounded-r-none py-2 text-xs font-semibold transition flex items-center justify-center gap-2 ${
                   activeTab === 'pharmacy'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-transparent text-emerald-800'
                 }`}
               >
-                <Pill className="h-4 w-4 text-white" />
-                My Pharmacy
+                <Pill
+                  className={`h-4 w-4 ${
+                    activeTab === 'pharmacy' ? 'text-white' : 'text-emerald-800'
+                  }`}
+                />
+                <span className="min-w-0 max-w-[10rem] truncate">
+                  {selectedPharmacy ?? 'My Pharmacy'}
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('nutrient')}
-                className={`flex-1 rounded-r-full rounded-l-none px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
-                  activeTab === 'nutrient'
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-transparent text-emerald-800'
+              <div
+                className={`relative flex-1 rounded-r-full rounded-l-none ${
+                  activeTab === 'nutrient' ? 'bg-emerald-600 text-white' : 'bg-transparent text-emerald-800'
                 }`}
               >
-                <Layers className="h-4 w-4 text-white" />
-                My Nutrient Pack
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('nutrient')}
+                  className="flex w-full items-center justify-start gap-2 px-1 py-2 text-xs font-semibold transition"
+                >
+                  <Layers
+                    className={`h-4 w-4 ${
+                      activeTab === 'nutrient' ? 'text-white' : 'text-emerald-800'
+                    }`}
+                  />
+                  My Nutrient Pack
+                </button>
+                {hasNutrientNotice && (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setShowNutrientNotice(true);
+                      setHasNutrientNotice(false);
+                    }}
+                    className="absolute right-2 top-1 h-2.5 w-2.5 rounded-full bg-red-700 text-red-700 shadow-sm flex items-center justify-center"
+                    aria-label="Nutrient pack update"
+                  >
+                    <Dot 
+                     onClick={(event) => {
+                      event.stopPropagation();
+                      setShowNutrientNotice(true);
+                      setHasNutrientNotice(false);
+                    }}
+                    />
+                  </button>
+                )}
+              </div>
             </div>
             </div>
           </div>
 
-          <div className="mt-6">
+          <div >
             {activeTab === 'pharmacy' ? (
               <div className="space-y-4">
-                <div className="w-full max-w-xl px-4">
-                  <div className="relative">
-                    <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <Input
-                      value={searchValue}
-                      onChange={(e) => setSearchValue(e.target.value)}
-                      placeholder="Search any medication"
-                      className="pl-9 bg-white"
-                    />
+                <div className="w-full px-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="relative flex-1 max-w-xl">
+                      <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Input
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
+                        placeholder="Search any medication"
+                        className="pl-9 bg-white"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="h-10 w-12 border rounded-sm border-emerald-100 bg-gray-500/90 text-white shadow-sm flex items-center justify-center"
+                      aria-label="Filter medications"
+                    >
+                      <Filter className="h-5 w-5" />
+                    </button>
                   </div>
+                  {selectedPharmacy && (
+                    <button
+                      type="button"
+                      onClick={openPharmacyModal}
+                      className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
+                    >
+                      Change pharmacy
+                    </button>
+                  )}
                 </div>
                 {!selectedPharmacy ? (
-                  <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
+                  <button
+                    type="button"
+                    onClick={openPharmacyModal}
+                    className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-50/80 transition"
+                  >
                     Select a pharmacy to view available drugs.
-                  </div>
+                  </button>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -299,16 +807,32 @@ const Dashboard = () => {
                               className="h-full w-full object-cover"
                             />
                           </div>
-                          <div className="mt-5 flex flex-col gap-2">
+                          <div className="mt-4 flex flex-col gap-2">
                             <div className="flex items-center justify-center">
-                              <p className="text-sm font-semibold text-slate-900 leading-tigh">{item.title}</p>
+                              <p className="text-sm font-semibold leading-tight text-slate-900">{item.title}</p>
                               <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
                             </div>
                             <div className="flex justify-around w-full gap-2">
-                              <p className="text-xs h-fit p-1 text-emerald-600 bg-gray-200 hover:text-emerald-700">
-                                Buy
-                              </p>
-                              <p className="text-xs h-fit p-1 text-orange-500 bg-gray-200 hover:text-orange-600">
+                              <button
+                                type="button"
+                                onClick={() => handleAddPharmacyItemToCart(item)}
+                                disabled={addingToCartId === item.id}
+                                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                aria-label={`Add ${item.title} to cart`}
+                                title="Add to cart"
+                              >
+                                {addingToCartId === item.id ? (
+                                  <LoadingSpinner className="h-3 w-3" />
+                                ) : (
+                                  <>
+                                    <ShoppingCart className="h-4 w-4" />
+                                    <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-white">
+                                      <Plus className="h-2.5 w-2.5" />
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                              <p className="flex h-7 items-center justify-center rounded-md px-3 text-xs text-orange-500 bg-gray-200 hover:text-orange-600">
                                 Later
                               </p>
                             </div>
@@ -365,7 +889,7 @@ const Dashboard = () => {
                     )} */}
                   </>
                 )}
-                {filteredPharmacyItems.length > 0 && (
+                {selectedPharmacy && filteredPharmacyItems.length > 0 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <button
                       type="button"
@@ -407,87 +931,255 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5">
-                {promoCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="relative w-[90vw] mx-auto overflow-hidden rounded-bl-[28px] rounded-tr-[28px] shadow-lg"
-                    style={{ height: 'calc(90vw / 2)' }}
-                  >
-                    <img
-                      src={card.image}
-                      alt={card.title}
-                      className="absolute inset-0 h-full w-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-white/15" />
+                {activeCatalogueId ? (
+                  <PackCatalogue 
+                    packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
+                    items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
+                    onBack={() => setActiveCatalogueId(null)}
+                    deliveryAddress={deliveryAddress}
+                    savedDeliveryAddress={savedDeliveryAddress}
+                    onDeliveryAddressChange={setDeliveryAddress}
+                    onPay={(address, options) =>
+                      handlePackCheckout(
+                        promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId],
+                        address,
+                        options
+                      )
+                    }
+                    onReorder={() =>
+                      handleReorderPack(
+                        promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]
+                      )
+                    }
+                    isPaying={isPayingForPack}
+                    paymentState={packPaymentStates[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]]}
+                  />
+                ) : (
+                  promoCards.map((card) => (
                     <div
-                      className={`absolute inset-0 ${card.overlay} backdrop-blur-lg border border-white/20`}
-                    />
-                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${card.glow} blur-2xl`} />
-                    <div className="relative h-full w-full p-5 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">{card.title}</h3>
-                        <p className="mt-1 text-xs text-white/90">{card.subtitle}</p>
-                      </div>
-                      <div className="flex items-end justify-between">
-                        <span className="text-[11px] text-white/80">Explore packs</span>
-                        <button
-                          type="button"
-                          className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center"
-                          aria-label={`Open ${card.title}`}
-                        >
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
+                      key={card.id}
+                      className="relative w-[90vw] mx-auto overflow-hidden rounded-bl-[28px] rounded-tr-[28px] shadow-lg"
+                      style={{ height: 'calc(90vw / 2)' }}
+                    >
+                      <img
+                        src={card.image}
+                        alt={card.title}
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-white/15" />
+                      <div
+                        className={`absolute inset-0 ${card.overlay} backdrop-blur-lg border border-white/20`}
+                      />
+                      <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${card.glow} blur-2xl`} />
+                      <div className="relative h-full w-full p-5 flex flex-col justify-between">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{card.title}</h3>
+                          <p className="mt-1 text-xs text-white/90">{card.subtitle}</p>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <span className="text-[11px] text-white/80">Explore packs</span>
+                          <button
+                            onClick={() => setActiveCatalogueId(card.id)}
+                            type="button"
+                            className="h-10 w-10 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center"
+                            aria-label={`Open ${card.title}`}
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {showPharmacyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black backdrop-blur-sm px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">Select your pharmacy</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Start typing to find and select one or more pharmacies.
-            </p>
-            <div className="mt-4">
-              <Input
-                value={pharmacySearch}
-                onChange={(e) => setPharmacySearch(e.target.value)}
-                placeholder="Enter pharmacy name"
-                className="bg-white"
-              />
+      <Dialog open={showPharmacyModal} onOpenChange={handlePharmacyModalOpenChange}>
+        <DialogContent className="sm:max-w-[24rem] gap-0 overflow-hidden rounded-none border border-emerald-100 bg-white p-0 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.45)] [&>button]:hidden sm:w-[24rem]">
+          <div className="h-1.5 w-full bg-green-800" />
+
+          <div className="flex max-h-[min(36rem,calc(100vh-4rem))] flex-col">
+            <div className="px-5 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-3">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <DialogHeader className="space-y-1 text-left">
+                    <DialogTitle className="text-xl font-semibold tracking-[-0.02em] text-slate-950">
+                      Select your pharmacy
+                    </DialogTitle>
+                    <DialogDescription className="sm:max-w-sm text-sm leading-6 text-slate-500 w-[70vw]">
+                      Start typing to find and select one pharmacy before you continue.
+                    </DialogDescription>
+                  </DialogHeader>
+                </div>
+
+                <DialogClose
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-emerald-200 hover:text-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                  aria-label="Close pharmacy modal"
+                >
+                  <X className="h-4 w-4" />
+                </DialogClose>
+              </div>
             </div>
-            <div className="mt-4 max-h-56 overflow-y-auto space-y-2">
-              {filteredPharmacyDirectory.length === 0 ? (
-               <></>
-              ) : (
-                filteredPharmacyDirectory.map((name) => {
-                  const selected = selectedPharmacy === name;
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => {
-                        setSelectedPharmacy((prev) => (prev === name ? null : name));
-                      }}
-                      className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
-                        selected
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  );
-                })
+
+            {selectedPharmacy && (
+              <div className="px-5 sm:px-6">
+                <div className="rounded-[18px] border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-4 py-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-emerald-950">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="truncate">{selectedPharmacy}</span>
+                  </div>
+                  {selectedPharmacyPhone && (
+                    <p className="mt-1 text-xs font-medium text-emerald-700">
+                      Office phone: {selectedPharmacyPhone}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPharmacy(null);
+                      setSelectedPharmacyPhone(null);
+                      setPharmacySearch('');
+                      setCustomPharmacyPhone('');
+                    }}
+                    className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
+                  >
+                    Change pharmacy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 space-y-1.5 overflow-y-auto px-5 pb-1.5 sm:px-6 sm:pb-2">
+              {!selectedPharmacy && (
+                <div className="space-y-2">
+                  <label
+                    htmlFor="pharmacy-search"
+                    className="text-sm font-medium text-slate-800"
+                  >
+                    Pharmacy name
+                  </label>
+                  <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-2 transition focus-within:border-emerald-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-100">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="pharmacy-search"
+                        value={pharmacySearch}
+                        onChange={(e) => setPharmacySearch(e.target.value)}
+                        placeholder="Enter pharmacy name"
+                        className="h-11 border-0 bg-transparent pl-10 pr-10 text-sm text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:ring-0"
+                      />
+                      {pharmacySearch && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPharmacySearch('');
+                            setCustomPharmacyPhone('');
+                          }}
+                          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                          aria-label="Clear pharmacy search"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm font-semibold text-slate-900"></p>
+                    <p className="text-xs text-slate-500">
+                      {!selectedPharmacy && pharmacySearch.trim()
+                        ? `${filteredPharmacyDirectory.length} result${filteredPharmacyDirectory.length === 1 ? '' : 's'}`
+                        : ''}
+                    </p>
+                  </div>
+
+                {pharmacySearch.trim() && !selectedPharmacy ? (
+                  <div className="space-y-2">
+                    {filteredPharmacyDirectory.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-emerald-200 bg-white px-4 py-4 text-left">
+                        {shouldShowCustomPharmacyPhone && (
+                          <div className="mt-3 space-y-2">
+                            <label
+                              htmlFor="custom-pharmacy-phone"
+                              className="text-sm font-medium text-slate-800"
+                            >
+                              Pharmacy mobile number
+                            </label>
+                            <Input
+                              id="custom-pharmacy-phone"
+                              value={customPharmacyPhone}
+                              onChange={(event) => setCustomPharmacyPhone(event.target.value)}
+                              inputMode="tel"
+                              placeholder="e.g. 08012345678"
+                              className="h-11"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      filteredPharmacyDirectory.map((name) => {
+                        const selected = selectedPharmacy === name;
+                        const saved = savedPharmacyByName.get(name.toLowerCase());
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() => selectPharmacy(name)}
+                            className={`group flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                              selected
+                                ? 'border-green-800 bg-green-50 text-green-900'
+                                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                            }`}
+                            aria-pressed={selected}
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate">{name}</p>
+                              {saved?.phone && (
+                                <p className="truncate text-xs font-normal text-slate-500">
+                                  {saved.phone}
+                                </p>
+                              )}
+                            </div>
+                            <span
+                              className={`ml-4 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                                selected
+                                  ? 'border-green-800 bg-green-800 text-white'
+                                  : 'border-slate-300 bg-white text-transparent group-hover:border-emerald-300'
+                              }`}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-3">
+
+            <DialogFooter className="flex-col gap-2 border-t border-slate-100 bg-white px-5 py-2 sm:flex-col sm:px-6">
+              <Button
+                onClick={handleContinueWithPharmacy}
+                disabled={
+                  isSavingPharmacy ||
+                  (!selectedPharmacy &&
+                    !(shouldShowCustomPharmacyPhone && pharmacySearchName && customPharmacyPhone.trim()))
+                }
+                className="h-11 w-full self-stretch rounded-xl bg-green-800 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 disabled:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSavingPharmacy && <LoadingSpinner className="mr-2" />}
+                Continue
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -495,53 +1187,27 @@ const Dashboard = () => {
                   setShowPharmacyModal(false);
                   setPharmacyModalDismissed(true);
                 }}
+                className="h-11 w-full self-stretch rounded-xl border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 Cancel
               </Button>
-              <Button
-                onClick={() => setShowPharmacyModal(false)}
-                disabled={!selectedPharmacy}
-              >
-                Continue
-              </Button>
-            </div>
+            </DialogFooter>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-        <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="grid grid-cols-3 text-center">
-            <NavLink
-              to="/benfek/dashboard"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <ShoppingCart className="h-5 w-5" color='white' />
-              Store
-            </NavLink>
-            <NavLink
-              to="/blog/1"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <Newspaper className="h-5 w-5" color='white' />
-              Read Articles
-            </NavLink>
-            <NavLink
-              to="/podcast"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 text-xs font-medium ${isActive ? 'text-white' : 'text-gray-500'}`
-              }
-            >
-              <Tv className="h-5 w-5" color='white' />
-              Podcast
-            </NavLink>
-          </div>
-        </div>
-      </nav>
+      <Dialog open={showNutrientNotice} onOpenChange={setShowNutrientNotice}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update</DialogTitle>
+            <DialogDescription>
+              Our researchers are working. An alert with a link will be sent you to view your nutrient type pack
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bottom nav is rendered in `src/components/Layout.tsx` for Benfeks */}
     </div>
   );
 };

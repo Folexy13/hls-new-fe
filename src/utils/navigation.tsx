@@ -1,4 +1,4 @@
-import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Shield, Users, Package, Briefcase } from 'lucide-react';
+import { Home, User, ShoppingCart, BookOpen, Headphones, Menu, X, FileText, LogOut, Shield, Users, Package, Briefcase, LifeBuoy, Gift, CreditCard } from 'lucide-react';
 import { UserRole } from '../context/roles';
 
 // Common navigation items for all users (public routes)
@@ -24,13 +24,22 @@ export const roleNavigation = {
   [UserRole.WHOLESALER]: [
     { name: 'Wholesaler Dashboard', href: '/wholesaler', icon: Package },
   ],
+  [UserRole.RESEARCHER]: [
+    { name: 'Researcher Workspace', href: '/researcher', icon: Briefcase },
+  ],
+  [UserRole.PHARMACY]: [
+    { name: 'Dashboard', href: '/', icon: Home },
+  ],
   [UserRole.BENFEK]: [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Benfek Dashboard', href: '/benfek', icon: Briefcase },
-    { name: 'About', href: '/about', icon: BookOpen },
+    { name: 'My Profile', href: '/benfek/my-profile', icon: User },
+    { name: 'Account', href: '/benfek/account', icon: CreditCard },
+    { name: 'Bonus', href: '/benfek/bonus', icon: Gift },
+    { name: 'Support', href: '/support', icon: LifeBuoy },
+
+    // Kept for routing elsewhere, but the Benfek hamburger menu hides these (footer owns primary nav).
+    // { name: 'Benfek Dashboard', href: '/benfek/dashboard', icon: Briefcase },
     { name: 'Quiz', href: '/quiz', icon: User },
     { name: 'Form', href: '/form', icon: FileText },
-    { name: 'Support', href: '/support', icon: BookOpen },
     { name: 'Marketplace', href: '/marketplace', icon: ShoppingCart },
     { name: 'Podcast', href: '/podcast', icon: Headphones },
     { name: 'Cart', href: '/cart', icon: ShoppingCart },

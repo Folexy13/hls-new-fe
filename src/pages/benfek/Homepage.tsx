@@ -1,14 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import doctor from '../../images/bannerdoctor.png'
+import doctor from '../../images/hero-doctor.png'
 import leftPill from '../../images/leftPill.png';
 import rightPill from '../../images/rightPill.png';
-import vitamins from '../../images/vitamins.png'
-import vitamins2 from '../../images/vitamins2.png'
-import vitamins3 from '../../images/vitamins3.png'
-import vitamins4 from '../../images/vitamins4.png'
 import patient from '../../images/patient.jpg'
 import bose from '../../images/avwenagha-bose.jpg'
 import joy from '../../images/joy.jpeg'
@@ -18,6 +14,10 @@ import nick from '../../images/nick-ozonuma.jpg'
 import eriscyl from '../../images/ericsyl-john.jpg'
 import mimi from '../../images/mimi-gloria.jpg'
 import { Package } from "lucide-react";
+import { useStore } from '@/store/useStore';
+import { toast } from 'react-toastify';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { apiClient } from '@/config/axios';
 
 import {
   Carousel,
@@ -37,10 +37,63 @@ import {
 
 const BenfekHomepage: React.FC = () => {
   const navigate = useNavigate();
+  const { addToCart } = useStore();
+  const [addingProductId, setAddingProductId] = useState<string | null>(null);
+  const [products, setProducts] = useState<Array<{
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    description: string;
+    category: string;
+  }>>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   const handleQuizStart = () => {
     navigate('/assessment');
   };
+
+  const handleAddToCart = async (event: React.MouseEvent, product: any) => {
+    event.stopPropagation();
+    setAddingProductId(product.id);
+    try {
+      await addToCart(product);
+      toast.success('Added to cart');
+    } catch {
+      toast.error('Failed to add to cart');
+    } finally {
+      setAddingProductId(null);
+    }
+  };
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        setIsLoadingProducts(true);
+        const response = await apiClient.get('/api/v2/supplements/all');
+        const supplements = response.data?.data?.supplements || [];
+        const mapped = supplements
+          .map((item: any) => ({
+            id: String(item.id),
+            name: item.name || 'Supplement',
+            price: Number(item.price || 0),
+            image: item.image || item.imageUrl || '/placeholder.svg',
+            description: item.description || 'Premium supplement from HLS.',
+            category: item.category || item.dosageForm || 'supplement',
+          }))
+          .filter((item: any) => item.id && item.name)
+          .slice(0, 8);
+        setProducts(mapped);
+      } catch (error) {
+        console.error('Failed to load featured products:', error);
+        setProducts([]);
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
 
   const testimonials = [
     {
@@ -97,41 +150,6 @@ const BenfekHomepage: React.FC = () => {
       rating: 5,
       image: "/placeholder.svg"
     },
-  ];
-
-  const products = [
-    {
-      id: '1',
-      name: 'Vitamin D3 Complex',
-      price: 14999,
-      image: vitamins,
-      description: 'High-potency vitamin D3 for bone health and immune support',
-      category: 'vitamin' as const
-    },
-    {
-      id: '2',
-      name: 'Omega-3 Fish Oil',
-      price: 17499,
-      image: vitamins2,
-      description: 'Pure omega-3 fatty acids for heart and brain health',
-      category: 'supplement' as const
-    },
-    {
-      id: '3',
-      name: 'Magnesium Glycinate',
-      price: 12499,
-      image: vitamins3,
-      description: 'Highly absorbable magnesium for muscle and nerve function',
-      category: 'mineral' as const
-    },
-    {
-      id: '4',
-      name: 'Whey Protein Isolate',
-      price: 24999,
-      image: vitamins4,
-      description: 'Premium protein for muscle building and recovery',
-      category: 'protein' as const
-    }
   ];
 
   const faqs = [
@@ -423,37 +441,69 @@ const BenfekHomepage: React.FC = () => {
             </div>
           </div>
 
-          <Carousel className="w-full">
-            <CarouselContent>
-              {products.map((product) => (
+          {isLoadingProducts ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">
+              <LoadingSpinner className="text-emerald-600" />
+              Loading products...
+            </div>
+          ) : products.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+              No products are available yet.
+            </div>
+          ) : (
+            <Carousel className="w-full">
+              <CarouselContent>
+                {products.map((product) => (
                 <CarouselItem key={product.id} className="basis-full sm:basis-1/2 lg:basis-1/4">
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full">
-                    <Link to={`/product/${product.id}`}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-24 sm:h-40 lg:h-48 object-cover"
-                      />
-                    </Link>
-                    <div className="p-3 sm:p-6">
-                      <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-2">{product.name}</h3>
-                      <p className="text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 hidden sm:block">{product.description}</p>
-                      <div className="flex items-center justify-between">
+                  <div
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => navigate(`/product/${product.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') navigate(`/product/${product.id}`);
+                    }}
+                    className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <div className="relative h-44 sm:h-48 border-b border-slate-100 bg-gradient-to-br from-white to-emerald-50 p-5">
+                      <img src={product.image} alt={product.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                      <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm">
+                        {product.category}
+                      </span>
+                    </div>
+                    <div className="p-4 sm:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
+                          <p className="mt-2 min-h-[40px] text-xs sm:text-sm leading-5 text-slate-600 line-clamp-2">{product.description}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
                         <span className="text-sm sm:text-xl lg:text-2xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
-                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-md transition-colors text-xs sm:text-sm">
-                          Add to Cart
-                        </button>
+                        <span className="mt-2 flex items-center justify-end gap-1 text-xs font-medium text-slate-500">
+                          <Eye className="h-3.5 w-3.5" />
+                          Details
+                        </span>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(event) => handleAddToCart(event, product)}
+                        disabled={addingProductId === product.id}
+                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                      >
+                        {addingProductId === product.id ? <LoadingSpinner /> : <ShoppingCart className="h-4 w-4" />}
+                        {addingProductId === product.id ? 'Adding...' : 'Add to Cart'}
+                      </button>
                     </div>
                   </div>
                 </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="hidden sm:block">
-              <CarouselPrevious />
-              <CarouselNext />
-            </div>
-          </Carousel>
+                ))}
+              </CarouselContent>
+              <div className="hidden sm:block">
+                <CarouselPrevious />
+                <CarouselNext />
+              </div>
+            </Carousel>
+          )}
         </div>
       </section>
 

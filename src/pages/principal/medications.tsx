@@ -17,11 +17,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import {
   Search, Filter, Download, Eye, ArrowUpDown,
-  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2
+  ChevronDown, Plus, Edit, Trash2, Image, X, Save, Package, Loader2, Camera, Images, Pill
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
@@ -31,10 +32,13 @@ type Medication = {
   id: number;
   name: string;
   category: string;
+  isSupplement?: boolean;
   price: string;
   stock: number;
   manufacturer: string;
+  strength?: string;
   status: string;
+  expiryDate?: string;
   dateAdded: string;
   image: string;
   description?: string;
@@ -90,6 +94,40 @@ const AccordionSkeleton: React.FC = () => (
 );
 
 const MedicationsPage: React.FC = () => {
+  const EMPTY_MEDICATION_IMAGE = 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med';
+  const formatDateForInput = (value?: string | null) => {
+    if (!value) return '';
+
+    const normalizedValue = value.includes('T') ? value : `${value}T00:00:00`;
+    const parsedDate = new Date(normalizedValue);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
+    }
+
+    return parsedDate.toISOString().slice(0, 10);
+  };
+
+  const formatExpiryDisplay = (value?: string | null) => {
+    const normalizedValue = formatDateForInput(value);
+    if (!normalizedValue) return 'N/A';
+
+    return new Date(`${normalizedValue}T00:00:00`).toLocaleDateString();
+  };
+
+  const createEmptyMedication = (): Partial<Medication> => ({
+    name: '',
+    category: '',
+    isSupplement: false,
+    price: '',
+    stock: 0,
+    manufacturer: '',
+    strength: '',
+    status: 'In Stock',
+    expiryDate: '',
+    description: '',
+    image: EMPTY_MEDICATION_IMAGE,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [medications, setMedications] = useState<Medication[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,20 +138,13 @@ const MedicationsPage: React.FC = () => {
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null);
   const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const [newMedication, setNewMedication] = useState<Partial<Medication>>({
-    name: '',
-    category: '',
-    price: '',
-    stock: 0,
-    manufacturer: '',
-    status: 'In Stock',
-    description: '',
-    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med'
-  });
+  const [newMedication, setNewMedication] = useState<Partial<Medication>>(createEmptyMedication());
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'In Stock' | 'Low Stock' | 'Out of Stock'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -128,13 +159,16 @@ const MedicationsPage: React.FC = () => {
         const mappedMedications: Medication[] = data.map((item: Record<string, unknown>) => ({
           id: item.id as number,
           name: item.name as string,
-          category: (item.category as string) || 'Supplement',
+          category: (item.category as string) || 'Medication',
+          isSupplement: ((item.category as string) || '').trim().toLowerCase() === 'supplement',
           price: `₦${(item.price as number)?.toLocaleString() || '0'}`,
           stock: (item.stock as number) || 0,
-          manufacturer: (item.manufacturer as string) || 'Unknown',
+          manufacturer: (item.manufacturer as string) || (item.brand as string) || 'Unknown',
+          strength: (item.strength as string) || '',
           status: (item.stock as number) > 10 ? 'In Stock' : (item.stock as number) > 0 ? 'Low Stock' : 'Out of Stock',
           dateAdded: item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A',
-          image: (item.image as string) || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
+          expiryDate: formatDateForInput(item.expiryDate as string | undefined),
+          image: (item.imageUrl as string) || (item.image as string) || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
           description: item.description as string,
         }));
         setMedications(mappedMedications);
@@ -160,11 +194,17 @@ const MedicationsPage: React.FC = () => {
   };
 
   // Filter and sort data
-  const filteredData = medications.filter(medication =>
-    medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medication.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = medications.filter((medication) => {
+    const matchesSearch =
+      medication.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medication.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medication.manufacturer.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === 'all' ? true : medication.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
@@ -318,8 +358,11 @@ const MedicationsPage: React.FC = () => {
 
       // Parse price - remove currency symbol and convert to number
       const priceValue = typeof newMedication.price === 'string' 
-        ? parseFloat(newMedication.price.replace(/[₦,]/g, '')) || 0
+        ? parseFloat(newMedication.price.replace(/[^\d.]/g, '')) || 0
         : newMedication.price || 0;
+      const resolvedCategory = newMedication.isSupplement
+        ? 'Supplement'
+        : (newMedication.category || 'Medication');
 
       if (editingMedicationId !== null) {
         // Update existing supplement
@@ -329,7 +372,10 @@ const MedicationsPage: React.FC = () => {
           price: priceValue,
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
-          category: newMedication.category,
+          category: resolvedCategory,
+          manufacturer: newMedication.manufacturer || '',
+          strength: newMedication.strength || '',
+          expiryDate: newMedication.expiryDate || '',
         });
 
         if (response.data?.data?.supplement) {
@@ -341,10 +387,13 @@ const MedicationsPage: React.FC = () => {
                     ...medication,
                     name: updated.name,
                     category: updated.category || medication.category,
+                    isSupplement: (updated.category || medication.category || '').trim().toLowerCase() === 'supplement',
                     price: `₦${updated.price?.toLocaleString() || '0'}`,
                     stock: updated.stock,
                     manufacturer: newMedication.manufacturer || medication.manufacturer,
+                    strength: newMedication.strength || medication.strength,
                     status: updated.stock > 10 ? 'In Stock' : updated.stock > 0 ? 'Low Stock' : 'Out of Stock',
+                    expiryDate: formatDateForInput(updated.expiryDate || newMedication.expiryDate || ''),
                     description: updated.description,
                     image: updated.imageUrl || medication.image,
                   }
@@ -361,23 +410,29 @@ const MedicationsPage: React.FC = () => {
           price: priceValue,
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
-          category: newMedication.category || 'Supplement',
+          category: resolvedCategory,
+          manufacturer: newMedication.manufacturer || '',
+          strength: newMedication.strength || '',
+          expiryDate: newMedication.expiryDate || '',
         });
 
         if (response.data?.data?.supplement) {
           const created = response.data.data.supplement;
-          const medicationToAdd: Medication = {
-            id: created.id,
-            name: created.name,
-            category: created.category || 'Supplement',
-            price: `₦${created.price?.toLocaleString() || '0'}`,
-            stock: created.stock || 0,
-            manufacturer: newMedication.manufacturer || 'Unknown',
-            status: created.stock > 10 ? 'In Stock' : created.stock > 0 ? 'Low Stock' : 'Out of Stock',
-            dateAdded: new Date(created.createdAt).toLocaleDateString(),
-            image: created.imageUrl || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
-            description: created.description,
-          };
+           const medicationToAdd: Medication = {
+             id: created.id,
+             name: created.name,
+             category: created.category || 'Medication',
+             isSupplement: (created.category || '').trim().toLowerCase() === 'supplement',
+             price: `₦${created.price?.toLocaleString() || '0'}`,
+             stock: created.stock || 0,
+             manufacturer: created.manufacturer || newMedication.manufacturer || 'Unknown',
+             strength: (created.strength as string) || newMedication.strength || '',
+             status: created.stock > 10 ? 'In Stock' : created.stock > 0 ? 'Low Stock' : 'Out of Stock',
+             dateAdded: new Date(created.createdAt).toLocaleDateString(),
+             expiryDate: formatDateForInput(created.expiryDate || newMedication.expiryDate || ''),
+             image: created.imageUrl || created.image || 'https://via.placeholder.com/100/4299E1/FFFFFF?text=Med',
+             description: created.description,
+           };
           setMedications(prev => [medicationToAdd, ...prev]);
           toast.success('Medication created successfully');
         }
@@ -388,16 +443,7 @@ const MedicationsPage: React.FC = () => {
       setEditingMedicationId(null);
       setSelectedMedication(null);
       setSelectedFile(null);
-      setNewMedication({
-        name: '',
-        category: '',
-        price: '',
-        stock: 0,
-        manufacturer: '',
-        status: 'In Stock',
-        description: '',
-        image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-      });
+      setNewMedication(createEmptyMedication());
       setPreviewImage(null);
       setIsDirty(false);
       setIsDirty(false);
@@ -421,10 +467,13 @@ const MedicationsPage: React.FC = () => {
     setNewMedication({
       name: medication.name,
       category: medication.category,
+      isSupplement: medication.isSupplement || medication.category.trim().toLowerCase() === 'supplement',
       price: medication.price,
       stock: medication.stock,
       manufacturer: medication.manufacturer,
+      strength: medication.strength || '',
       status: medication.status,
+      expiryDate: medication.expiryDate || '',
       description: medication.description || '',
       image: medication.image,
     });
@@ -447,72 +496,106 @@ const MedicationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-gray-50 pb-20 sm:pb-8">
-      {/* Page Header */}
-      <div className="bg-white border-b sticky top-0 z-20 sm:relative sm:top-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-row items-center justify-between">
-            <div>
-          <BackToDashboardButton isDirty={isDirty} className="mb-2" />
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
-              <p className="hidden sm:block mt-1 text-sm text-gray-500">
-                Manage your medication inventory
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="flex items-center gap-2 h-9 rounded-full px-4 shadow-sm"
-                onClick={() => {
-                  setSelectedMedication(null);
-                  setEditingMedicationId(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    status: 'In Stock',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
-                  setPreviewImage(null);
-                  setIsDirty(false);
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Medication</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
-            </div>
+    <div className="flex-1 min-h-screen bg-gray-50 pb-20 sm:pb-8 pt-[100px]">
+      {/* Fixed Header (Back + Title) */}
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
+          <BackToDashboardButton isDirty={isDirty} className="text-black/90 hover:text-black/80" />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Medications</h1>
+            <Button
+              size="sm"
+              className="flex items-center gap-2 h-9 px-4 shadow-sm"
+              onClick={() => {
+                setSelectedMedication(null);
+                setEditingMedicationId(null);
+                setNewMedication(createEmptyMedication());
+                setPreviewImage(null);
+                setIsDirty(false);
+                setIsModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Add Medication</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-8">
+      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-2 pt-1">
         <Card className="overflow-hidden border-0 sm:border shadow-none sm:shadow-sm bg-transparent sm:bg-white">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
+          <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0 sm:max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search medications..."
-                className="pl-10 h-11 sm:h-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
+                className="pl-10 h-11 sm:h-10 bg-gray-100 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar py-1">
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
-                <Filter className="h-4 w-4" />
-                <span>Filter</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none items-center gap-2 h-9 rounded-full px-4 border-gray-200 bg-white">
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'In Stock', value: 'In Stock' as const },
+                      { label: 'Low Stock', value: 'Low Stock' as const },
+                      { label: 'Out of Stock', value: 'Out of Stock' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Export"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
                 <Download className="h-4 w-4" />
-                <span>Export</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Medications count"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
+                <Pill className="h-4 w-4" />
+                <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : medications.length}</p>
               </Button>
             </div>
           </div>
@@ -525,16 +608,7 @@ const MedicationsPage: React.FC = () => {
               <EmptyState onAddClick={() => {
                 setSelectedMedication(null);
                 setEditingMedicationId(null);
-                setNewMedication({
-                  name: '',
-                  category: '',
-                  price: '',
-                  stock: 0,
-                  manufacturer: '',
-                  status: 'In Stock',
-                  description: '',
-                  image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                });
+                setNewMedication(createEmptyMedication());
                 setPreviewImage(null);
                 setIsDirty(false);
                 setIsModalOpen(true);
@@ -686,7 +760,7 @@ const MedicationsPage: React.FC = () => {
           </div>
 
           {/* Mobile Accordion View - Visible only on mobile */}
-          <div className="md:hidden space-y-2 p-2">
+          <div className="md:hidden space-y-2 px-2 pb-2 pt-[2px]">
             {isLoading ? (
               <AccordionSkeleton />
             ) : medications.length === 0 ? (
@@ -694,16 +768,7 @@ const MedicationsPage: React.FC = () => {
                 <EmptyState onAddClick={() => {
                   setSelectedMedication(null);
                   setEditingMedicationId(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    status: 'In Stock',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
+                  setNewMedication(createEmptyMedication());
                   setPreviewImage(null);
                   setIsModalOpen(true);
                 }} />
@@ -713,47 +778,64 @@ const MedicationsPage: React.FC = () => {
                 {paginatedData.map((medication) => (
                   <AccordionItem key={medication.id} value={`medication-${medication.id}`} className="border-0 bg-white rounded-xl shadow-sm overflow-hidden">
                     <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4 w-full">
-                        <div className="relative">
-                          <img
-                            src={medication.image}
-                            alt={medication.name}
-                            className="h-14 w-14 rounded-lg object-cover shadow-sm border border-gray-100"
-                          />
-                          {medication.stock <= 10 && (
-                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                            </span>
-                          )}
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        <div className="flex flex-1 items-center gap-3 min-w-0">
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={medication.image}
+                              alt={medication.name}
+                              className="h-14 w-14 rounded-lg object-cover shadow-sm border border-gray-100"
+                            />
+                            {medication.stock < 5 && (
+                              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 text-center flex flex-col items-center justify-center">
+                            <p className="font-bold text-gray-900 truncate text-base">
+                              {medication.name}
+                            </p>
+                            <span className="font-semibold text-gray-500">{medication.manufacturer ? ` (${medication.manufacturer})` : ''}</span>
+                          </div>
                         </div>
-                        <div className="flex-1 text-left min-w-0">
-                          <p className="font-bold text-gray-900 truncate text-base">{medication.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-sm font-bold text-emerald-600">{medication.price}</span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-500 font-medium">{medication.category}</span>
-                          </div>
-                          <div className="mt-2">
-                            {renderStatusBadge(medication.status)}
-                          </div>
+
+                        <div className="text-right flex-shrink-0">
+                          {/* <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Price</p> */}
+                          <p className="text-sm font-bold text-emerald-600">{medication.price}</p>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4 bg-white">
                       <div className="space-y-4 pt-2">
-                        <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded-lg">
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Stock</p>
-                            <p className="font-bold text-gray-900 mt-0.5">{medication.stock} units</p>
+                        <div className="rounded-xl border border-slate-200 bg-gray-50/60 p-4 text-sm">
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Stock Qty</p>
+                            <p className={`font-bold ${medication.stock < 5 ? 'text-red-600' : 'text-gray-900'}`}>
+                              {medication.stock < 5 ? 'Low' : medication.stock}
+                            </p>
                           </div>
-                          <div>
-                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Manufacturer</p>
-                            <p className="font-bold text-gray-900 mt-0.5 truncate">{medication.manufacturer}</p>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Category</p>
+                            <p className="font-bold text-gray-900 truncate max-w-[60%] text-right">{medication.category}</p>
                           </div>
-                          <div className="col-span-2">
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Status</p>
+                            <div className="pt-0.5">{renderStatusBadge(medication.status)}</div>
+                          </div>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
                             <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Date Added</p>
-                            <p className="font-bold text-gray-900 mt-0.5">{medication.dateAdded}</p>
+                            <p className="font-bold text-gray-900">{medication.dateAdded}</p>
+                          </div>
+                          <div className="my-3 h-px bg-slate-200/70" />
+                          <div className="flex items-center justify-between gap-6">
+                            <p className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Expiry Date</p>
+                            <p className="font-bold text-gray-900">{formatExpiryDisplay(medication.expiryDate)}</p>
                           </div>
                         </div>
                         {medication.description && (
@@ -810,9 +892,9 @@ const MedicationsPage: React.FC = () => {
           {!isLoading && medications.length > 0 && (
             <div className="p-4 bg-white border-t">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm text-gray-500 order-2 sm:order-1">
+                {/* <div className="text-sm text-gray-500 order-2 sm:order-1">
                   Showing {`${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {filteredData.length} entries
-                </div>
+                </div> */}
                 <Pagination className="order-1 sm:order-2">
                   <PaginationContent>
                     <PaginationItem>
@@ -887,6 +969,10 @@ const MedicationsPage: React.FC = () => {
                     <p className="font-semibold text-gray-900">{selectedMedication.manufacturer}</p>
                   </div>
                   <div>
+                    <p className="text-sm font-medium text-gray-500">Strength</p>
+                    <p className="font-semibold text-gray-900">{selectedMedication.strength || 'N/A'}</p>
+                  </div>
+                  <div>
                     <p className="text-sm font-medium text-gray-500">Status</p>
                     <div>{renderStatusBadge(selectedMedication.status)}</div>
                   </div>
@@ -899,7 +985,7 @@ const MedicationsPage: React.FC = () => {
               <p className="text-gray-700">{selectedMedication.description || "No description available."}</p>
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 flex justify-end z-10">
+            <div className="mt-6 flex justify-end border-t bg-white pt-4 pb-2">
               <Button
                 variant="outline"
                 className="w-full sm:w-auto rounded-full h-11"
@@ -912,37 +998,8 @@ const MedicationsPage: React.FC = () => {
         ) : (
           // Add New Medication Form
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-md border overflow-hidden bg-gray-100 flex items-center justify-center">
-                    {previewImage ? (
-                      <img
-                        src={previewImage}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Image className="h-8 w-8 text-gray-400" />
-                    )}
-                  </div>
-                  <label htmlFor="medication-image" className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-full cursor-pointer">
-                    <Plus className="h-4 w-4" />
-                  </label>
-                  <input
-                    id="medication-image"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    title = "Upload medication image"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-2 text-center">Upload image</p>
-              </div>
-
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Medication Name <span className="text-red-500">*</span></Label>
                     <Input
@@ -953,6 +1010,28 @@ const MedicationsPage: React.FC = () => {
                       placeholder="e.g., Paracetamol 500mg"
                     />
                   </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="manufacturer">Manufacturer</Label>
+                      <Input
+                        id="manufacturer"
+                        name="manufacturer"
+                        value={newMedication.manufacturer}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Pfizer"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="strength">Strength</Label>
+                      <Input
+                        id="strength"
+                        name="strength"
+                        value={newMedication.strength || ''}
+                        onChange={handleInputChange}
+                        placeholder="mg"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <Label htmlFor="category">Category</Label>
                     <Input
@@ -961,6 +1040,20 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.category}
                       onChange={handleInputChange}
                       placeholder="e.g., Pain Relief"
+                      disabled={!!newMedication.isSupplement}
+                    />
+                    {newMedication.isSupplement && (
+                      <p className="mt-1 text-xs text-gray-500">Supplement items are saved under the Supplement category automatically.</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="expiryDate">Expiry Date</Label>
+                    <Input
+                      id="expiryDate"
+                      name="expiryDate"
+                      type="date"
+                      value={newMedication.expiryDate || ''}
+                      onChange={handleInputChange}
                     />
                   </div>
                   <div>
@@ -985,16 +1078,6 @@ const MedicationsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="manufacturer">Manufacturer</Label>
-                    <Input
-                      id="manufacturer"
-                      name="manufacturer"
-                      value={newMedication.manufacturer}
-                      onChange={handleInputChange}
-                      placeholder="e.g., Pfizer"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="status">Status</Label>
                     <select
                       id="status"
@@ -1002,14 +1085,34 @@ const MedicationsPage: React.FC = () => {
                       value={newMedication.status}
                       onChange={handleInputChange}
                       title = "Medication status"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border border-input bg-gray-100 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="In Stock">In Stock</option>
                       <option value="Low Stock">Low Stock</option>
                       <option value="Out of Stock">Out of Stock</option>
                     </select>
                   </div>
-                </div>
+                  <div className="md:col-span-2 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="isSupplement"
+                        checked={!!newMedication.isSupplement}
+                        onCheckedChange={(checked) => {
+                          const isSupplement = checked === true;
+                          setNewMedication((prev) => ({
+                            ...prev,
+                            isSupplement,
+                            category: isSupplement ? 'Supplement' : '',
+                          }));
+                          setIsDirty(true);
+                        }}
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="isSupplement" className="cursor-pointer">This medication is a supplement</Label>
+                        <p className="text-xs text-gray-600">Turn this on to save the item as a supplement and auto-select the Supplement category.</p>
+                      </div>
+                    </div>
+                  </div>
               </div>
             </div>
 
@@ -1025,7 +1128,61 @@ const MedicationsPage: React.FC = () => {
               />
             </div>
 
-            <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t mt-6 flex justify-end gap-2 z-10">
+            <div className="space-y-2">
+              <Label>Medication Image <span className="text-red-500">*</span></Label>
+              <div className="w-32 mx-auto">
+                <div className="relative">
+                  <div className="w-32 h-32 rounded-md border overflow-hidden bg-gray-100 flex items-center justify-center">
+                    {previewImage ? (
+                      <img
+                        src={previewImage}
+                        alt="Medication preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex w-32 items-center justify-around">
+                    <label
+                      htmlFor="medication-image-camera"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 cursor-pointer"
+                      title="Snap with camera"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </label>
+                    <label
+                      htmlFor="medication-image-gallery"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 cursor-pointer"
+                      title="Select from gallery"
+                    >
+                      <Images className="h-5 w-5" />
+                    </label>
+                  </div>
+
+                  <input
+                    id="medication-image-camera"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    title="Snap medication image"
+                  />
+                  <input
+                    id="medication-image-gallery"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    title="Upload medication image"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2 border-t bg-white pt-4 pb-2">
               <Button
                 variant="outline"
                 className="flex-1 sm:flex-none rounded-full"
@@ -1033,16 +1190,7 @@ const MedicationsPage: React.FC = () => {
                   setIsModalOpen(false);
                   setEditingMedicationId(null);
                   setSelectedMedication(null);
-                  setNewMedication({
-                    name: '',
-                    category: '',
-                    price: '',
-                    stock: 0,
-                    manufacturer: '',
-                    status: 'In Stock',
-                    description: '',
-                    image: 'https://via.placeholder.com/100/4299E1/FFFFFF?text=New+Med',
-                  });
+                  setNewMedication(createEmptyMedication());
                   setPreviewImage(null);
                   setIsDirty(false);
                 }}

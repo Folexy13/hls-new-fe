@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -14,9 +15,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { 
   Search, Filter, Download, Eye, ArrowUpDown,
-  ChevronDown, Plus, Edit, Trash2, Play, Mic, 
-  Pause, Clock
+  Plus, Edit, Trash2, Play, Mic, 
+  Pause, Clock, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@radix-ui/react-accordion';
+import { contentService } from '@/services/contentService';
+import { toast } from 'sonner';
 
 // Define the Podcast type
 type Podcast = {
@@ -27,6 +31,8 @@ type Podcast = {
   duration: string;
   publishDate: string;
   status: string;
+  audioUrl?: string;
+  tags?: Record<string, string[]>;
   listens: number;
 };
 
@@ -54,6 +60,8 @@ const mockPodcasts: Podcast[] = Array(50).fill(0).map((_, i) => ({
 }));
 
 const PodcastsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,19 +69,38 @@ const PodcastsPage: React.FC = () => {
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [playingId, setPlayingId] = useState<number | null>(null);
+  const [openPodcastId, setOpenPodcastId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'Published' | 'Draft' | 'Scheduled' | 'Archived'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
   
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(mockPodcasts.length / itemsPerPage);
 
-  // Simulate loading data
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setPodcasts(mockPodcasts);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    const loadPodcasts = async () => {
+      setIsLoading(true);
+      try {
+        const rows = await contentService.getPrincipalPodcasts();
+        setPodcasts(rows.map((podcast: any) => ({
+          id: podcast.id,
+          title: podcast.title,
+          host: podcast.host || 'Principal',
+          category: podcast.category || 'Wellness',
+          duration: podcast.duration || 'Not set',
+          publishDate: podcast.createdAt ? new Date(podcast.createdAt).toLocaleDateString() : 'Recently',
+          status: podcast.status === 'published' ? 'Published' : podcast.status === 'scheduled' ? 'Scheduled' : podcast.status === 'archived' ? 'Archived' : 'Draft',
+          audioUrl: podcast.audioUrl || '',
+          tags: podcast.tags || {},
+          listens: Number(podcast.listens || 0),
+        })));
+      } catch (error) {
+        console.error('Failed to load podcasts:', error);
+        setPodcasts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPodcasts();
   }, []);
 
   // Handle sorting
@@ -86,21 +113,59 @@ const PodcastsPage: React.FC = () => {
     }
   };
 
-  // Toggle play/pause
-  const togglePlay = (id: number) => {
-    if (playingId === id) {
+  const pauseOtherPodcasts = (activeId: number) => {
+    Object.entries(audioRefs.current).forEach(([id, audio]) => {
+      if (Number(id) !== activeId && audio && !audio.paused) audio.pause();
+    });
+  };
+
+  const playPodcastAudio = async (podcast: Podcast) => {
+    if (!podcast.audioUrl) {
+      toast.error('No audio file is attached to this podcast');
+      return;
+    }
+
+    const audio = audioRefs.current[podcast.id];
+    if (!audio) {
+      toast.error('Audio player is not ready yet');
+      return;
+    }
+
+    try {
+      pauseOtherPodcasts(podcast.id);
+      await audio.play();
+      setPlayingId(podcast.id);
+    } catch (error) {
+      console.error(error);
       setPlayingId(null);
-    } else {
-      setPlayingId(id);
+      toast.error('Unable to play this podcast audio');
     }
   };
 
+  // Toggle play/pause without resetting the current playback position.
+  const togglePlay = async (podcast: Podcast) => {
+    if (playingId === podcast.id) {
+      audioRefs.current[podcast.id]?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    await playPodcastAudio(podcast);
+  };
+
   // Filter and sort data
-  const filteredData = podcasts.filter(podcast => 
-    podcast.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    podcast.host.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    podcast.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredData = podcasts.filter((podcast) => {
+    const matchesSearch =
+      podcast.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      podcast.host.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      podcast.category.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all' ? true : podcast.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const sortedData = [...filteredData].sort((a, b) => {
     if (a[sortField as keyof Podcast] < b[sortField as keyof Podcast]) return sortDirection === 'asc' ? -1 : 1;
@@ -114,32 +179,10 @@ const PodcastsPage: React.FC = () => {
     currentPage * itemsPerPage
   );
 
-  // Generate pagination items
-  const getPaginationItems = () => {
-    const items = [];
-    const maxVisiblePages = 5;
-    
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      items.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            onClick={() => setCurrentPage(i)} 
-            isActive={currentPage === i}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    return items;
+  const getVisiblePages = () => {
+    if (totalPages <= 3) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 1, totalPages - 2));
+    return [start, start + 1, start + 2];
   };
 
   // Render status badge
@@ -170,242 +213,282 @@ const PodcastsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      {/* Page Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <BackToDashboardButton className="mb-3" />
-              <h1 className="text-2xl font-bold text-gray-900">Podcasts</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your health podcasts and episodes
-              </p>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Podcast
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-50 pb-16 pt-[100px]">
+      {/* Fixed Header (Back + Title) */}
+      <div className="fixed left-0 right-0 top-[64px] z-30 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 space-y-3">
+          <BackToDashboardButton className="text-black/90 hover:text-black/80" />
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Podcasts</h1>
+            <Button className="flex items-center gap-2 h-9 px-4" onClick={() => navigate('/principal/podcasts/create')}>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Podcast</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-3">
         <Card className="overflow-hidden">
           {/* Table Controls */}
-          <div className="p-4 bg-white border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+          <div className="p-4 bg-white border-b flex flex-row items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-0 sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search podcasts..."
-                className="pl-8"
+                className="pl-10 h-11 sm:h-10 bg-gray-100 border-gray-200 focus:bg-white transition-colors rounded-xl sm:rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <span className="hidden sm:inline">Filter</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Filter"
+                  onClick={() => setShowStatusFilter((v) => !v)}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+                >
+                  <Filter className="h-4 w-4" />
+                </Button>
+
+                {showStatusFilter && (
+                  <div className="absolute right-0 top-12 z-20 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    {[
+                      { label: 'All', value: 'all' as const },
+                      { label: 'Published', value: 'Published' as const },
+                      { label: 'Draft', value: 'Draft' as const },
+                      { label: 'Scheduled', value: 'Scheduled' as const },
+                      { label: 'Archived', value: 'Archived' as const },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(opt.value);
+                          setCurrentPage(1);
+                          setShowStatusFilter(false);
+                        }}
+                        className={`w-full rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                          statusFilter === opt.value
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Export"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
                 <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Podcasts count"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-xl sm:rounded-lg border-gray-200 bg-white"
+              >
+                <Mic className="h-4 w-4" />
+                <p className="text-xs -mt-1 -ml-1 font-semibold">{isLoading ? '...' : podcasts.length}</p>
               </Button>
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableCaption>A list of all podcasts.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('id')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      ID
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('title')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Title
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('host')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Host
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('category')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Category
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('duration')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Duration
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('status')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Status
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => handleSort('listens')}
-                      className="flex items-center gap-1 p-0 h-auto font-medium"
-                    >
-                      Listens
-                      <ArrowUpDown className="h-3 w-3" />
-                    </Button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  // Skeleton loading state
-                  Array(itemsPerPage).fill(0).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-12" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : paginatedData.length > 0 ? (
-                  // Actual data
-                  paginatedData.map((podcast) => (
-                    <TableRow key={podcast.id}>
-                      <TableCell className="font-medium">{podcast.id}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={`h-8 w-8 rounded-full ${playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100'}`}
-                          onClick={() => togglePlay(podcast.id)}
-                        >
-                          {playingId === podcast.id ? (
-                            <Pause className="h-4 w-4" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mic className="h-4 w-4 text-gray-400" />
-                          <span className="font-medium truncate max-w-[200px]">{podcast.title}</span>
+          {/* Podcasts List (Accordion) */}
+          <div className="p-4 space-y-2">
+            {isLoading ? (
+              Array(itemsPerPage).fill(0).map((_, index) => (
+                <div key={index} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-8 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : paginatedData.length > 0 ? (
+              <Accordion
+                type="single"
+                collapsible
+                value={openPodcastId ? `podcast-${openPodcastId}` : undefined}
+                onValueChange={(value) =>
+                  setOpenPodcastId(value ? Number(value.replace('podcast-', '')) : null)
+                }
+                className="space-y-2"
+              >
+                {paginatedData.map((podcast) => (
+                  <AccordionItem
+                    key={podcast.id}
+                    value={`podcast-${podcast.id}`}
+                    className="rounded-xl border border-slate-200 bg-white px-4 shadow-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AccordionTrigger className="min-w-0 flex-1 rounded-lg bg-white py-4 text-left hover:no-underline hover:bg-slate-50/70">
+                        <div className="flex w-full items-center gap-2 min-w-0">
+                          <Mic className="h-5 w-5 shrink-0 text-slate-400" />
+                          <span className="truncate text-sm font-semibold text-slate-900">
+                            {podcast.title}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{podcast.host}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{podcast.category}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-gray-400" />
-                          {podcast.duration}
+                      </AccordionTrigger>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 shrink-0 rounded-full ${
+                          playingId === podcast.id ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-slate-700'
+                        }`}
+                        onClick={() => togglePlay(podcast)}
+                        aria-label={playingId === podcast.id ? 'Pause podcast' : 'Play podcast'}
+                      >
+                        {playingId === podcast.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <AccordionContent forceMount className="pb-4 pt-2 data-[state=closed]:hidden">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-sm text-slate-600">
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Podcast ID</p>
+                          <p className="mt-1 text-slate-900">{podcast.id}</p>
                         </div>
-                      </TableCell>
-                      <TableCell>{renderStatusBadge(podcast.status)}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{podcast.listens.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="flex flex-col min-w-0 md:items-center items-end">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Host</p>
+                          <p className="mt-1 text-slate-700">{podcast.host}</p>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  // No results
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                      No podcasts found. Try adjusting your search.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                        <div className="flex flex-col min-w-0 md:items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Category</p>
+                          <p className="mt-1 text-slate-700">{podcast.category}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-end">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Duration</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{podcast.duration}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Listens</p>
+                          <p className="mt-1 text-slate-700 whitespace-nowrap">{podcast.listens.toLocaleString()}</p>
+                        </div>
+                        <div className="flex flex-col min-w-0 items-end md:items-center">
+                          <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
+                          <div className="mt-1">{renderStatusBadge(podcast.status)}</div>
+                        </div>
+                        <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
+                          {Object.values(podcast.tags || {}).flat().length > 0
+                            ? `Tags: ${Object.values(podcast.tags || {}).flat().join(', ')}`
+                            : 'Visible to all your Benfeks'}
+                        </div>
+                        {podcast.audioUrl ? (
+                          <div className="col-span-2 md:col-span-4">
+                            <audio
+                              ref={(node) => {
+                                audioRefs.current[podcast.id] = node;
+                              }}
+                              className="w-full"
+                              controls
+                              src={podcast.audioUrl}
+                              onPlay={() => {
+                                pauseOtherPodcasts(podcast.id);
+                                setPlayingId(podcast.id);
+                              }}
+                              onPause={() => {
+                                if (playingId === podcast.id) setPlayingId(null);
+                              }}
+                              onEnded={() => {
+                                if (playingId === podcast.id) setPlayingId(null);
+                              }}
+                            >
+                              Your browser does not support audio playback.
+                            </audio>
+                          </div>
+                        ) : null}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+                No podcasts found. Try adjusting your search.
+              </div>
+            )}
           </div>
 
           {/* Pagination */}
           <div className="p-4 bg-white border-t">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-gray-500 order-2 sm:order-1">
+            <div className="flex flex-row items-center justify-between gap-3">
+              <div className="min-w-0 flex-1 text-xs sm:text-sm text-gray-500 truncate">
                 Showing {isLoading ? '...' : `${(currentPage - 1) * itemsPerPage + 1} to ${Math.min(currentPage * itemsPerPage, filteredData.length)}`} of {isLoading ? '...' : filteredData.length} entries
               </div>
-              <Pagination className="order-1 sm:order-2">
-                <PaginationContent>
+              <Pagination className="shrink-0 w-auto">
+                <PaginationContent className="flex-nowrap justify-end overflow-x-auto no-scrollbar max-w-[55vw] sm:max-w-none">
                   <PaginationItem>
-                    <PaginationPrevious 
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
+                    <PaginationLink
+                      href="#"
+                      aria-label="First page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(1); }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </PaginationLink>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      aria-label="Previous page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.max(1, prev - 1)); }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </PaginationLink>
                   </PaginationItem>
                   
-                  {getPaginationItems()}
+                  {getVisiblePages().map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                        isActive={currentPage === page}
+                        className="h-9 w-9"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
                   
                   <PaginationItem>
-                    <PaginationNext 
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
-                    />
+                    <PaginationLink
+                      href="#"
+                      aria-label="Next page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(prev => Math.min(totalPages, prev + 1)); }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </PaginationLink>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationLink
+                      href="#"
+                      aria-label="Last page"
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(totalPages); }}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50 h-9 w-9' : 'h-9 w-9'}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </PaginationLink>
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>

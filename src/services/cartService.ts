@@ -5,7 +5,8 @@ export interface Supplement {
   name: string;
   description: string;
   price: number;
-  image: string;
+  image?: string;
+  imageUrl?: string;
 }
 
 export interface CartItem {

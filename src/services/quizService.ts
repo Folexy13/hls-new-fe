@@ -10,6 +10,7 @@ export interface CompleteQuizPayload {
   lifestyle: {
     habits: string;
     funActivities: string;
+    desires: string;
     priority: string;
   };
   preferences: {
