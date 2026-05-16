@@ -24,6 +24,7 @@ import { principalService } from '@/services/principalService';
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 // Define the Withdrawal type
 type Withdrawal = {
@@ -65,7 +66,7 @@ type PaymentMethod = {
   default: boolean;
 };
 
-const MIN_WITHDRAWAL_AMOUNT = 100;
+const MIN_WITHDRAWAL_AMOUNT = 350;
 
 const parseWithdrawalAmount = (value: string) => Number(value.replace(/,/g, '').trim());
 
@@ -175,11 +176,6 @@ const WithdrawPage: React.FC = () => {
       return;
     }
 
-    if (false && amount < MIN_WITHDRAWAL_AMOUNT) {
-      toast.error('Minimum withdrawal amount is ₦10,000.00');
-      return;
-    }
-
     if (amount > withdrawableBalance) {
       toast.error('Withdrawal amount exceeds your withdrawable balance');
       return;
@@ -198,7 +194,7 @@ const WithdrawPage: React.FC = () => {
       setWithdrawAmount('');
     }).catch((error) => {
       console.error('Withdrawal failed:', error);
-      toast.error(error?.response?.data?.message || 'Failed to submit withdrawal request');
+      toast.error(getApiErrorMessage(error, 'Failed to submit withdrawal request'));
     }).finally(() => {
       setIsLoading(false);
     });
@@ -410,7 +406,7 @@ const WithdrawPage: React.FC = () => {
                       <div>
                         <h4 className="font-medium text-gray-900 mb-1">Minimum Withdrawal</h4>
                         <p className="text-sm text-gray-600">
-                          The minimum withdrawal amount is ₦10,000.00.
+                          The minimum withdrawal amount is ₦350.00.
                         </p>
                       </div>
                       

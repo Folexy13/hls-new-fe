@@ -13,6 +13,7 @@ import {
 import { budgetRangeOptions } from "@/lib/researcher/taxonomy";
 import { useToast } from "@/components/ui/use-toast";
 import { useLocation } from "react-router-dom";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 export function TabsContainer() {
   const location = useLocation();
@@ -32,6 +33,10 @@ export function TabsContainer() {
 
   const dispatchedStorageKey = useMemo(() => {
     return verifiedCode ? `researcher.dispatched.packs.${verifiedCode}` : "researcher.dispatched.packs";
+  }, [verifiedCode]);
+
+  const packRationalesStorageKey = useMemo(() => {
+    return verifiedCode ? `researcher.pack.rationales.${verifiedCode}` : "researcher.pack.rationales";
   }, [verifiedCode]);
 
   const pendingPackAddStorageKey = "researcher.gallery.pending_pack_add";
@@ -56,6 +61,7 @@ export function TabsContainer() {
   const [userBudget, setUserBudget] = useState<{ min: number; max: number } | null>(null);
   const [benfekData, setBenfekData] = useState<any | null>(null);
   const [dispatchedPacks, setDispatchedPacks] = useState<Record<string, boolean>>({});
+  const [packRationales, setPackRationales] = useState<Record<string, string>>({});
   const [dispatchingPackId, setDispatchingPackId] = useState<string | null>(null);
   const [dispatchingAll, setDispatchingAll] = useState(false);
 
@@ -110,10 +116,11 @@ export function TabsContainer() {
     try {
       localStorage.setItem(packStorageKey, JSON.stringify(selectedSupplements));
       localStorage.setItem(dispatchedStorageKey, JSON.stringify(dispatchedPacks));
+      localStorage.setItem(packRationalesStorageKey, JSON.stringify(packRationales));
     } catch {
       // ignore
     }
-  }, [packStorageKey, dispatchedStorageKey, packsHydrated, selectedSupplements, dispatchedPacks, userVerified]);
+  }, [packStorageKey, dispatchedStorageKey, packRationalesStorageKey, packsHydrated, selectedSupplements, dispatchedPacks, packRationales, userVerified]);
 
   useEffect(() => {
     const loadPackSupplements = () => {
@@ -138,6 +145,14 @@ export function TabsContainer() {
         } catch {
           setDispatchedPacks({});
         }
+
+        try {
+          const rawRationales = localStorage.getItem(packRationalesStorageKey);
+          const parsedRationales = rawRationales ? JSON.parse(rawRationales) : {};
+          setPackRationales(parsedRationales && typeof parsedRationales === "object" ? parsedRationales : {});
+        } catch {
+          setPackRationales({});
+        }
       } catch {
         setSelectedSupplements(emptySelected);
       }
@@ -152,7 +167,7 @@ export function TabsContainer() {
       window.removeEventListener("researcher-pack-updated", loadPackSupplements);
       window.removeEventListener("storage", loadPackSupplements);
     };
-  }, [emptySelected, packStorageKey, dispatchedStorageKey, userVerified]);
+  }, [emptySelected, packStorageKey, dispatchedStorageKey, packRationalesStorageKey, userVerified]);
 
   useEffect(() => {
     if (!userVerified || !packsHydrated) return;
@@ -256,6 +271,7 @@ export function TabsContainer() {
       // ignore
     }
     setSelectedSupplements(emptySelected);
+    setPackRationales({});
     setBudgetExceeded(Object.fromEntries(packCategories.map((p) => [p.id, false])));
     setUserBudget(null);
     setPacksHydrated(false);
@@ -317,6 +333,13 @@ export function TabsContainer() {
     });
   };
 
+  const handlePackRationaleChange = (packId: string, rationale: string) => {
+    setPackRationales((prev) => ({
+      ...prev,
+      [packId]: rationale,
+    }));
+  };
+
   const handleDispatchPack = async (packId: string) => {
     const packName = packCategories.find((p) => p.id === packId)?.name || packId;
 
@@ -367,6 +390,7 @@ export function TabsContainer() {
         code: verifiedCode,
         packId,
         packName,
+        rationale: packRationales[packId] || null,
         items,
         status: "dispatched",
       });
@@ -380,7 +404,7 @@ export function TabsContainer() {
     } catch (e) {
       toast({
         title: "Dispatch failed",
-        description: "Could not sync with the server.",
+        description: getApiErrorMessage(e, "Could not sync with the server."),
         variant: "destructive",
       });
     } finally {
@@ -408,6 +432,30 @@ export function TabsContainer() {
     let succeeded = 0;
     const updatedDispatched = { ...dispatchedPacks };
     const updatedSelected = { ...selectedSupplements };
+    const packsNeedingFallback = packsToDispatch.filter((pack) => {
+      const packItems = selectedSupplements[pack.id] || [];
+      return packItems.some((item: any) => {
+        const hasWholesalerOptions = Array.isArray(item.wholesalers) && item.wholesalers.length > 0;
+        if (!hasWholesalerOptions) return !item.forceDispatchWithoutWholesaler;
+        return !item.selectedWholesalerName || !Number.isFinite(Number(item.selectedWholesalerPrice));
+      });
+    });
+
+    let forceMissingWholesalers = false;
+    if (packsNeedingFallback.length > 0) {
+      forceMissingWholesalers = window.confirm(
+        `${packsNeedingFallback.length} pack${packsNeedingFallback.length > 1 ? "s have" : " has"} items that need wholesaler reselection. Click OK to dispatch them with the fallback 1.3 markup rule, or Cancel to review the packs first.`
+      );
+
+      if (!forceMissingWholesalers) {
+        toast({
+          title: "Wholesaler reselection required",
+          description: "Open the highlighted packs and select wholesalers, or dispatch with fallback markup.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     setDispatchingAll(true);
     try {
@@ -422,10 +470,6 @@ export function TabsContainer() {
           return !item.selectedWholesalerName || !Number.isFinite(Number(item.selectedWholesalerPrice));
         });
 
-        if (missingWholesaleSelection.length > 0) {
-          throw new Error("WHOLESALER_RESELECTION_REQUIRED");
-        }
-
         const items = packItems.map((i: any) => ({
           id: i.id,
           quantity: (i as any).qty || 1,
@@ -433,7 +477,10 @@ export function TabsContainer() {
           selectedWholesalerPrice: i.selectedWholesalerPrice ?? null,
           selectedWholesalerContact: i.selectedWholesalerContact || null,
           selectedWholesalerAddress: i.selectedWholesalerAddress || null,
-          forceDispatchWithoutWholesaler: Boolean(i.forceDispatchWithoutWholesaler),
+          forceDispatchWithoutWholesaler:
+            Boolean(i.forceDispatchWithoutWholesaler) ||
+            (forceMissingWholesalers &&
+              missingWholesaleSelection.some((missing: any) => String(missing.id) === String(i.id))),
         }));
 
         try {
@@ -441,6 +488,7 @@ export function TabsContainer() {
             code: verifiedCode,
             packId: pack.id,
             packName: pack.name,
+            rationale: packRationales[pack.id] || null,
             items,
             status: "dispatched",
           });
@@ -451,10 +499,7 @@ export function TabsContainer() {
         } catch (error) {
           toast({
             title: `Failed to dispatch ${pack.name}`,
-            description:
-              error instanceof Error && error.message === "WHOLESALER_RESELECTION_REQUIRED"
-                ? "One or more items need wholesaler reselection before this pack can be dispatched."
-                : "One of the packs could not be dispatched. Please try again.",
+            description: getApiErrorMessage(error, "One of the packs could not be dispatched. Please try again."),
             variant: "destructive",
           });
         }
@@ -516,8 +561,11 @@ export function TabsContainer() {
     setBenfekData(data);
     
     // Extract budget from the nested quiz preferences if available
+    const parsedRange =
+      parseRangeString(data?.quiz?.preferences?.budgetRange) ||
+      inferBudgetRangeFromMax(Number(data?.quiz?.preferences?.budget));
     const budgetValue = Number(data?.quiz?.preferences?.budget);
-    setUserBudget(Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : null);
+    setUserBudget(parsedRange || (Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : null));
 
     toast({
       title: "Beneficiary Verified",
@@ -554,6 +602,8 @@ export function TabsContainer() {
           packBudgets={packBudgets as any}
           onDispatchPack={handleDispatchPack}
           onDispatchAllPacks={handleDispatchAllPacks}
+          packRationales={packRationales}
+          onPackRationaleChange={handlePackRationaleChange}
           dispatchedPacks={dispatchedPacks}
           dispatchingPackId={dispatchingPackId}
           dispatchingAll={dispatchingAll}

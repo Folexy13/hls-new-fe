@@ -9,6 +9,7 @@ import { User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { researcherService } from "@/services/researcherService";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { getApiErrorMessage } from "@/utils/apiError";
 
 interface UserProfileProps {
   onUserVerified?: (verified: boolean, data: any) => void;
@@ -21,6 +22,10 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
 
   const formatValue = (value: unknown, fallback = "Not specified") => {
     if (value === null || value === undefined) return fallback;
+    if (Array.isArray(value)) {
+      const text = value.map((item) => String(item || "").trim()).filter(Boolean).join(", ");
+      return text || fallback;
+    }
     const text = String(value).trim();
     return text ? text : fallback;
   };
@@ -73,10 +78,6 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
       const data = await researcherService.verifyBenfekCode(benefekCode);
 
       if (data?.benfek) {
-        // Clear previous session data to ensure fresh fetch from backend
-        localStorage.removeItem(`researcher.sheet.supplements.${data.benfek.code}`);
-        localStorage.removeItem("researcher.gallery.supplements");
-
         sessionStorage.setItem("researcherVerifiedBenfekCode", data.benfek.code);
         sessionStorage.setItem("researcherVerifiedBenfek", JSON.stringify(data.benfek));
         window.dispatchEvent(new Event("researcher-benfek-verified"));
@@ -86,15 +87,21 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
           const packsData = await researcherService.getBenfekPacks(data.benfek.code);
           if (packsData && Array.isArray(packsData)) {
             const mappedPacks: Record<string, any[]> = {};
+            const mappedRationales: Record<string, string> = {};
             packsData.forEach((p: any) => {
               mappedPacks[p.packId] = (p.items || []).map((i: any) => ({
                 ...i.supplement,
                 id: String(i.supplement.id)
               }));
+              mappedRationales[p.packId] = String(p.rationale || "");
             });
             localStorage.setItem(
               `researcher.pack.supplements.${data.benfek.code}`,
               JSON.stringify(mappedPacks)
+            );
+            localStorage.setItem(
+              `researcher.pack.rationales.${data.benfek.code}`,
+              JSON.stringify(mappedRationales)
             );
             // Notify other components (like TabsContainer or SupplementsSelector) that packs are updated
             window.dispatchEvent(new Event("researcher-pack-updated"));
@@ -124,7 +131,7 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
       console.error("Error verifying code:", error);
       toast({
         title: "Error",
-        description: "Something went wrong while verifying the code.",
+        description: getApiErrorMessage(error, "Something went wrong while verifying the code."),
         variant: "destructive",
       });
     } finally {
@@ -173,7 +180,7 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
           </CardContent>
         </Card>
 
-        {isVerifying ? (
+        {isVerifying && !userDetails ? (
           <Card className="mt-6 animate-fade-in">
             <CardHeader>
               <Skeleton className="h-12 w-12 rounded-full" />
