@@ -307,6 +307,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   ref={notificationButtonRef}
                   data-principal-notification-button="true"
                   type="button"
+                  onPointerDown={(event) => event.stopPropagation()}
                   onClick={() => {
                     if (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) {
                       setNotificationMenuOpen((open) => !open);
@@ -549,6 +550,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     ref={notificationButtonRef}
                     data-principal-notification-button="true"
                     type="button"
+                    onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => {
                       if (userRole === UserRole.PRINCIPAL || userRole === UserRole.BENFEK) {
                         setNotificationMenuOpen((open) => !open);

@@ -273,6 +273,16 @@ const getPersistedQuizValue = (key: string) => {
   }
 };
 
+const readQuizDraft = (code: string) => {
+  if (!code) return null;
+  try {
+    const raw = localStorage.getItem(`benfek.quiz.draft.${code}`);
+    return raw ? (JSON.parse(raw) as any) : null;
+  } catch {
+    return null;
+  }
+};
+
 const QuizFormPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -316,14 +326,15 @@ const QuizFormPage: React.FC = () => {
   const validatedBenfekAge = getPersistedQuizValue('validatedBenfekAge');
   const validatedBenfekWeight = getPersistedQuizValue('validatedBenfekWeight');
   const validatedBenfekHeight = getPersistedQuizValue('validatedBenfekHeight');
+  const persistedDraft = useMemo(() => readQuizDraft(validatedQuizCode), [validatedQuizCode]);
   const shouldShowBodyMetricFields = includeGenderAge;
   const shouldUsePrincipalBodyMetrics = !includeGenderAge;
   const [basic, setBasic] = useState({
-    gender: validatedBenfekGender,
-    nickname: '',
-    age: validatedBenfekAge,
-    weight: shouldUsePrincipalBodyMetrics ? validatedBenfekWeight : '',
-    height: shouldUsePrincipalBodyMetrics ? validatedBenfekHeight : '',
+    gender: persistedDraft?.basic?.gender || validatedBenfekGender,
+    nickname: persistedDraft?.basic?.nickname || '',
+    age: persistedDraft?.basic?.age || validatedBenfekAge,
+    weight: persistedDraft?.basic?.weight || (shouldUsePrincipalBodyMetrics ? validatedBenfekWeight : ''),
+    height: persistedDraft?.basic?.height || (shouldUsePrincipalBodyMetrics ? validatedBenfekHeight : ''),
   });
   const [finalLogin, setFinalLogin] = useState({
     email: validatedBenfekEmail,
@@ -355,6 +366,27 @@ const QuizFormPage: React.FC = () => {
   const [gameResultActionsLocked, setGameResultActionsLocked] = useState(false);
   const [trappedZonePct, setTrappedZonePct] = useState(DEFAULT_MIN_Y_BOUND);
   const [maxSafeYPct, setMaxSafeYPct] = useState(DEFAULT_MAX_Y_BOUND);
+
+  useEffect(() => {
+    if (!persistedDraft) return;
+    if (persistedDraft.lifestyle) setLifestyle(persistedDraft.lifestyle);
+    if (persistedDraft.preference) setPreference(persistedDraft.preference);
+    if (Number.isInteger(persistedDraft.nutrientStep)) {
+      setNutrientStep(Math.max(includeGenderAge ? 0 : 1, Math.min(2, persistedDraft.nutrientStep)));
+    }
+  }, [includeGenderAge, persistedDraft]);
+
+  useEffect(() => {
+    if (!validatedQuizCode) return;
+    try {
+      localStorage.setItem(
+        `benfek.quiz.draft.${validatedQuizCode}`,
+        JSON.stringify({ basic, lifestyle, preference, nutrientStep })
+      );
+    } catch {
+      // keep the quiz usable if storage is unavailable
+    }
+  }, [basic, lifestyle, nutrientStep, preference, validatedQuizCode]);
 
   const lockGameResultActions = () => {
     if (gameResultActionUnlockTimeoutRef.current) {
@@ -515,11 +547,12 @@ const QuizFormPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       await quizService.submitQuizData(payload);
+      localStorage.removeItem(`benfek.quiz.draft.${validatedQuizCode}`);
       toast.success('Assessment completed successfully.');
       navigate('/benfek/dashboard');
     } catch (error) {
       console.error(error);
-      toast.error('Failed to submit quiz data. Please try again.');
+      toast.error(getApiErrorMessage(error, 'Failed to submit quiz data. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

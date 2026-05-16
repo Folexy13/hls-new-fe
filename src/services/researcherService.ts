@@ -55,6 +55,7 @@ export const researcherService = {
     code: string;
     packId: string;
     packName: string;
+    rationale?: string | null;
     items: Array<{
       id: string | number;
       quantity: number;

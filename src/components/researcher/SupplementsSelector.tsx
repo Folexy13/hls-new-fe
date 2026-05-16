@@ -10,6 +10,7 @@ import { packCategories, type Supplement } from "@/lib/researcher/dummyData";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SupplementsSelectorProps {
   onNavigateToGallery: (packId: string) => void;
@@ -20,6 +21,8 @@ interface SupplementsSelectorProps {
   packBudgets: Record<string, { min: number; max: number }> | null;
   onDispatchPack: (packId: string) => void;
   onDispatchAllPacks: () => void;
+  packRationales: Record<string, string>;
+  onPackRationaleChange: (packId: string, rationale: string) => void;
   dispatchedPacks: Record<string, boolean>;
   dispatchingPackId?: string | null;
   dispatchingAll?: boolean;
@@ -34,6 +37,8 @@ export function SupplementsSelector({
   packBudgets,
   onDispatchPack,
   onDispatchAllPacks,
+  packRationales,
+  onPackRationaleChange,
   dispatchedPacks,
   dispatchingPackId,
   dispatchingAll = false,
@@ -116,6 +121,19 @@ export function SupplementsSelector({
                     >
                       <GalleryHorizontal className="mr-1.5 h-3.5 w-3.5" /> Add from Gallery
                     </Button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700" htmlFor={`pack-rationale-${pack.id}`}>
+                      Pack rationale
+                    </label>
+                    <Textarea
+                      id={`pack-rationale-${pack.id}`}
+                      value={packRationales[pack.id] || ""}
+                      onChange={(event) => onPackRationaleChange(pack.id, event.target.value)}
+                      placeholder={`Explain why this ${displayName} is appropriate for this benfek...`}
+                      className="min-h-20 bg-white text-sm"
+                    />
                   </div>
 
                   <div className="mt-4 space-y-2">

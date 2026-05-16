@@ -141,6 +141,14 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setTagValueMode("select");
   };
 
+  const normalizeSupplementForGallery = (item: any) => ({
+    ...item,
+    id: String(item.id),
+    category: normalizeLoadedCategory(item),
+    tags: item.tags || {},
+    source: item.source,
+  });
+
   const uploadImageToCloudinary = async (file: File): Promise<string | null> => {
     try {
       setIsUploadingImage(true);
@@ -214,24 +222,22 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   }, []);
 
   useEffect(() => {
-    setGallerySupplements([]);
-
     const fetchSupplements = async () => {
       try {
         const items = await researcherService.getSupplements({ code: verifiedCode || undefined });
         const fetchedSupplements = Array.isArray(items)
-          ? items.map((item: any) => ({
-              ...item,
-              id: String(item.id),
-              category: normalizeLoadedCategory(item),
-              tags: item.tags || {},
-              source: item.source,
-            }))
+          ? items.map(normalizeSupplementForGallery)
           : [];
         setGallerySupplements(fetchedSupplements as any);
       } catch (error) {
         console.error("Failed to fetch supplements from backend:", error);
-        setGallerySupplements([]);
+        try {
+          const raw = localStorage.getItem(GALLERY_STORAGE_KEY);
+          const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+          setGallerySupplements(Array.isArray(parsed) ? parsed : []);
+        } catch {
+          setGallerySupplements([]);
+        }
       }
     };
 
@@ -400,7 +406,9 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       try {
         const updated = await researcherService.updateSupplement(editingId, updatePayload);
         if (updated) {
-          setGallerySupplements((prev) => prev.map((item) => (item.id === editingId ? updated : item)));
+          setGallerySupplements((prev) =>
+            prev.map((item) => (item.id === editingId ? normalizeSupplementForGallery(updated) : item))
+          );
         } else {
           throw new Error("No supplement returned");
         }
@@ -715,7 +723,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   onCheckedChange={() => handleToggleSelect(supplement.id)}
                 />
               </div>
-          bbbbbb    <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
+              <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
               <div className="mt-0.5 flex items-center justify-center gap-2">
                 <p className="text-xs font-medium">₦{supplement.price.toLocaleString()}</p>
                 <Button

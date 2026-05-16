@@ -20,10 +20,6 @@ api.interceptors.response.use(
       responseData.error = getSafeUserMessage(responseData.error);
     }
 
-    if (responseData?.error?.details) {
-      delete responseData.error.details;
-    }
-
     return Promise.reject(error);
   }
 );

@@ -83,6 +83,7 @@ const Dashboard = () => {
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
+  const [packRationales, setPackRationales] = useState<Record<string, string>>({});
   const [packPaymentStates, setPackPaymentStates] = useState<Record<string, PackPaymentState>>({});
   const [isPayingForPack, setIsPayingForPack] = useState(false);
   const [isSavingPharmacy, setIsSavingPharmacy] = useState(false);
@@ -164,8 +165,10 @@ const Dashboard = () => {
         const response = await apiClient.get('/api/v2/benfek/packs');
         const packs = response.data?.data || [];
         const mapped: Record<string, any[]> = {};
+        const rationales: Record<string, string> = {};
         const paymentStates: Record<string, PackPaymentState> = {};
         packs.forEach((p: any) => {
+          rationales[p.packId] = String(p.rationale || '');
           mapped[p.packId] = (p.items || []).map((i: any) => ({
             ...i.supplement,
             qty: i.quantity,
@@ -181,16 +184,18 @@ const Dashboard = () => {
           };
         });
         setPackItems(mapped);
+        setPackRationales(rationales);
         setPackPaymentStates(paymentStates);
       } catch (error) {
         console.error('Failed to fetch packs:', error);
         setPackItems({});
+        setPackRationales({});
         setPackPaymentStates({});
       }
     };
 
-    if (activeTab === 'nutrient') fetchPacks();
-  }, [activeTab]);
+    fetchPacks();
+  }, []);
 
   const pharmacyItems = apiPharmacyItems;
   const filteredPharmacyItems = useMemo(() => {
@@ -385,6 +390,31 @@ const Dashboard = () => {
     }),
     []
   );
+
+  const nutrientPackNoticeMessage = useMemo(() => {
+    const readyPacks = promoCards
+      .map((card) => {
+        const packId = promoIdToPackId[card.id as keyof typeof promoIdToPackId];
+        const itemCount = (packItems[packId] || []).length;
+        const payment = packPaymentStates[packId];
+        if (!itemCount || payment?.isPaid) return null;
+        return `${card.title}: ${itemCount} item${itemCount === 1 ? '' : 's'} ready for review and payment.`;
+      })
+      .filter(Boolean);
+
+    if (readyPacks.length > 0) {
+      return readyPacks.join('\n');
+    }
+
+    return 'Your nutrient packs are still being prepared. You will see pack details here as soon as a researcher dispatches them.';
+  }, [packItems, packPaymentStates, promoCards, promoIdToPackId]);
+
+  useEffect(() => {
+    const hasActionablePack = Object.entries(packItems).some(([packId, items]) => {
+      return items.length > 0 && !packPaymentStates[packId]?.isPaid;
+    });
+    setHasNutrientNotice(hasActionablePack);
+  }, [packItems, packPaymentStates]);
 
   const packIdToPromoId = useMemo(
     () => ({
@@ -736,15 +766,10 @@ const Dashboard = () => {
                       setHasNutrientNotice(false);
                     }}
                     className="absolute right-2 top-1 h-2.5 w-2.5 rounded-full bg-red-700 text-red-700 shadow-sm flex items-center justify-center"
-                    aria-label="Nutrient pack update"
+                    aria-label="Nutrient pack action needed"
+                    title={nutrientPackNoticeMessage}
                   >
-                    <Dot 
-                     onClick={(event) => {
-                      event.stopPropagation();
-                      setShowNutrientNotice(true);
-                      setHasNutrientNotice(false);
-                    }}
-                    />
+                    <Dot />
                   </button>
                 )}
               </div>
@@ -934,6 +959,7 @@ const Dashboard = () => {
                 {activeCatalogueId ? (
                   <PackCatalogue 
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
+                    packRationale={packRationales[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
                     onBack={() => setActiveCatalogueId(null)}
                     deliveryAddress={deliveryAddress}
@@ -1199,9 +1225,9 @@ const Dashboard = () => {
       <Dialog open={showNutrientNotice} onOpenChange={setShowNutrientNotice}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Update</DialogTitle>
-            <DialogDescription>
-              Our researchers are working. An alert with a link will be sent you to view your nutrient type pack
+            <DialogTitle>Nutrient pack update</DialogTitle>
+            <DialogDescription className="whitespace-pre-line">
+              {nutrientPackNoticeMessage}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
