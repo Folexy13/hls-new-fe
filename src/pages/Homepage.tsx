@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart, Eye } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -79,7 +79,9 @@ const Homepage: React.FC = () => {
     const fetchFeaturedProducts = async () => {
       try {
         setIsLoadingProducts(true);
-        const response = await apiClient.get('/api/v2/supplements/all');
+        const response = await apiClient.get('/api/v2/supplements/all', {
+          params: { role: 'researcher', limit: 8 },
+        });
         const supplements = response.data?.data?.supplements || [];
         const mapped = supplements
           .map((item: any) => ({
@@ -492,16 +494,11 @@ const Homepage: React.FC = () => {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 [&>span]:hidden">
                           <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
-                          <p className="mt-2 min-h-[40px] text-xs sm:text-sm leading-5 text-slate-600 line-clamp-2">{product.description}</p>
                         <span className="text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
                         </div>
                         <div className="shrink-0 text-right">
                         {/* <span className="text-lg sm:text-xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span> */}
                         <span className="block text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
-                        <span className="mt-2 flex items-center justify-end gap-1 text-xs font-medium text-slate-500">
-                          <Eye className="h-3.5 w-3.5" />
-                          Details
-                        </span>
                         </div>
                       </div>
                       <button

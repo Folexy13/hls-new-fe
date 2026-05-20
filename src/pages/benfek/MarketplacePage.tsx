@@ -1,8 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, ShoppingCart } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
@@ -76,10 +75,6 @@ const MarketplacePage: React.FC = () => {
     );
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString();
-  };
-
   const ProductGrid = ({ products }: { products: Product[] }) => {
     const filteredProducts = filterProducts(products);
 
@@ -110,39 +105,34 @@ const MarketplacePage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredProducts.map((product) => (
               <Link key={product.id} to={`/product/${product.id}`} className="block">
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full rounded-2xl border border-gray-200">
-                  <CardHeader className="p-0">
-                    <div className="w-full h-44 bg-white flex items-center justify-center p-4">
+                <div className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <div className="relative">
+                    <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-5 border-b border-slate-100">
                       <img
                         src={product.image}
                         alt={product.name}
-                        className="max-h-full max-w-full object-contain"
+                        className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
-                  </CardHeader>
+                    <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm">
+                      {product.category}
+                    </span>
+                  </div>
 
-                  <CardContent className="p-4">
-                    <CardTitle className="text-base font-semibold mb-2 line-clamp-2 text-gray-900">
-                      {product.name}
-                    </CardTitle>
-
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                      {product.description}
-                    </p>
-
-                    <div className="space-y-1 mb-4">
-                      <p className="text-lg font-bold text-emerald-600">
-                        ₦{product.price.toLocaleString()}
-                      </p>
-                      {product.expiryDate && (
-                        <p className="text-sm text-gray-500">
-                          Expiry: {formatDate(product.expiryDate)}
-                        </p>
-                      )}
+                  <div className="p-4 sm:p-5 flex flex-1 flex-col">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 [&>span]:hidden">
+                        <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
+                        <span className="text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="block text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
+                      </div>
                     </div>
 
                     <button
-                     className="w-full text-xs sm:text-sm bg-black text-white py-1 sm:py-2 rounded-full transition-all duration-300 shadow-[0_4px_14px_rgba(16,185,129,0.25)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] active:scale-95 disabled:opacity-50"
+                      type="button"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
                       disabled={addingId === product.id}
                       onClick={async (e) => {
                         e.preventDefault();
@@ -162,10 +152,15 @@ const MarketplacePage: React.FC = () => {
                           <LoadingSpinner />
                           Adding...
                         </span>
-                      ) : 'Add to Cart'}
+                      ) : (
+                        <>
+                          <ShoppingCart className="h-4 w-4" />
+                          Add to Cart
+                        </>
+                      )}
                     </button>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>

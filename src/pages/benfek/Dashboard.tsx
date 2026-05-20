@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot, ShoppingCart, Plus } from 'lucide-react';
+import { Filter, Search, BookOpen, Headphones, LayoutDashboard, Pill, Layers, ArrowRight, MessageCircle, Building2, CheckCircle2, X, Dot, ShoppingCart } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -693,10 +693,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="max-w-6xl mx-auto pb-8 ">
         <div className="mb-6 flex justify-center">
-          <div
-            className="relative w-full max-w-[960px] overflow-hidden shadow-lg"
-            style={{ aspectRatio: '16 / 5' }}
-          >
+          <div className="relative h-[50vw] w-full max-w-[960px] overflow-hidden shadow-lg">
             <div
               className="flex h-full transition-transform duration-700 ease-out"
               style={{ transform: `translateX(-${bannerIndex * 100}%)` }}
@@ -791,15 +788,15 @@ const Dashboard = () => {
                         className="pl-9 bg-white"
                       />
                     </div>
-                    <button
+                    {/* <button
                       type="button"
                       className="h-10 w-12 border rounded-sm border-emerald-100 bg-gray-500/90 text-white shadow-sm flex items-center justify-center"
                       aria-label="Filter medications"
                     >
                       <Filter className="h-5 w-5" />
-                    </button>
+                    </button> */}
                   </div>
-                  {selectedPharmacy && (
+                  {/* {selectedPharmacy && (
                     <button
                       type="button"
                       onClick={openPharmacyModal}
@@ -807,7 +804,7 @@ const Dashboard = () => {
                     >
                       Change pharmacy
                     </button>
-                  )}
+                  )} */}
                 </div>
                 {!selectedPharmacy ? (
                   <button
@@ -823,44 +820,49 @@ const Dashboard = () => {
                       {pagedPharmacyItems.map((item) => (
                         <div
                           key={item.id}
-                          className="w-[40vw] h-[200px] rounded-3xl border border-slate-200 bg-white p-0 shadow-sm transition hover:shadow-md relative"
+                          className="group w-[40vw] max-w-[190px] cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         >
-                          <div className="h-24 w-24 rounded-2xl bg-emerald-500 flex items-center justify-center justify-self-center shadow-inner mt-6">
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="h-full w-full object-cover"
-                            />
+                          <div className="relative">
+                            <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-3 border-b border-slate-100">
+                              <img
+                                src={item.image}
+                                alt={item.title}
+                                className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                              />
+                            </div>
+                            <span className="absolute left-2 top-2 rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm">
+                              Supplement
+                            </span>
                           </div>
-                          <div className="mt-4 flex flex-col gap-2">
-                            <div className="flex items-center justify-center">
-                              <p className="text-sm font-semibold leading-tight text-slate-900">{item.title}</p>
-                              <p className="text-sm font-medium text-black absolute top-1 right-4">{item.price}</p>
+                          <div className="p-3 flex flex-1 flex-col">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 [&>span]:hidden">
+                                <h3 className="text-xs font-semibold text-gray-950 leading-snug line-clamp-2">{item.title}</h3>
+                                <span className="text-xs font-semibold text-emerald-600">{item.price}</span>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <span className="block text-xs font-semibold text-emerald-600">{item.price}</span>
+                              </div>
                             </div>
-                            <div className="flex justify-around w-full gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleAddPharmacyItemToCart(item)}
-                                disabled={addingToCartId === item.id}
-                                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                aria-label={`Add ${item.title} to cart`}
-                                title="Add to cart"
-                              >
-                                {addingToCartId === item.id ? (
-                                  <LoadingSpinner className="h-3 w-3" />
-                                ) : (
-                                  <>
-                                    <ShoppingCart className="h-4 w-4" />
-                                    <span className="absolute -right-0.5 -top-0.5 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-600 text-white">
-                                      <Plus className="h-2.5 w-2.5" />
-                                    </span>
-                                  </>
-                                )}
-                              </button>
-                              <p className="flex h-7 items-center justify-center rounded-md px-3 text-xs text-orange-500 bg-gray-200 hover:text-orange-600">
-                                Later
-                              </p>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAddPharmacyItemToCart(item)}
+                              disabled={addingToCartId === item.id}
+                              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                              aria-label={`Add ${item.title} to cart`}
+                            >
+                              {addingToCartId === item.id ? (
+                                <>
+                                  <LoadingSpinner className="h-3.5 w-3.5" />
+                                  Adding...
+                                </>
+                              ) : (
+                                <>
+                                  <ShoppingCart className="h-3.5 w-3.5" />
+                                  Add to Cart
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1065,7 +1067,7 @@ const Dashboard = () => {
                       Office phone: {selectedPharmacyPhone}
                     </p>
                   )}
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setSelectedPharmacy(null);
@@ -1076,7 +1078,7 @@ const Dashboard = () => {
                     className="mt-2 text-left text-xs font-semibold text-emerald-700 underline underline-offset-4 hover:text-emerald-800"
                   >
                     Change pharmacy
-                  </button>
+                  </button> */}
                 </div>
               </div>
             )}
