@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { Home, ShoppingCart, BookOpen, Headphones, Menu, X, LogOut, Bell, Settings, LogIn, UserPlus, LayoutDashboard, CheckCheck } from 'lucide-react';
+import { Home, ShoppingCart, BookOpen, Headphones, Menu, X, LogOut, Bell, Settings, LogIn, UserPlus, LayoutDashboard, CheckCheck, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import logo from '../images/logo.jpg';
 import { useRBAC } from '../context/useRBAC';
@@ -32,6 +32,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [principalNotificationItems, setPrincipalNotificationItems] = useState<PrincipalNotificationItem[]>([]);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const [notificationRefreshKey, setNotificationRefreshKey] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
@@ -101,6 +102,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setNotificationMenuOpen(false);
   };
 
+  const handleInstallPwa = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice.catch(() => null);
+      setInstallPrompt(null);
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    if (isIOS) {
+      window.alert('To install HLS, tap Share in Safari, then choose Add to Home Screen.');
+      return;
+    }
+
+    window.alert('Use your browser menu to install HLS on this device.');
+  };
+
   const refreshPrincipalNotifications = () => setNotificationRefreshKey((key) => key + 1);
 
   const handleNotificationItemClick = async (item: PrincipalNotificationItem) => {
@@ -140,6 +158,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isIOS]);
+
+  useEffect(() => {
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+  }, []);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -345,6 +373,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             className="absolute top-full right-0 w-1/2 max-w-[320px] bg-white shadow-lg border-l border-t z-40 rounded-bl-2xl"
           >
             <nav className="px-4 py-3 space-y-1">
+              <button
+                type="button"
+                onClick={handleInstallPwa}
+                className="mb-2 flex w-full items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-left text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+              >
+                <Download className="h-5 w-5 mr-3" />
+                Install App
+              </button>
+
               {/* Always show Home link */}
               {!(isAuthenticated && userRole === UserRole.BENFEK) && (
                 <Link
