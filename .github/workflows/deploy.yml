@@ -22,11 +22,13 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Set API base URL
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.ref_name }}" = "main" ]; then
-            echo "VITE_API_BASE_URL=https://api.hlsnigeria.com" >> $GITHUB_ENV
-          elif [ "${{ github.ref_name }}" = "testing" ]; then
-            echo "VITE_API_BASE_URL=https://hls-test-api.onrender.com" >> $GITHUB_ENV
+          if [ "$BRANCH_NAME" = "main" ]; then
+            echo "VITE_API_BASE_URL=https://api.hlsnigeria.com" >> "$GITHUB_ENV"
+          elif [ "$BRANCH_NAME" = "testing" ]; then
+            echo "VITE_API_BASE_URL=https://hls-test-api.onrender.com" >> "$GITHUB_ENV"
           fi
 
       - name: Install dependencies
