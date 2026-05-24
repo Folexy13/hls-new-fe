@@ -3,6 +3,7 @@ import { apiClient } from "@/config/axios";
 export type ResearcherSupplementPayload = {
   name: string;
   description: string;
+  rating?: number | string | null;
   price: number;
   stock?: number;
   imageUrl?: string | null;
