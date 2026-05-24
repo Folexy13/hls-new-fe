@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart, Eye } from 'lucide-react';
+import { ArrowDown, Star, CheckCircle, TrendingUp, Users, Award, Dna, Banknote, Truck, Stethoscope, Gift, Sun, Moon, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import doctor from '../../images/hero-doctor.png'
 import leftPill from '../../images/leftPill.png';
@@ -452,9 +452,9 @@ const BenfekHomepage: React.FC = () => {
             </div>
           ) : (
             <Carousel className="w-full">
-              <CarouselContent>
+              <CarouselContent className="-ml-3 sm:-ml-4">
                 {products.map((product) => (
-                <CarouselItem key={product.id} className="basis-full sm:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
                   <div
                     role="link"
                     tabIndex={0}
@@ -464,24 +464,22 @@ const BenfekHomepage: React.FC = () => {
                     }}
                     className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <div className="relative h-44 sm:h-48 border-b border-slate-100 bg-gradient-to-br from-white to-emerald-50 p-5">
-                      <img src={product.image} alt={product.name} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <div className="relative">
+                      <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-5 border-b border-slate-100">
+                        <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105" />
+                      </div>
                       <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm">
                         {product.category}
                       </span>
                     </div>
-                    <div className="p-4 sm:p-5">
+                    <div className="p-4 sm:p-5 flex flex-1 flex-col">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                        <div className="min-w-0 [&>span]:hidden">
                           <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
-                          <p className="mt-2 min-h-[40px] text-xs sm:text-sm leading-5 text-slate-600 line-clamp-2">{product.description}</p>
+                          <span className="text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
                         </div>
                         <div className="shrink-0 text-right">
-                        <span className="text-sm sm:text-xl lg:text-2xl font-bold text-emerald-600">₦{product.price.toLocaleString()}</span>
-                        <span className="mt-2 flex items-center justify-end gap-1 text-xs font-medium text-slate-500">
-                          <Eye className="h-3.5 w-3.5" />
-                          Details
-                        </span>
+                        <span className="block text-sm sm:text-xl font-semibold text-emerald-600">₦{product.price.toLocaleString()}</span>
                         </div>
                       </div>
                       <button

@@ -28,6 +28,7 @@ import { type Supplement } from "@/lib/researcher/dummyData";
 
 interface PackCatalogueProps {
   packName: string;
+  packRationale?: string;
   items: Supplement[];
   onBack: () => void;
   deliveryAddress?: string;
@@ -51,6 +52,7 @@ const PLACEHOLDER_IMAGE =
 
 export function PackCatalogue({
   packName,
+  packRationale = "",
   items,
   onBack,
   deliveryAddress = "",
@@ -93,6 +95,7 @@ export function PackCatalogue({
       rationale: String((item as any).rationale || "").trim(),
     }))
     .filter((item) => item.rationale.length > 0);
+  const trimmedPackRationale = packRationale.trim();
 
   useEffect(() => {
     if (trimmedSavedDeliveryAddress) {
@@ -304,8 +307,14 @@ export function PackCatalogue({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-5 pb-5 text-sm leading-relaxed text-slate-600">
-            {itemRationales.length > 0 ? (
+            {trimmedPackRationale || itemRationales.length > 0 ? (
               <div className="space-y-3">
+                {trimmedPackRationale ? (
+                  <div className="rounded-2xl border border-emerald-100 bg-white px-4 py-3">
+                    <p className="font-semibold text-slate-800">{packName}</p>
+                    <p className="mt-1 text-slate-600">{trimmedPackRationale}</p>
+                  </div>
+                ) : null}
                 {itemRationales.map((item) => (
                   <div key={item.id} className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
                     <p className="font-semibold text-slate-800">{item.name}</p>

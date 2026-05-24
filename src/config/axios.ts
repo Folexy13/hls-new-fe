@@ -65,10 +65,6 @@ apiClient.interceptors.response.use(
       responseData.error = getSafeUserMessage(responseData.error);
     }
 
-    if (responseData?.error?.details) {
-      delete responseData.error.details;
-    }
-
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 

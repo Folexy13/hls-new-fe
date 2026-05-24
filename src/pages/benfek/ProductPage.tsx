@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Star, Shield, Truck, Heart } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Star, Heart } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { toast } from 'react-toastify';
 import { apiClient } from '@/config/axios';
@@ -165,9 +164,9 @@ const ProductPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-3 sm:space-y-4">
+            <div className="flex flex-row gap-3 sm:gap-4">
               <button 
-                className="w-full bg-emerald-600 text-white py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                className="flex-1 bg-emerald-600 text-white py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50"
                 disabled={!product.inStock || adding}
                 onClick={async () => {
                   setAdding(true);
@@ -188,62 +187,12 @@ const ProductPage: React.FC = () => {
                   </span>
                 ) : 'Add to Cart'}
               </button>
-              <button className="w-full border border-gray-300 text-gray-700 py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center">
+              <button className="flex-1 border border-gray-300 text-gray-700 py-3 sm:py-4 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center">
                 <Heart className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                 Add to Wishlist
               </button>
             </div>
-
-            <div className="grid grid-cols-3 gap-4 text-center py-4 sm:py-6">
-              <div className="flex flex-col items-center">
-                <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 mb-2" />
-                <span className="text-xs sm:text-sm text-gray-600">Quality Assured</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 mb-2" />
-                <span className="text-xs sm:text-sm text-gray-600">Free Shipping</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <Star className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600 mb-2" />
-                <span className="text-xs sm:text-sm text-gray-600">Top Rated</span>
-              </div>
-            </div>
           </div>
-        </div>
-
-        {/* Product Information Tabs */}
-        <div className="mt-8 sm:mt-12 lg:mt-16 grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg lg:text-xl">Key Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 sm:space-y-3">
-                {product.features.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="h-2 w-2 bg-emerald-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    <span className="text-gray-700 text-sm sm:text-base">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg lg:text-xl">Health Benefits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 sm:space-y-3">
-                {product.benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="h-2 w-2 bg-emerald-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                    <span className="text-gray-700 text-sm sm:text-base">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

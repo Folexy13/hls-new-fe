@@ -78,6 +78,10 @@ export default function ResearcherSelectedSupplementsPage() {
     () => (verifiedCode ? `researcher.pack.supplements.${verifiedCode}` : "researcher.pack.supplements"),
     [verifiedCode]
   );
+  const packRationalesStorageKey = useMemo(
+    () => (verifiedCode ? `researcher.pack.rationales.${verifiedCode}` : "researcher.pack.rationales"),
+    [verifiedCode]
+  );
 
   const canViewWholesale = canViewWholesaleDetails();
 
@@ -256,6 +260,15 @@ export default function ResearcherSelectedSupplementsPage() {
           code,
           packId: selectedPackId,
           packName: selectedPackName,
+          rationale: (() => {
+            try {
+              const raw = localStorage.getItem(packRationalesStorageKey);
+              const parsed = raw ? JSON.parse(raw) : {};
+              return String(parsed?.[selectedPackId] || "").trim() || null;
+            } catch {
+              return null;
+            }
+          })(),
           items: items.map(({ id, quantity, selectedWholesalerName, selectedWholesalerPrice, selectedWholesalerContact, selectedWholesalerAddress, forceDispatchWithoutWholesaler, rationale }) => ({
             id,
             quantity,
