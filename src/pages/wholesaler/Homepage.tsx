@@ -124,6 +124,7 @@ const WholesalerHomepage: React.FC = () => {
               // Quick access buttons
               [
                 { icon: <Pill className="h-6 w-6 text-blue-600" />, label: 'My Products', href: '/wholesaler/products' },
+                { icon: <Package className="h-6 w-6 text-teal-600" />, label: 'HLS Gallery', href: '/wholesaler/gallery' },
                 { icon: <Plus className="h-6 w-6 text-emerald-600" />, label: 'Add Product', href: '/wholesaler/add-product' },
                 { icon: <ShoppingCart className="h-6 w-6 text-purple-600" />, label: 'Orders', href: '/wholesaler/orders' },
                 { icon: <DollarSign className="h-6 w-6 text-amber-600" />, label: 'Earnings', href: '/wholesaler/earnings' },

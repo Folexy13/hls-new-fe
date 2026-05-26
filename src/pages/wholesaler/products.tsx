@@ -26,6 +26,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { apiClient } from '@/config/axios';
 
 // Mock data for products
 const mockProducts = [
@@ -134,12 +135,27 @@ const ProductsPage: React.FC = () => {
   // Simulate loading
   useEffect(() => {
     setIsLoading(true);
-    const timer = setTimeout(() => {
-      setProducts(mockProducts);
-      setIsLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    apiClient.get('/api/v2/supplements/user')
+      .then((response) => {
+        const supplements = response.data?.data?.supplements || [];
+        setProducts(supplements.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          category: item.category || 'Supplement',
+          price: `NGN ${Number(item.price || 0).toLocaleString()}`,
+          stock: Number(item.stock || 0),
+          status: item.status === 'out_of_stock' || Number(item.stock || 0) === 0 ? 'Out of Stock' : 'Active',
+          image: item.imageUrl || '/placeholder.svg',
+          created: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '',
+          description: item.description || '',
+        })));
+      })
+      .catch(() => {
+        setProducts([]);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
   
   // Filter products based on search term, category, and status

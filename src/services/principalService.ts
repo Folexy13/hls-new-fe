@@ -18,6 +18,7 @@ export interface PrincipalProfilePayload {
   bankName?: string;
   accountNumber?: string;
   accountName?: string;
+  currentPassword?: string;
   password?: string;
 }
 

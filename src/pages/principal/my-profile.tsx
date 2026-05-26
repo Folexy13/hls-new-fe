@@ -370,14 +370,22 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
   };
 
   const updatePassword = async () => {
-    if (!passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('Please ensure the new passwords match');
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Please ensure your current password is entered and the new passwords match');
+      return;
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      toast.error('New password must be different from your current password');
       return;
     }
 
     try {
       setSavingSection('password');
-      await principalService.updateMe({ password: passwordForm.newPassword });
+      await principalService.updateMe({
+        currentPassword: passwordForm.currentPassword,
+        password: passwordForm.newPassword,
+      });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
       toast.success('Password updated successfully');
     } catch (error: any) {

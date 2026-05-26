@@ -80,7 +80,7 @@ const Homepage: React.FC = () => {
       try {
         setIsLoadingProducts(true);
         const response = await apiClient.get('/api/v2/supplements/all', {
-          params: { role: 'researcher', limit: 8 },
+          params: { limit: 5 },
         });
         const supplements = response.data?.data?.supplements || [];
         const mapped = supplements
@@ -93,7 +93,7 @@ const Homepage: React.FC = () => {
             category: item.category || item.dosageForm || 'supplement',
           }))
           .filter((item: any) => item.id && item.name)
-          .slice(0, 8);
+          .slice(0, 5);
         setProducts(mapped);
       } catch (error) {
         console.error('Failed to load featured products:', error);
@@ -468,7 +468,7 @@ const Homepage: React.FC = () => {
             <Carousel className="w-full">
               <CarouselContent className="-ml-3 sm:-ml-4">
                 {products.map((product) => (
-                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={product.id} className="flex pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
                   <div
                     role="link"
                     tabIndex={0}
@@ -476,7 +476,7 @@ const Homepage: React.FC = () => {
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') navigate(`/product/${product.id}`);
                     }}
-                    className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="group flex h-full min-h-[300px] w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:min-h-[340px]"
                   >
                     <div className="relative">
                       <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-5 border-b border-slate-100">
@@ -490,7 +490,7 @@ const Homepage: React.FC = () => {
                         {product.category}
                       </span>
                     </div>
-                    <div className="p-4 sm:p-5 flex flex-1 flex-col">
+                    <div className="flex flex-1 flex-col p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 [&>span]:hidden">
                           <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
@@ -505,7 +505,7 @@ const Homepage: React.FC = () => {
                         type="button"
                         onClick={(event) => handleAddToCart(event, product)}
                         disabled={addingProductId === product.id}
-                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                        className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
                       >
                         {addingProductId === product.id ? <LoadingSpinner /> : <ShoppingCart className="h-4 w-4" />}
                         {addingProductId === product.id ? 'Adding...' : 'Add to Cart'}
