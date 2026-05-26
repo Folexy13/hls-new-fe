@@ -1,4 +1,4 @@
-import { Briefcase } from "lucide-react";
+import { Store } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const AuthSignupPage = () => {
@@ -42,6 +42,22 @@ const AuthSignupPage = () => {
 
               <p className="text-sm text-gray-600">
                 Admin account to manage the platform, users, and products
+              </p>
+            </div>
+          </Link>
+
+          <Link to="/auth/signup/wholesaler">
+            <div className="border rounded-xl p-6 text-center cursor-pointer transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:bg-purple-50">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center">
+                <Store className="text-purple-600" size={28} />
+              </div>
+
+              <h2 className="text-lg font-semibold text-purple-600 mb-2">
+                Wholesaler
+              </h2>
+
+              <p className="text-sm text-gray-600">
+                List available products, prices, and wholesale supply details.
               </p>
             </div>
           </Link>

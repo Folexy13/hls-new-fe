@@ -387,11 +387,11 @@ const PodcastsPage: React.FC = () => {
                           <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
                           <div className="mt-1">{renderStatusBadge(podcast.status)}</div>
                         </div>
-                        <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
-                          {Object.values(podcast.tags || {}).flat().length > 0
-                            ? `Tags: ${Object.values(podcast.tags || {}).flat().join(', ')}`
-                            : 'Visible to all your Benfeks'}
-                        </div>
+                        {Object.values(podcast.tags || {}).flat().length > 0 ? (
+                          <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
+                            Tags: {Object.values(podcast.tags || {}).flat().join(', ')}
+                          </div>
+                        ) : null}
                         {podcast.audioUrl ? (
                           <div className="col-span-2 md:col-span-4">
                             <audio

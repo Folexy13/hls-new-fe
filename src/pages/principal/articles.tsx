@@ -360,12 +360,12 @@ const ArticlesPage: React.FC = () => {
                           <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
                           <div className="mt-1">{renderStatusBadge(article.status)}</div>
                         </div>
-                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-between gap-3 justify-self-start">
-                          <div className="min-w-0 flex-1 text-xs text-slate-500">
-                            {Object.values(article.tags || {}).flat().length > 0
-                              ? `Tags: ${Object.values(article.tags || {}).flat().join(', ')}`
-                              : 'Visible to all your Benfeks'}
-                          </div>
+                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-end gap-3 justify-self-start">
+                          {Object.values(article.tags || {}).flat().length > 0 ? (
+                            <div className="min-w-0 flex-1 text-xs text-slate-500">
+                              Tags: {Object.values(article.tags || {}).flat().join(', ')}
+                            </div>
+                          ) : null}
                           <Button
                             type="button"
                             variant="ghost"

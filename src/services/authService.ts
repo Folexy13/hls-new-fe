@@ -6,8 +6,12 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  businessName?: string;
+  mainBranch?: string;
+  contact?: string;
   email: string;
   password: string;
   role?: string;
