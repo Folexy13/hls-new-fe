@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react';
-import { contentService } from '@/services/contentService';
+import { contentService, type PublicArticle } from '@/services/contentService';
 
 const BlogPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [blog, setBlog] = useState<any | null>(null);
+  const [blog, setBlog] = useState<PublicArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    contentService.getBenfekContent()
-      .then((data) => {
-        const article = (data.articles || []).find((item: any) => String(item.id) === String(id));
-        setBlog(article || null);
-      })
+    if (!id) {
+      setBlog(null);
+      setIsLoading(false);
+      return;
+    }
+
+    contentService.getPublicArticle(id)
+      .then(setBlog)
       .catch(() => setBlog(null))
       .finally(() => setIsLoading(false));
   }, [id]);

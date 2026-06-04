@@ -66,7 +66,9 @@ const SignInPage = () => {
     setValidationMessage('');
     
     if (!email || !password) {
-      setValidationMessage('Please fill in all fields');
+      const message = 'Please enter both your email address and password to sign in.';
+      setValidationMessage(message);
+      toast.error(message, { autoClose: 10000 });
       return;
     }
 
@@ -115,7 +117,12 @@ const SignInPage = () => {
       const from = location.state?.from?.pathname || redirectPath;
       navigate(from, { replace: true });
     } catch (error) {
-      setValidationMessage(getApiErrorMessage(error, 'Unable to sign in. Please try again.'));
+      const message = getApiErrorMessage(
+        error,
+        'We could not sign you in. Please check your email and password, then try again.'
+      );
+      setValidationMessage(message);
+      toast.error(message, { autoClose: 10000 });
     } finally {
       setIsLoading(false);
     }

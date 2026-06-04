@@ -56,6 +56,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const responseData = error.response?.data;
+    const requestUrl = String(originalRequest?.url || '');
+    const isAuthRequest = requestUrl.includes('/api/v2/auth/login')
+      || requestUrl.includes('/api/v2/auth/register')
+      || requestUrl.includes('/api/v2/auth/refresh')
+      || requestUrl.includes('/api/v2/auth/forgot-password')
+      || requestUrl.includes('/api/v2/auth/reset-password');
 
     if (responseData?.message) {
       responseData.message = getSafeUserMessage(responseData.message);
@@ -65,7 +71,7 @@ apiClient.interceptors.response.use(
       responseData.error = getSafeUserMessage(responseData.error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !isAuthRequest && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {

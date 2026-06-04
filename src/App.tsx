@@ -192,25 +192,11 @@ const App = () => (
                 />
                 <Route
                   path="/blog"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <BenfekArticlesPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<BenfekArticlesPage />}
                 />
                 <Route
                   path="/blog/:id"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <BlogPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<BlogPage />}
                 />
                 {/* Principal Routes */}
                 <Route
