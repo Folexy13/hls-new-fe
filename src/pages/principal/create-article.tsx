@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FileText, Save } from 'lucide-react';
+import { FileText, ImageIcon, Save, Upload } from 'lucide-react';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,8 @@ import { emptyContentTags } from './contentOptions';
 import ContentTagBuilder from './ContentTagBuilder';
 import CreatableCategorySelect from './CreatableCategorySelect';
 import { toast } from 'sonner';
+import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
+import { getApiErrorMessage } from '@/utils/apiError';
 
 const CreateArticlePage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +23,8 @@ const CreateArticlePage: React.FC = () => {
   const isEditing = Boolean(id);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [tags, setTags] = useState<ContentTags>(emptyContentTags);
   const [form, setForm] = useState({
     title: '',
@@ -50,6 +54,7 @@ const CreateArticlePage: React.FC = () => {
           readTime: article?.readTime || '',
           status: (article?.status || 'published') as 'draft' | 'published' | 'archived',
         });
+        setImagePreviewUrl(article?.imageUrl || '');
         setTags(article?.tags || emptyContentTags);
       } catch (error) {
         console.error(error);
@@ -63,6 +68,38 @@ const CreateArticlePage: React.FC = () => {
     loadArticle();
   }, [id, navigate]);
 
+  const uploadArticleImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', 'articles');
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Image upload failed');
+    }
+
+    const data = await response.json();
+    return data.secure_url as string | undefined;
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file.');
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreviewUrl(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.category.trim()) {
@@ -72,17 +109,30 @@ const CreateArticlePage: React.FC = () => {
     setIsSaving(true);
 
     try {
+      let imageUrl = form.imageUrl;
+      if (imageFile) {
+        const uploadedUrl = await uploadArticleImage(imageFile);
+        if (!uploadedUrl) {
+          toast.error('Image upload failed. Please try again.');
+          return;
+        }
+        imageUrl = uploadedUrl;
+        setForm((prev) => ({ ...prev, imageUrl: uploadedUrl }));
+      }
+
+      const payload = { ...form, imageUrl, tags };
+
       if (id) {
-        await contentService.updatePrincipalArticle(id, { ...form, tags });
+        await contentService.updatePrincipalArticle(id, payload);
         toast.success('Article updated');
       } else {
-        await contentService.createPrincipalArticle({ ...form, tags });
+        await contentService.createPrincipalArticle(payload);
         toast.success('Article created');
       }
       navigate('/principal/articles');
     } catch (error) {
       console.error(error);
-      toast.error('Failed to create article');
+      toast.error(getApiErrorMessage(error, imageFile ? 'Article image upload failed. Please try again.' : 'Failed to save article.'));
     } finally {
       setIsSaving(false);
     }
@@ -138,9 +188,23 @@ const CreateArticlePage: React.FC = () => {
               <Label>Read Time</Label>
               <Input value={form.readTime} onChange={(e) => setForm((prev) => ({ ...prev, readTime: e.target.value }))} placeholder="8 min read" />
             </div>
-            <div className="space-y-2">
-              <Label>Image URL</Label>
-              <Input value={form.imageUrl} onChange={(e) => setForm((prev) => ({ ...prev, imageUrl: e.target.value }))} placeholder="/placeholder.svg" />
+            <div className="space-y-2 md:col-span-2">
+              <Label>Cover Image</Label>
+              <div className="grid gap-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 md:grid-cols-[180px,1fr]">
+                <div className="flex h-32 items-center justify-center overflow-hidden rounded-lg border bg-white">
+                  {imagePreviewUrl || form.imageUrl ? (
+                    <img src={imagePreviewUrl || form.imageUrl} alt="Article cover preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex flex-col justify-center gap-3">
+                  <Input type="file" accept="image/*" onChange={handleImageChange} />
+                  {form.imageUrl && !imageFile ? (
+                    <p className="truncate text-xs text-slate-500">Current image: {form.imageUrl}</p>
+                  ) : null}
+                </div>
+              </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Description</Label>
@@ -167,8 +231,8 @@ const CreateArticlePage: React.FC = () => {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSaving} className="gap-2">
-            {isSaving ? <LoadingSpinner /> : <Save className="h-4 w-4" />}
-            {isSaving ? 'Saving...' : isEditing ? 'Update Article' : 'Create Article'}
+            {isSaving ? <LoadingSpinner /> : imageFile ? <Upload className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+            {isSaving ? (imageFile ? 'Uploading & Saving...' : 'Saving...') : isEditing ? 'Update Article' : 'Create Article'}
           </Button>
         </div>
         </>

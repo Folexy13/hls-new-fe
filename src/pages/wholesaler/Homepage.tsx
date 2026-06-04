@@ -3,6 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   CheckCircle,
   Download,
   Edit,
@@ -122,6 +126,11 @@ const getStatusIcon = (status: string) => {
   return <AlertCircle className="mr-1 h-3 w-3" />;
 };
 
+const getTagValues = (tags?: Record<string, string[]>, key?: string, fallback?: string | null) => {
+  const taggedValue = key ? tags?.[key]?.[0] : "";
+  return taggedValue || fallback || "Not Specified";
+};
+
 const WholesalerHomepage: React.FC = () => {
   const { user } = useStore();
   const currentUserId = Number(user?.id || 0);
@@ -143,6 +152,7 @@ const WholesalerHomepage: React.FC = () => {
   const [galleryPage, setGalleryPage] = useState(1);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [prices, setPrices] = useState<Record<number, string>>({});
+  const [selectedGalleryProduct, setSelectedGalleryProduct] = useState<WholesalerSupplement | null>(null);
 
   const [myProducts, setMyProducts] = useState<ProductRow[]>([]);
   const [myProductsLoading, setMyProductsLoading] = useState(true);
@@ -259,6 +269,12 @@ const WholesalerHomepage: React.FC = () => {
       return matchesSearch && matchesCategory && matchesStatus;
     });
   }, [categoryFilter, myProducts, myProductsQuery, statusFilter]);
+
+  const galleryTotalPages = Math.max(1, galleryMeta.totalPages || 1);
+  const galleryCurrentPage = Math.min(Math.max(1, galleryMeta.page || galleryPage), galleryTotalPages);
+  const galleryStart = galleryMeta.total === 0 ? 0 : (galleryCurrentPage - 1) * galleryMeta.limit + 1;
+  const galleryEnd = Math.min(galleryCurrentPage * galleryMeta.limit, galleryMeta.total);
+  const galleryProgress = galleryMeta.total ? Math.min(100, Math.round((galleryEnd / galleryMeta.total) * 100)) : 0;
 
   const savePrice = async (product: WholesalerSupplement) => {
     const price = Number(prices[product.id]);
@@ -472,8 +488,23 @@ const WholesalerHomepage: React.FC = () => {
             ) : visibleGalleryProducts.length ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {visibleGalleryProducts.map((product) => (
-                  <Card key={product.id} className="flex min-h-[270px] flex-col overflow-hidden rounded-lg border-slate-200 bg-white">
-                    <div className="flex h-40 w-full items-center justify-center border-b bg-emerald-50/40 p-3">
+                  <Card
+                    key={product.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedGalleryProduct(product)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedGalleryProduct(product);
+                      }
+                    }}
+                    className="flex min-h-[270px] cursor-pointer flex-col overflow-hidden rounded-lg border-slate-200 bg-white transition hover:border-emerald-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <div className="relative flex h-40 w-full items-center justify-center border-b bg-emerald-50/40 p-3">
+                      <Badge className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded bg-white/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 shadow-sm hover:bg-white">
+                        {product.manufacturer || "Unknown brand"}
+                      </Badge>
                       {product.imageUrl ? (
                         <img src={product.imageUrl} alt={product.name} className="max-h-full max-w-full object-contain" />
                       ) : (
@@ -490,8 +521,11 @@ const WholesalerHomepage: React.FC = () => {
                             <TooltipContent>{product.name}</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                        <p className="mt-1 line-clamp-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                          {product.manufacturer || "Unknown brand"}
+                        </p>
                       </div>
-                      <div className="mt-auto space-y-2">
+                      <div className="mt-auto space-y-2" onClick={(event) => event.stopPropagation()}>
                         <Input
                           type="number"
                           min="0"
@@ -519,26 +553,64 @@ const WholesalerHomepage: React.FC = () => {
               <Card className="rounded-lg bg-white p-8 text-center text-sm text-slate-500">No products found.</Card>
             )}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
-              <span>
-                Showing {visibleGalleryProducts.length} of {galleryMeta.total} products. Page {galleryMeta.page} of {galleryMeta.totalPages || 1}.
-              </span>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-semibold text-slate-950">
+                    Showing {galleryEnd.toLocaleString()} of {galleryMeta.total.toLocaleString()} products
+                  </span>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                    {galleryStart.toLocaleString()}-{galleryEnd.toLocaleString()} on this page
+                  </span>
+                </div>
+                <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${galleryProgress}%` }} />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white"
                   disabled={!galleryMeta.hasPrevPage || galleryLoading}
-                  onClick={() => setGalleryPage((prev) => Math.max(1, prev - 1))}
+                  onClick={() => setGalleryPage(1)}
+                  aria-label="First page"
                 >
-                  Previous
+                  <ChevronsLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white"
+                  disabled={!galleryMeta.hasPrevPage || galleryLoading}
+                  onClick={() => setGalleryPage((prev) => Math.max(1, prev - 1))}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div className="flex h-9 min-w-28 items-center justify-center rounded-full bg-slate-950 px-3 text-xs font-semibold text-white">
+                  Page {galleryCurrentPage} of {galleryTotalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white"
                   disabled={!galleryMeta.hasNextPage || galleryLoading}
                   onClick={() => setGalleryPage((prev) => prev + 1)}
+                  aria-label="Next page"
                 >
-                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-full border-slate-200 bg-white"
+                  disabled={!galleryMeta.hasNextPage || galleryLoading}
+                  onClick={() => setGalleryPage(galleryTotalPages)}
+                  aria-label="Last page"
+                >
+                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -866,6 +938,116 @@ const WholesalerHomepage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={Boolean(selectedGalleryProduct)} onOpenChange={(open) => !open && setSelectedGalleryProduct(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+          {selectedGalleryProduct && (
+            <>
+              <DialogHeader className="border-b px-6 py-5">
+                <DialogTitle>{selectedGalleryProduct.name}</DialogTitle>
+                <DialogDescription>{selectedGalleryProduct.manufacturer || selectedGalleryProduct.category || "Product details"}</DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-5 px-6 py-5">
+                <div className="flex flex-col gap-5 sm:flex-row">
+                  <div className="flex min-h-48 flex-1 items-center justify-center rounded-lg border bg-emerald-50/40 p-4">
+                    {selectedGalleryProduct.imageUrl ? (
+                      <img
+                        src={selectedGalleryProduct.imageUrl}
+                        alt={selectedGalleryProduct.name}
+                        className="max-h-56 max-w-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon className="h-12 w-12 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="grid flex-1 grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Brand / manufacturer</p>
+                      <p className="mt-1 font-semibold text-slate-900">{selectedGalleryProduct.manufacturer || "Not Specified"}</p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Category</p>
+                      <p className="mt-1 font-semibold text-slate-900">{selectedGalleryProduct.category || "Not Specified"}</p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Price</p>
+                      <p className="mt-1 font-semibold text-slate-900">{formatCurrency(selectedGalleryProduct.price)}</p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Stock</p>
+                      <p className="mt-1 font-semibold text-slate-900">{Number(selectedGalleryProduct.stock || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Dosage form</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {getTagValues(selectedGalleryProduct.tags, "dosage_form", selectedGalleryProduct.dosageForm)}
+                      </p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Strength</p>
+                      <p className="mt-1 font-semibold text-slate-900">{selectedGalleryProduct.strength || "Not Specified"}</p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Budget range</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {getTagValues(selectedGalleryProduct.tags, "budget_range", selectedGalleryProduct.budgetRange)}
+                      </p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Pack quantity</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {getTagValues(selectedGalleryProduct.tags, "pack_quantity")}
+                      </p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Expiry date</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {selectedGalleryProduct.expiryDate ? String(selectedGalleryProduct.expiryDate).slice(0, 10) : "Not Specified"}
+                      </p>
+                    </div>
+                    <div className="rounded-md border bg-slate-50 p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Your wholesale price</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {prices[selectedGalleryProduct.id] ? formatCurrency(Number(prices[selectedGalleryProduct.id])) : "Not set"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-white p-4">
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-400">Description / rationale</p>
+                  <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
+                    {selectedGalleryProduct.description || "No description available."}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-white p-4">
+                  <p className="mb-3 text-[10px] font-bold uppercase tracking-wide text-slate-400">Researcher tags</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(selectedGalleryProduct.tags || {}).flatMap(([tagKey, values]) =>
+                      (values || []).map((value) => (
+                        <Badge key={`${tagKey}:${value}`} variant="outline" title={`${tagKey}: ${value}`} className="whitespace-normal break-words bg-emerald-50 text-emerald-800">
+                          {value}
+                        </Badge>
+                      ))
+                    )}
+                    {Object.values(selectedGalleryProduct.tags || {}).flatMap((values) => values || []).length === 0 ? (
+                      <p className="text-xs text-slate-500">No tags.</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="border-t px-6 py-4">
+                <Button variant="outline" type="button" onClick={() => setSelectedGalleryProduct(null)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(selectedProduct)} onOpenChange={(open) => !open && setSelectedProduct(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

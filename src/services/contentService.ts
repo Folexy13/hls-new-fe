@@ -34,7 +34,31 @@ export type PrincipalPodcastPayload = {
   tags: ContentTags;
 };
 
+export type PublicArticle = {
+  id: number;
+  title: string;
+  category?: string | null;
+  description?: string | null;
+  excerpt?: string | null;
+  content?: string | null;
+  imageUrl?: string | null;
+  readTime?: string | null;
+  createdAt?: string | null;
+  author?: string | null;
+  tags?: ContentTags;
+};
+
 export const contentService = {
+  async getPublicArticles(): Promise<PublicArticle[]> {
+    const response = await apiClient.get("/api/v2/content/public/articles");
+    return response.data?.data?.articles ?? [];
+  },
+
+  async getPublicArticle(id: number | string): Promise<PublicArticle | null> {
+    const response = await apiClient.get(`/api/v2/content/public/articles/${id}`);
+    return response.data?.data?.article ?? null;
+  },
+
   async getPrincipalArticles() {
     const response = await apiClient.get("/api/v2/content/principal/articles");
     return response.data?.data?.articles ?? [];
