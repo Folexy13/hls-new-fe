@@ -36,6 +36,7 @@ export type PrincipalPodcastPayload = {
 
 export type PublicArticle = {
   id: number;
+  authorId?: number | null;
   title: string;
   category?: string | null;
   description?: string | null;
@@ -48,6 +49,19 @@ export type PublicArticle = {
   tags?: ContentTags;
 };
 
+export type ArticleComment = {
+  id: number;
+  body: string;
+  articleId: number;
+  userId: number;
+  parentId?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  author?: string | null;
+  authorRole?: string | null;
+  replies?: ArticleComment[];
+};
+
 export const contentService = {
   async getPublicArticles(): Promise<PublicArticle[]> {
     const response = await apiClient.get("/api/v2/content/public/articles");
@@ -57,6 +71,21 @@ export const contentService = {
   async getPublicArticle(id: number | string): Promise<PublicArticle | null> {
     const response = await apiClient.get(`/api/v2/content/public/articles/${id}`);
     return response.data?.data?.article ?? null;
+  },
+
+  async getArticleComments(articleId: number | string): Promise<ArticleComment[]> {
+    const response = await apiClient.get(`/api/v2/content/public/articles/${articleId}/comments`);
+    return response.data?.data?.comments ?? [];
+  },
+
+  async createArticleComment(articleId: number | string, body: string) {
+    const response = await apiClient.post(`/api/v2/content/public/articles/${articleId}/comments`, { body });
+    return response.data?.data;
+  },
+
+  async replyToArticleComment(articleId: number | string, commentId: number | string, body: string) {
+    const response = await apiClient.post(`/api/v2/content/principal/articles/${articleId}/comments/${commentId}/replies`, { body });
+    return response.data?.data;
   },
 
   async getPrincipalArticles() {
