@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, LogIn, MessageCircle, Reply, Send, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MessageCircle, Reply, Send, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { contentService, type ArticleComment, type PublicArticle } from '@/services/contentService';
 import { useStore } from '@/store/useStore';
@@ -15,6 +16,7 @@ const BlogPage: React.FC = () => {
   const [comments, setComments] = useState<ArticleComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [guestName, setGuestName] = useState('');
   const [commentBody, setCommentBody] = useState('');
   const [replyBodyByComment, setReplyBodyByComment] = useState<Record<number, string>>({});
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
@@ -57,8 +59,9 @@ const BlogPage: React.FC = () => {
 
   const handleSubmitComment = async () => {
     if (!id) return;
-    if (!isAuthenticated) {
-      toast.error('Please sign in to comment on this article.');
+    const trimmedGuestName = guestName.trim();
+    if (!isAuthenticated && trimmedGuestName.length < 2) {
+      toast.error('Please enter your name before posting a comment.');
       return;
     }
     if (commentBody.trim().length < 2) {
@@ -68,8 +71,9 @@ const BlogPage: React.FC = () => {
 
     setIsSubmittingComment(true);
     try {
-      await contentService.createArticleComment(id, commentBody.trim());
+      await contentService.createArticleComment(id, commentBody.trim(), isAuthenticated ? undefined : trimmedGuestName);
       setCommentBody('');
+      if (!isAuthenticated) setGuestName('');
       toast.success('Comment posted');
       await loadComments(id);
     } catch (error) {
@@ -171,33 +175,35 @@ const BlogPage: React.FC = () => {
 
           <div className="mb-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
             {isAuthenticated ? (
-              <>
-                <p className="mb-3 text-sm font-medium text-slate-700">Commenting as {user?.name || 'your account'}</p>
-                <Textarea
-                  value={commentBody}
-                  onChange={(event) => setCommentBody(event.target.value)}
-                  placeholder="Share your thoughts on this article..."
-                  className="min-h-28 bg-white"
-                  maxLength={2000}
-                />
-                <div className="mt-3 flex justify-end">
-                  <Button onClick={handleSubmitComment} disabled={isSubmittingComment} className="bg-emerald-600 hover:bg-emerald-700">
-                    <Send className="mr-2 h-4 w-4" />
-                    {isSubmittingComment ? 'Posting...' : 'Post Comment'}
-                  </Button>
-                </div>
-              </>
+              <p className="mb-3 text-sm font-medium text-slate-700">Commenting as {user?.name || 'your account'}</p>
             ) : (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-600">Sign in to join the conversation. Your name will be shown from your account.</p>
-                <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-                  <Link to={`/auth/signin?redirect=/blog/${blog.id}`}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </Link>
-                </Button>
+              <div className="mb-3 space-y-2">
+                <label htmlFor="comment-name" className="text-sm font-medium text-slate-700">
+                  Your name
+                </label>
+                <Input
+                  id="comment-name"
+                  value={guestName}
+                  onChange={(event) => setGuestName(event.target.value)}
+                  placeholder="Enter your name"
+                  className="bg-white"
+                  maxLength={100}
+                />
               </div>
             )}
+            <Textarea
+              value={commentBody}
+              onChange={(event) => setCommentBody(event.target.value)}
+              placeholder="Share your thoughts on this article..."
+              className="min-h-28 bg-white"
+              maxLength={2000}
+            />
+            <div className="mt-3 flex justify-end">
+              <Button onClick={handleSubmitComment} disabled={isSubmittingComment} className="bg-emerald-600 hover:bg-emerald-700">
+                <Send className="mr-2 h-4 w-4" />
+                {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+              </Button>
+            </div>
           </div>
 
           {commentsLoading ? (
