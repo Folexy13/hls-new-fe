@@ -53,12 +53,14 @@ export type ArticleComment = {
   id: number;
   body: string;
   articleId: number;
-  userId: number;
+  userId?: number | null;
+  guestName?: string | null;
   parentId?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   author?: string | null;
   authorRole?: string | null;
+  isGuest?: boolean;
   replies?: ArticleComment[];
 };
 
@@ -78,8 +80,8 @@ export const contentService = {
     return response.data?.data?.comments ?? [];
   },
 
-  async createArticleComment(articleId: number | string, body: string) {
-    const response = await apiClient.post(`/api/v2/content/public/articles/${articleId}/comments`, { body });
+  async createArticleComment(articleId: number | string, body: string, guestName?: string) {
+    const response = await apiClient.post(`/api/v2/content/public/articles/${articleId}/comments`, { body, guestName });
     return response.data?.data;
   },
 
