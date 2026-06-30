@@ -31,6 +31,7 @@ export type PrincipalPodcastPayload = {
   audioUrl?: string;
   thumbnailUrl?: string;
   status: "draft" | "published" | "scheduled" | "archived";
+  scheduledAt?: string | null;
   tags: ContentTags;
 };
 
