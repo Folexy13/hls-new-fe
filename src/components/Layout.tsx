@@ -704,6 +704,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Bottom Navigation for Mobile (Private Routes) */}
       {isAuthenticated &&
         userRole !== UserRole.BENFEK &&
+        userRole !== UserRole.WHOLESALER &&
         (userRole === UserRole.PRINCIPAL
           ? privateNavigation.filter((item) => item.name !== 'Dashboard')
           : privateNavigation

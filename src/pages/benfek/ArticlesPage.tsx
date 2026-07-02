@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BookOpen } from 'lucide-react';
-import { contentService } from '@/services/contentService';
+import { contentService, type PublicArticle } from '@/services/contentService';
 
 const ArticlesPage: React.FC = () => {
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<PublicArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    contentService.getBenfekContent()
-      .then((data) => setArticles(Array.isArray(data.articles) ? data.articles : []))
+    contentService.getPublicArticles()
+      .then(setArticles)
       .catch(() => setArticles([]))
       .finally(() => setIsLoading(false));
   }, []);
@@ -34,7 +34,7 @@ const ArticlesPage: React.FC = () => {
           )}
           {!isLoading && articles.length === 0 && (
             <div className="rounded-[28px] bg-white p-6 text-sm text-slate-500 shadow-sm">
-              No articles have been matched to your profile yet.
+              No articles have been published yet.
             </div>
           )}
           {articles.map((article) => (

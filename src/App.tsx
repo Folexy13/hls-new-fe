@@ -54,6 +54,7 @@ import WholesalerEarningsPage from "./pages/wholesaler/earnings";
 import WholesalerAddProductPage from "./pages/wholesaler/add-product";
 import WholesalerProductsPage from "./pages/wholesaler/products";
 import WholesalerOrdersPage from "./pages/wholesaler/orders";
+import WholesalerGalleryPage from "./pages/wholesaler/gallery";
 import ResearcherAuthPage from "./pages/researcher/ResearcherAuthpage";
 import ResearcherHomepage from "./pages/researcher/Homepage";
 import ResearcherNotFound from "./pages/researcher/NotFound";
@@ -191,25 +192,11 @@ const App = () => (
                 />
                 <Route
                   path="/blog"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <BenfekArticlesPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<BenfekArticlesPage />}
                 />
                 <Route
                   path="/blog/:id"
-                  element={
-                    <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
-                      fallbackPath="/"
-                    >
-                      <BlogPage />
-                    </RoleBasedRoute>
-                  }
+                  element={<BlogPage />}
                 />
                 {/* Principal Routes */}
                 <Route
@@ -393,6 +380,15 @@ const App = () => (
                   element={
                     <RoleBasedRoute allowedRoles={[UserRole.WHOLESALER]}>
                       <WholesalerProductsPage />
+                    </RoleBasedRoute>
+                  }
+                />
+
+                <Route
+                  path="/wholesaler/gallery"
+                  element={
+                    <RoleBasedRoute allowedRoles={[UserRole.WHOLESALER]}>
+                      <WholesalerGalleryPage />
                     </RoleBasedRoute>
                   }
                 />

@@ -30,33 +30,11 @@ type Article = {
   status: string;
   publishDate: string;
   createdAt?: string;
+  imageUrl?: string;
   tags?: Record<string, string[]>;
   views: number;
   likes: number;
 };
-
-// Mock data for articles
-const mockArticles: Article[] = Array(50).fill(0).map((_, i) => ({
-  id: i + 1,
-  title: [
-    'The Benefits of Regular Exercise',
-    'Understanding Diabetes Management',
-    'Healthy Eating Habits for Busy Professionals',
-    'Mental Health Awareness in the Workplace',
-    'The Importance of Vaccination',
-    'Managing Chronic Pain Naturally',
-    'Sleep Hygiene: Tips for Better Rest',
-    'Heart Health: Prevention and Care',
-    'Stress Management Techniques',
-    'Nutrition Myths Debunked'
-  ][Math.floor(Math.random() * 10)],
-  category: ['Health', 'Nutrition', 'Fitness', 'Mental Health', 'Medical', 'Wellness'][Math.floor(Math.random() * 6)],
-  author: ['Dr. John Smith', 'Dr. Sarah Johnson', 'Dr. Michael Brown', 'Dr. Emily Davis', 'Dr. Robert Wilson'][Math.floor(Math.random() * 5)],
-  status: ['Published', 'Draft', 'Under Review', 'Archived'][Math.floor(Math.random() * 4)],
-  publishDate: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toLocaleDateString(),
-  views: Math.floor(Math.random() * 10000),
-  likes: Math.floor(Math.random() * 1000),
-}));
 
 const ArticlesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -86,6 +64,7 @@ const ArticlesPage: React.FC = () => {
           status: article.status === 'published' ? 'Published' : article.status === 'archived' ? 'Archived' : 'Draft',
           publishDate: article.createdAt ? new Date(article.createdAt).toLocaleDateString() : 'Recently',
           createdAt: article.createdAt,
+          imageUrl: article.imageUrl || '',
           tags: article.tags || {},
           views: Number(article.views || 0),
           likes: Number(article.likes || 0),
@@ -327,11 +306,20 @@ const ArticlesPage: React.FC = () => {
                   >
                     <AccordionTrigger className="w-full rounded-lg bg-white py-4 hover:no-underline hover:bg-slate-50/70">
                       <div className="flex w-full justify-between flex-row items-center gap-2 text-left sm:items-center">
-                        <div className="flex w-full items-center gap-2 justify-start min-w-0">
-                          <FileText className={`h-5 w-5 ${statusIconColor(article.status)}`} />
-                          <span className="text-sm font-semibold text-slate-900 truncate w-[90%]">
-                            {article.title}
-                          </span>
+                        <div className="flex w-full items-center gap-3 justify-start min-w-0">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-slate-100">
+                            {article.imageUrl ? (
+                              <img src={article.imageUrl} alt={article.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <FileText className={`h-5 w-5 ${statusIconColor(article.status)}`} />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              {article.title}
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-slate-500">{article.category}</span>
+                          </div>
                         </div>
                         <div className="ml-auto flex w-1/3 justify-end text-right">
                           <Eye className="h-4 w-4 text-slate-500" />
@@ -360,12 +348,12 @@ const ArticlesPage: React.FC = () => {
                           <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
                           <div className="mt-1">{renderStatusBadge(article.status)}</div>
                         </div>
-                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-between gap-3 justify-self-start">
-                          <div className="min-w-0 flex-1 text-xs text-slate-500">
-                            {Object.values(article.tags || {}).flat().length > 0
-                              ? `Tags: ${Object.values(article.tags || {}).flat().join(', ')}`
-                              : 'Visible to all your Benfeks'}
-                          </div>
+                        <div className="col-span-2 md:col-span-4 flex w-full items-center justify-end gap-3 justify-self-start">
+                          {Object.values(article.tags || {}).flat().length > 0 ? (
+                            <div className="min-w-0 flex-1 text-xs text-slate-500">
+                              Tags: {Object.values(article.tags || {}).flat().join(', ')}
+                            </div>
+                          ) : null}
                           <Button
                             type="button"
                             variant="ghost"

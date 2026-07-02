@@ -14,7 +14,6 @@ import { apiClient } from '@/config/axios';
 import doctor from '../images/hero-doctor.png'
 import leftPill from '../images/leftPill.png';
 import rightPill from '../images/rightPill.png';
-import patient from '../images/patient.jpg'
 import bose from '../images/avwenagha-bose.jpg'
 import joy from '../images/joy.jpeg'
 import walter from '../images/walker-okolie.jpg'
@@ -23,6 +22,7 @@ import nick from '../images/nick-ozonuma.jpg'
 import eriscyl from '../images/ericsyl-john.jpg'
 import mimi from '../images/mimi-gloria.jpg'
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { contentService, type PublicArticle } from '@/services/contentService';
 
 import {
   Carousel,
@@ -44,6 +44,8 @@ const Homepage: React.FC = () => {
     category: string;
   }>>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [blogs, setBlogs] = useState<PublicArticle[]>([]);
+  const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [showReferralDialog, setShowReferralDialog] = useState(false);
@@ -80,7 +82,7 @@ const Homepage: React.FC = () => {
       try {
         setIsLoadingProducts(true);
         const response = await apiClient.get('/api/v2/supplements/all', {
-          params: { role: 'researcher', limit: 8 },
+          params: { limit: 5 },
         });
         const supplements = response.data?.data?.supplements || [];
         const mapped = supplements
@@ -93,7 +95,7 @@ const Homepage: React.FC = () => {
             category: item.category || item.dosageForm || 'supplement',
           }))
           .filter((item: any) => item.id && item.name)
-          .slice(0, 8);
+          .slice(0, 5);
         setProducts(mapped);
       } catch (error) {
         console.error('Failed to load featured products:', error);
@@ -104,6 +106,23 @@ const Homepage: React.FC = () => {
     };
 
     fetchFeaturedProducts();
+  }, []);
+
+  useEffect(() => {
+    const fetchPublicArticles = async () => {
+      try {
+        setIsLoadingBlogs(true);
+        const articles = await contentService.getPublicArticles();
+        setBlogs(articles);
+      } catch (error) {
+        console.error('Failed to load public articles:', error);
+        setBlogs([]);
+      } finally {
+        setIsLoadingBlogs(false);
+      }
+    };
+
+    fetchPublicArticles();
   }, []);
 
   // Check if user is logged in and redirect to their role-specific homepage
@@ -311,30 +330,6 @@ const Homepage: React.FC = () => {
     }
   ];
 
-  const blogs = [
-    {
-      id: 1,
-      title: "The Science Behind Personalized Nutrition",
-      excerpt: "Discover how your unique genetic makeup influences your nutritional needs and how personalized supplementation can optimize your health.",
-      date: "March 15, 2024",
-      image: patient
-    },
-    {
-      id: 2,
-      title: "5 Signs You Might Need Vitamin D",
-      excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
-      date: "March 10, 2024",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      title: "Optimizing Recovery with Magnesium",
-      excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
-      date: "March 5, 2024",
-      image: "/placeholder.svg"
-    }
-  ];
-
   const whyTakeQuiz = [
     {
       icon: Dna,
@@ -468,7 +463,7 @@ const Homepage: React.FC = () => {
             <Carousel className="w-full">
               <CarouselContent className="-ml-3 sm:-ml-4">
                 {products.map((product) => (
-                <CarouselItem key={product.id} className="pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
+                <CarouselItem key={product.id} className="flex pl-3 sm:pl-4 basis-[66%] sm:basis-1/2 lg:basis-1/4">
                   <div
                     role="link"
                     tabIndex={0}
@@ -476,7 +471,7 @@ const Homepage: React.FC = () => {
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') navigate(`/product/${product.id}`);
                     }}
-                    className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="group flex h-full min-h-[300px] w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:min-h-[340px]"
                   >
                     <div className="relative">
                       <div className="w-full h-44 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-5 border-b border-slate-100">
@@ -490,7 +485,7 @@ const Homepage: React.FC = () => {
                         {product.category}
                       </span>
                     </div>
-                    <div className="p-4 sm:p-5 flex flex-1 flex-col">
+                    <div className="flex flex-1 flex-col p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 [&>span]:hidden">
                           <h3 className="text-sm sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
@@ -505,7 +500,7 @@ const Homepage: React.FC = () => {
                         type="button"
                         onClick={(event) => handleAddToCart(event, product)}
                         disabled={addingProductId === product.id}
-                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                        className="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
                       >
                         {addingProductId === product.id ? <LoadingSpinner /> : <ShoppingCart className="h-4 w-4" />}
                         {addingProductId === product.id ? 'Adding...' : 'Add to Cart'}
@@ -682,20 +677,28 @@ const Homepage: React.FC = () => {
           <div className="overflow-hidden pl-2">
             <Carousel className="w-full">
               <CarouselContent className='space-2'>
-                {blogs.map((blog) => (
+                {isLoadingBlogs ? (
+                  <CarouselItem className="basis-[75%] sm:basis-1/2 lg:basis-1/3">
+                    <article className="flex h-full min-h-64 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-sm text-gray-500">
+                      Loading articles...
+                    </article>
+                  </CarouselItem>
+                ) : blogs.length ? blogs.map((blog) => (
                   <CarouselItem key={blog.id} className="basis-[75%] sm:basis-1/2 lg:basis-1/3">
                     <article className="bg-gray-50 border border-gray-100 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                       <div className='w-full'>
                         <img
-                          src={blog.image}
+                          src={blog.imageUrl || '/placeholder.svg'}
                           alt={blog.title}
                           className="w-full h-24 sm:h-40 lg:h-48 object-contain p-1"
                         />
                       </div>
                       <div className="p-3 sm:p-6 flex-1 flex flex-col">
-                        <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
+                        <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">
+                          {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'Recently'}
+                        </div>
                         <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
-                        <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
+                        <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt || blog.description}</p>
                         <Link
                           to={`/blog/${blog.id}`}
                           className="text-emerald-600 font-medium hover:opacity-80 inline-block text-xs sm:text-base"
@@ -705,7 +708,13 @@ const Homepage: React.FC = () => {
                       </div>
                     </article>
                   </CarouselItem>
-                ))}
+                )) : (
+                  <CarouselItem className="basis-[75%] sm:basis-1/2 lg:basis-1/3">
+                    <article className="flex h-full min-h-64 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 p-6 text-center text-sm text-gray-500">
+                      No articles have been published yet.
+                    </article>
+                  </CarouselItem>
+                )}
               </CarouselContent>
               <div className="hidden sm:block">
                 <CarouselPrevious />

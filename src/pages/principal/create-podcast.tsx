@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Save, UploadCloud } from 'lucide-react';
+import { ImageIcon, Mic, Save, UploadCloud } from 'lucide-react';
 import BackToDashboardButton from '@/components/BackToDashboardButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,20 +16,25 @@ import CreatableCategorySelect from './CreatableCategorySelect';
 import { toast } from 'sonner';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 
+type PodcastMediaKind = 'audio' | 'video';
+
 const CreatePodcastPage: React.FC = () => {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreviewUrl, setMediaPreviewUrl] = useState('');
+  const [mediaKind, setMediaKind] = useState<PodcastMediaKind | null>(null);
+  const [mediaDuration, setMediaDuration] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState('');
   const [tags, setTags] = useState<ContentTags>(emptyContentTags);
   const [form, setForm] = useState({
     title: '',
     description: '',
     host: '',
     category: '',
-    duration: '',
-    audioUrl: '',
-    thumbnailUrl: '',
     status: 'published' as 'draft' | 'published' | 'scheduled' | 'archived',
+    scheduledAt: '',
   });
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -38,50 +43,120 @@ const CreatePodcastPage: React.FC = () => {
       toast.error('Please select or add a category');
       return;
     }
-    if (!form.audioUrl.trim()) {
-      toast.error('Please upload an audio file or provide an audio URL');
+    if (!mediaFile) {
+      toast.error('Please choose an audio or video file');
+      return;
+    }
+    if (form.status === 'scheduled' && !form.scheduledAt) {
+      toast.error('Please choose when this podcast should go live');
       return;
     }
     setIsSaving(true);
 
     try {
-      await contentService.createPrincipalPodcast({ ...form, tags });
+      const detectedDuration = mediaDuration || (await getMediaDurationFromFile(mediaFile, mediaKind));
+      const mediaUpload = await uploadToCloudinary(mediaFile, 'auto', `principal-podcasts/${mediaKind || 'media'}`);
+      const thumbnailUpload = thumbnailFile
+        ? await uploadToCloudinary(thumbnailFile, 'image', 'principal-podcasts/thumbnails')
+        : null;
+      const uploadDuration =
+        mediaUpload.duration && Number.isFinite(Number(mediaUpload.duration))
+          ? `${Math.floor(Number(mediaUpload.duration) / 60)}:${String(Math.round(Number(mediaUpload.duration) % 60)).padStart(2, '0')}`
+          : '';
+
+      await contentService.createPrincipalPodcast({
+        ...form,
+        audioUrl: mediaUpload.secure_url,
+        thumbnailUrl: thumbnailUpload?.secure_url || '',
+        duration: detectedDuration || uploadDuration,
+        scheduledAt: form.status === 'scheduled' ? new Date(form.scheduledAt).toISOString() : null,
+        tags,
+      });
       toast.success('Podcast created');
       navigate('/principal/podcasts');
     } catch (error) {
       console.error(error);
-      toast.error('Failed to create podcast');
+      toast.error('Failed to create podcast. Please check the selected files and try again.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const uploadAudioToCloudinary = async (file: File) => {
-    setIsUploadingAudio(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-      formData.append('folder', 'principal-podcasts');
+  const uploadToCloudinary = async (file: File, resourceType: 'auto' | 'image', folder: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('folder', folder);
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok || !data.secure_url) throw new Error(data?.error?.message || 'Upload failed');
-      setForm((prev) => ({
-        ...prev,
-        audioUrl: data.secure_url,
-        duration: prev.duration || (data.duration ? `${Math.floor(data.duration / 60)}:${String(Math.round(data.duration % 60)).padStart(2, '0')}` : prev.duration),
-      }));
-      toast.success('Audio uploaded');
-    } catch (error) {
-      console.error(error);
-      toast.error('Audio upload failed');
-    } finally {
-      setIsUploadingAudio(false);
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/${resourceType}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok || !data.secure_url) throw new Error(data?.error?.message || 'Upload failed');
+    return data as { secure_url: string; duration?: number };
+  };
+
+  const formatDuration = (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds <= 0) return '';
+    const totalSeconds = Math.round(seconds);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return hours
+      ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+      : `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+  };
+
+  const getMediaDurationFromFile = (file: File, kind: PodcastMediaKind | null) =>
+    new Promise<string>((resolve) => {
+      if (!kind) {
+        resolve('');
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      const media = document.createElement(kind);
+      media.preload = 'metadata';
+      media.onloadedmetadata = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(formatDuration(media.duration));
+      };
+      media.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve('');
+      };
+      media.src = objectUrl;
+    });
+
+  const handleMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+    const nextMediaKind: PodcastMediaKind | null = file.type.startsWith('audio/')
+      ? 'audio'
+      : file.type.startsWith('video/')
+        ? 'video'
+        : null;
+
+    if (!nextMediaKind) {
+      toast.error('Please choose a valid audio or video file.');
+      return;
     }
+    setMediaFile(file);
+    setMediaKind(nextMediaKind);
+    setMediaDuration('');
+    setMediaPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file.');
+      return;
+    }
+    setThumbnailFile(file);
+    setThumbnailPreviewUrl(URL.createObjectURL(file));
   };
 
   return (
@@ -95,7 +170,6 @@ const CreatePodcastPage: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900">Create Podcast</h1>
-              <p className="text-sm text-slate-500">Publish audio or video guidance for selected Benfeks.</p>
             </div>
           </div>
         </div>
@@ -120,10 +194,6 @@ const CreatePodcastPage: React.FC = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Duration</Label>
-              <Input value={form.duration} onChange={(e) => setForm((prev) => ({ ...prev, duration: e.target.value }))} placeholder="15:30" />
-            </div>
-            <div className="space-y-2">
               <Label>Status</Label>
               <Select value={form.status} onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as typeof form.status }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -135,43 +205,79 @@ const CreatePodcastPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            {form.status === 'scheduled' ? (
+              <div className="space-y-2">
+                <Label>Publish date and time</Label>
+                <Input
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={(e) => setForm((prev) => ({ ...prev, scheduledAt: e.target.value }))}
+                  required
+                />
+              </div>
+            ) : null}
             <div className="space-y-2 md:col-span-2">
-              <Label>Audio upload</Label>
+              <Label>Podcast media upload</Label>
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-900">Upload podcast audio</p>
-                    <p className="text-xs text-slate-500">MP3, M4A, WAV, or another browser-supported audio file.</p>
+                    <p className="text-sm font-medium text-slate-900">Upload podcast audio or video</p>
+                    <p className="text-xs text-slate-500">
+                      {mediaFile ? mediaFile.name : 'MP3, M4A, WAV, MP4, MOV, WEBM, or another browser-supported media file.'}
+                    </p>
                   </div>
                   <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                    {isUploadingAudio ? <LoadingSpinner /> : <UploadCloud className="h-4 w-4" />}
-                    {isUploadingAudio ? 'Uploading...' : 'Choose File'}
+                    <UploadCloud className="h-4 w-4" />
+                    Choose File
                     <input
                       type="file"
-                      accept="audio/*"
+                      accept="audio/*,video/*"
                       className="hidden"
-                      disabled={isUploadingAudio}
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) uploadAudioToCloudinary(file);
-                      }}
+                      disabled={isSaving}
+                      onChange={handleMediaChange}
                     />
                   </label>
                 </div>
-                {form.audioUrl ? (
-                  <audio className="mt-4 w-full" controls src={form.audioUrl}>
+                {mediaPreviewUrl && mediaKind === 'audio' ? (
+                  <audio
+                    className="mt-4 w-full"
+                    controls
+                    src={mediaPreviewUrl}
+                    onLoadedMetadata={(event) => setMediaDuration(formatDuration(event.currentTarget.duration))}
+                  >
                     Your browser does not support audio playback.
                   </audio>
+                ) : null}
+                {mediaPreviewUrl && mediaKind === 'video' ? (
+                  <video
+                    className="mt-4 max-h-[360px] w-full rounded-lg bg-black"
+                    controls
+                    src={mediaPreviewUrl}
+                    onLoadedMetadata={(event) => setMediaDuration(formatDuration(event.currentTarget.duration))}
+                  >
+                    Your browser does not support video playback.
+                  </video>
                 ) : null}
               </div>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Audio URL</Label>
-              <Input value={form.audioUrl} onChange={(e) => setForm((prev) => ({ ...prev, audioUrl: e.target.value }))} placeholder="https://..." />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Thumbnail URL</Label>
-              <Input value={form.thumbnailUrl} onChange={(e) => setForm((prev) => ({ ...prev, thumbnailUrl: e.target.value }))} placeholder="/placeholder.svg" />
+              <Label>Thumbnail upload</Label>
+              <div className="grid gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 md:grid-cols-[180px,1fr]">
+                <div className="flex h-32 items-center justify-center overflow-hidden rounded-lg border bg-white">
+                  {thumbnailPreviewUrl ? (
+                    <img src={thumbnailPreviewUrl} alt="Podcast thumbnail preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex flex-col justify-center gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Upload podcast thumbnail</p>
+                    <p className="text-xs text-slate-500">{thumbnailFile ? thumbnailFile.name : 'JPG, PNG, WEBP, or another browser-supported image file.'}</p>
+                  </div>
+                  <Input type="file" accept="image/*" onChange={handleThumbnailChange} disabled={isSaving} />
+                </div>
+              </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Description</Label>
@@ -189,9 +295,9 @@ const CreatePodcastPage: React.FC = () => {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSaving || isUploadingAudio} className="gap-2">
-            {isSaving || isUploadingAudio ? <LoadingSpinner /> : <Save className="h-4 w-4" />}
-            {isUploadingAudio ? 'Uploading audio...' : isSaving ? 'Saving...' : 'Create Podcast'}
+          <Button type="submit" disabled={isSaving} className="gap-2">
+            {isSaving ? <LoadingSpinner /> : <Save className="h-4 w-4" />}
+            {isSaving ? 'Uploading and saving...' : 'Create Podcast'}
           </Button>
         </div>
       </form>

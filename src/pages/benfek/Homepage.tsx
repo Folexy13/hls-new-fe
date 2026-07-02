@@ -18,6 +18,7 @@ import { useStore } from '@/store/useStore';
 import { toast } from 'react-toastify';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { apiClient } from '@/config/axios';
+import { contentService, type PublicArticle } from '@/services/contentService';
 
 import {
   Carousel,
@@ -48,6 +49,8 @@ const BenfekHomepage: React.FC = () => {
     category: string;
   }>>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [blogs, setBlogs] = useState<PublicArticle[]>([]);
+  const [isLoadingBlogs, setIsLoadingBlogs] = useState(true);
 
   const handleQuizStart = () => {
     navigate('/assessment');
@@ -93,6 +96,13 @@ const BenfekHomepage: React.FC = () => {
     };
 
     fetchFeaturedProducts();
+  }, []);
+
+  useEffect(() => {
+    contentService.getPublicArticles()
+      .then(setBlogs)
+      .catch(() => setBlogs([]))
+      .finally(() => setIsLoadingBlogs(false));
   }, []);
 
   const testimonials = [
@@ -168,30 +178,6 @@ const BenfekHomepage: React.FC = () => {
     {
       question: "How long does shipping take?",
       answer: "Standard shipping takes 3-5 business days. Express shipping options are available at checkout."
-    }
-  ];
-
-  const blogs = [
-    {
-      id: 1,
-      title: "The Science Behind Personalized Nutrition",
-      excerpt: "Discover how your unique genetic makeup influences your nutritional needs and how personalized supplementation can optimize your health.",
-      date: "March 15, 2024",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 2,
-      title: "5 Signs You Might Need Vitamin D",
-      excerpt: "Learn about the subtle signs of vitamin D deficiency and how proper supplementation can boost your energy and immune system.",
-      date: "March 10, 2024",
-      image: "/placeholder.svg"
-    },
-    {
-      id: 3,
-      title: "Optimizing Recovery with Magnesium",
-      excerpt: "Understand how magnesium plays a crucial role in muscle recovery and why it's essential for active individuals.",
-      date: "March 5, 2024",
-      image: "/placeholder.svg"
     }
   ];
 
@@ -583,20 +569,28 @@ const BenfekHomepage: React.FC = () => {
 
           <Carousel className="w-full">
             <CarouselContent>
-              {blogs.map((blog) => (
+              {isLoadingBlogs ? (
+                <CarouselItem className="basis-full sm:basis-1/2 lg:basis-1/3">
+                  <article className="flex h-full min-h-64 items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500">
+                    Loading articles...
+                  </article>
+                </CarouselItem>
+              ) : blogs.length ? blogs.map((blog) => (
                 <CarouselItem key={blog.id} className="basis-full sm:basis-1/2 lg:basis-1/3">
                   <article className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
                     <Link to={`/blog/${blog.id}`}>
                       <img
-                        src={blog.image}
+                        src={blog.imageUrl || '/placeholder.svg'}
                         alt={blog.title}
                         className="w-full h-24 sm:h-40 lg:h-48 object-cover"
                       />
                     </Link>
                     <div className="p-3 sm:p-6 flex-1 flex flex-col">
-                      <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">{blog.date}</div>
+                      <div className="text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">
+                        {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString() : 'Recently'}
+                      </div>
                       <h3 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 mb-2 sm:mb-3">{blog.title}</h3>
-                      <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt}</p>
+                      <p className="text-gray-700 mb-2 sm:mb-4 flex-1 text-xs sm:text-sm lg:text-base">{blog.excerpt || blog.description}</p>
                       <Link
                         to={`/blog/${blog.id}`}
                         className="text-emerald-600 font-medium hover:opacity-80 inline-block text-xs sm:text-base"
@@ -606,7 +600,13 @@ const BenfekHomepage: React.FC = () => {
                     </div>
                   </article>
                 </CarouselItem>
-              ))}
+              )) : (
+                <CarouselItem className="basis-full sm:basis-1/2 lg:basis-1/3">
+                  <article className="flex h-full min-h-64 items-center justify-center rounded-lg bg-gray-50 p-6 text-center text-sm text-gray-500">
+                    No articles have been published yet.
+                  </article>
+                </CarouselItem>
+              )}
             </CarouselContent>
             <div className="hidden sm:block">
               <CarouselPrevious />

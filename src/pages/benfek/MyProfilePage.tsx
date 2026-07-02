@@ -184,6 +184,16 @@ const MyProfilePage: React.FC = () => {
   };
 
   const updatePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Please ensure your current password is entered and the new passwords match');
+      return;
+    }
+
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      toast.error('New password must be different from your current password');
+      return;
+    }
+
     setSavingSection('password');
     try {
       await benfekService.changePassword(passwordForm);

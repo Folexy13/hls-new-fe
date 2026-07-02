@@ -169,8 +169,8 @@ const MarketplacePage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {filteredProducts.map((product) => (
-              <Link key={product.id} to={`/product/${product.id}`} className="block">
-                <div className="group h-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <Link key={product.id} to={`/product/${product.id}`} className="flex h-full">
+                <div className="group flex h-full min-h-[250px] w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:min-h-[340px]">
                   <div className="relative">
                     <div className="w-full h-32 sm:h-48 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-3 sm:p-5 border-b border-slate-100">
                       <img
@@ -184,7 +184,7 @@ const MarketplacePage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="p-3 sm:p-5 flex flex-1 flex-col">
+                  <div className="flex flex-1 flex-col p-3 sm:p-5">
                     <div className="flex items-start justify-between gap-2 sm:gap-3">
                       <div className="min-w-0 [&>span]:hidden">
                         <h3 className="text-xs sm:text-lg font-semibold text-gray-950 leading-snug line-clamp-2">{product.name}</h3>
@@ -197,7 +197,7 @@ const MarketplacePage: React.FC = () => {
 
                     <button
                       type="button"
-                      className="mt-3 sm:mt-4 inline-flex w-full items-center justify-center gap-1.5 sm:gap-2 rounded-lg bg-orange-500 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                      className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-2 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
                       disabled={addingId === product.id}
                       onClick={async (e) => {
                         e.preventDefault();

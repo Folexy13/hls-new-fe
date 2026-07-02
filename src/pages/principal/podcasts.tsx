@@ -31,7 +31,9 @@ type Podcast = {
   duration: string;
   publishDate: string;
   status: string;
+  scheduledAt?: string;
   audioUrl?: string;
+  thumbnailUrl?: string;
   tags?: Record<string, string[]>;
   listens: number;
 };
@@ -88,7 +90,9 @@ const PodcastsPage: React.FC = () => {
           duration: podcast.duration || 'Not set',
           publishDate: podcast.createdAt ? new Date(podcast.createdAt).toLocaleDateString() : 'Recently',
           status: podcast.status === 'published' ? 'Published' : podcast.status === 'scheduled' ? 'Scheduled' : podcast.status === 'archived' ? 'Archived' : 'Draft',
+          scheduledAt: podcast.scheduledAt ? new Date(podcast.scheduledAt).toLocaleString() : '',
           audioUrl: podcast.audioUrl || '',
+          thumbnailUrl: podcast.thumbnailUrl || '',
           tags: podcast.tags || {},
           listens: Number(podcast.listens || 0),
         })));
@@ -337,11 +341,20 @@ const PodcastsPage: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <AccordionTrigger className="min-w-0 flex-1 rounded-lg bg-white py-4 text-left hover:no-underline hover:bg-slate-50/70">
-                        <div className="flex w-full items-center gap-2 min-w-0">
-                          <Mic className="h-5 w-5 shrink-0 text-slate-400" />
-                          <span className="truncate text-sm font-semibold text-slate-900">
-                            {podcast.title}
-                          </span>
+                        <div className="flex w-full items-center gap-3 min-w-0">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                            {podcast.thumbnailUrl ? (
+                              <img src={podcast.thumbnailUrl} alt={podcast.title} className="h-full w-full object-cover" />
+                            ) : (
+                              <Mic className="h-5 w-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              {podcast.title}
+                            </span>
+                            <span className="block truncate text-xs text-slate-500">{podcast.category}</span>
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <Button
@@ -386,12 +399,15 @@ const PodcastsPage: React.FC = () => {
                         <div className="flex flex-col min-w-0 items-end md:items-center">
                           <p className="text-xs font-bold text-slate-500 uppercase">Status</p>
                           <div className="mt-1">{renderStatusBadge(podcast.status)}</div>
+                          {podcast.status === 'Scheduled' && podcast.scheduledAt ? (
+                            <p className="mt-1 text-xs text-slate-500">{podcast.scheduledAt}</p>
+                          ) : null}
                         </div>
-                        <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
-                          {Object.values(podcast.tags || {}).flat().length > 0
-                            ? `Tags: ${Object.values(podcast.tags || {}).flat().join(', ')}`
-                            : 'Visible to all your Benfeks'}
-                        </div>
+                        {Object.values(podcast.tags || {}).flat().length > 0 ? (
+                          <div className="col-span-2 md:col-span-4 text-xs text-slate-500">
+                            Tags: {Object.values(podcast.tags || {}).flat().join(', ')}
+                          </div>
+                        ) : null}
                         {podcast.audioUrl ? (
                           <div className="col-span-2 md:col-span-4">
                             <audio
