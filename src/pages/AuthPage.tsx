@@ -442,8 +442,16 @@ const ResetPasswordPage = () => {
       setIsLoading(true);
       const response = await authService.resetPassword(token!, password);
       
+      const user = {
+        id: response.user.id,
+        email: response.user.email,
+        name: `${response.user.firstName} ${response.user.lastName}`,
+        role: String(response.user.role ?? '').toLowerCase(),
+        isAuthenticated: true,
+      };
+
       // The backend returns a fresh set of tokens if successful, we can log them in
-      login(response.tokens.accessToken, response.tokens.refreshToken, response.user);
+      login(user, response.tokens.accessToken, response.tokens.refreshToken);
       
       toast.success('Password reset successful!');
       
