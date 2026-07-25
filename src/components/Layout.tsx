@@ -91,6 +91,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     location.pathname !== '/benfek' &&
     location.pathname !== '/benfek/Homepage' &&
     location.pathname !== '/benfek/quiz-form';
+  const hasBenfekBottomNav = isAuthenticated && userRole === UserRole.BENFEK;
+  const hasPrincipalSettingsFooter = isAuthenticated && userRole === UserRole.PRINCIPAL;
+  const hasMobilePrivateBottomNav =
+    isAuthenticated &&
+    userRole !== UserRole.BENFEK &&
+    userRole !== UserRole.WHOLESALER &&
+    (userRole === UserRole.PRINCIPAL
+      ? privateNavigation.filter((item) => item.name !== 'Dashboard')
+      : privateNavigation
+    ).length > 0;
+  const mainBottomSpacing = hasBenfekBottomNav
+    ? 'pb-24 sm:pb-28'
+    : hasPrincipalSettingsFooter
+      ? 'pb-24'
+      : hasMobilePrivateBottomNav
+        ? 'pb-24 lg:pb-0'
+        : '';
   const isIOS = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -638,7 +655,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className={`flex-1 ${mainBottomSpacing}`}>
         {showBenfekDashboardButton && (
           <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 lg:px-8">
             <BackToDashboardButton
