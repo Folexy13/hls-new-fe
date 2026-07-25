@@ -2,6 +2,7 @@ import { apiClient } from "@/config/axios";
 
 export interface BenfekProfilePayload {
   email?: string;
+  principalEmail?: string;
   firstName?: string;
   lastName?: string;
   phone?: string;
