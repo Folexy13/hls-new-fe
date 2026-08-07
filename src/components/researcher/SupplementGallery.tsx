@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
@@ -730,7 +730,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   onCheckedChange={() => handleToggleSelect(supplement.id)}
                 />
               </div>
-              <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
+              <h3 className="mt-2 min-h-[2rem] text-center text-xs font-medium leading-snug line-clamp-2">{supplement.name}</h3>
               <div className="mt-0.5 flex items-center justify-center gap-2">
                 <p className="text-xs font-medium">₦{supplement.price.toLocaleString()}</p>
                 <Button
@@ -748,11 +748,6 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 </Button>
               </div>
             </CardContent>
-            <CardFooter className="p-1 pt-0">
-              <p className="text-xs text-muted-foreground truncate w-full">
-                {supplement.manufacturer || "Unknown manufacturer"}
-              </p>
-            </CardFooter>
           </Card>
         ))}
       </div>

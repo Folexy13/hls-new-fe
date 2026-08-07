@@ -813,26 +813,9 @@ const WholesalerHomepage: React.FC = () => {
                       <AccordionItem key={product.id} value={`product-${product.id}`} className="overflow-hidden rounded-xl border-0 bg-white shadow-sm">
                         <AccordionTrigger className="px-4 py-4 transition-colors hover:bg-gray-50 hover:no-underline">
                           <div className="flex w-full items-center justify-between gap-3">
-                            <div className="flex min-w-0 flex-1 items-center gap-3">
-                              <div className="relative flex-shrink-0">
-                                <img
-                                  src={product.image}
-                                  alt={product.name}
-                                  className="h-14 w-14 rounded-lg border border-gray-100 object-cover shadow-sm"
-                                />
-                                {product.stock <= 10 && (
-                                  <span className="absolute -right-1 -top-1 flex h-3 w-3">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                                  </span>
-                                )}
-                              </div>
-
+                            <div className="flex min-w-0 flex-1 items-center">
                               <div className="flex min-w-0 flex-1 flex-col items-center justify-center text-center">
                                 <p className="truncate text-base font-bold text-gray-900">{product.name}</p>
-                                <span className="font-semibold text-gray-500">
-                                  {product.manufacturer ? ` (${product.manufacturer})` : ""}
-                                </span>
                               </div>
                             </div>
 
@@ -844,6 +827,11 @@ const WholesalerHomepage: React.FC = () => {
                         <AccordionContent className="bg-white px-4 pb-4">
                           <div className="space-y-4 pt-2">
                             <div className="rounded-xl border border-slate-200 bg-gray-50/60 p-4 text-sm">
+                              <div className="flex items-center justify-between gap-6">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Category</p>
+                                <p className="max-w-[60%] truncate text-right font-bold text-gray-900">{product.category || "N/A"}</p>
+                              </div>
+                              <div className="my-3 h-px bg-slate-200/70" />
                               <div className="flex items-center justify-between gap-6">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Manufacturer</p>
                                 <p className="max-w-[60%] truncate text-right font-bold text-gray-900">{product.manufacturer}</p>
