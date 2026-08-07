@@ -197,7 +197,7 @@ export function SupplementsSelector({
 
                           <Button
                             onClick={() => onDispatchPack(pack.id)}
-                            className="bg-researcher-primary/80 hover:bg-researcher-secondary w-fit h-fit"
+                            className="bg-researcher-primary hover:bg-researcher-secondary w-fit h-fit"
                             disabled={!hasSupplements || dispatchingPackId === pack.id || dispatchingAll}
                           >
                             {dispatchingPackId === pack.id && <LoadingSpinner className="mr-2" />}
