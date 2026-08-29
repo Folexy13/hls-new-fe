@@ -376,7 +376,7 @@ const AddBenfekPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Quiz code sent</DialogTitle>
             <DialogDescription>
-              Quiz code has been sent to the WhatsApp and email of the added benfek.
+              Quiz code has been sent to the email of the added benfek.
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
