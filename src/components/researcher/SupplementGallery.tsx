@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [newStrength, setNewStrength] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newPrice, setNewPrice] = useState<string>("");
+  const [newStock, setNewStock] = useState<string>("0");
   const [newTags, setNewTags] = useState<Record<string, string[]>>({});
   const [newExpiryDate, setNewExpiryDate] = useState("");
   const [newImageUrl, setNewImageUrl] = useState<string>("");
@@ -126,6 +127,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewStrength("");
     setNewDescription("");
     setNewPrice("");
+    setNewStock("0");
     setNewTags({});
     setNewExpiryDate("");
     setNewImageUrl("");
@@ -377,11 +379,12 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     const strength = newStrength.trim();
     const description = newDescription.trim();
     const price = Number(newPrice);
+    const stock = Number(newStock);
 
-    if (!name || !description || !Number.isFinite(price) || price <= 0) {
+    if (!name || !description || !Number.isFinite(price) || price <= 0 || !Number.isFinite(stock) || stock < 0) {
       toast({
         title: "Missing fields",
-        description: "Enter name, description, and a valid price.",
+        description: "Enter name, description, a valid price, and a valid stock quantity.",
         variant: "destructive",
       });
       return;
@@ -399,6 +402,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         tags: newTags,
         expiryDate: newExpiryDate || undefined,
         price,
+        stock,
         type: "supplement",
         code: verifiedCode,
         ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
@@ -415,13 +419,14 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
       } catch {
         setGallerySupplements((prev) =>
           prev.map((item) =>
-            item.id === editingId
-              ? {
-                  ...item,
-                  ...updatePayload,
-                  imageUrl: newImageUrl || item.imageUrl,
-                }
-              : item
+                item.id === editingId
+                  ? {
+                      ...item,
+                      ...updatePayload,
+                      stock,
+                      imageUrl: newImageUrl || item.imageUrl,
+                    }
+                  : item
           )
         );
       } finally {
@@ -443,6 +448,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
         tags: newTags,
         expiryDate: newExpiryDate || undefined,
         price,
+        stock,
         type: "supplement",
         code: verifiedCode,
         ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
@@ -460,7 +466,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           tags: newTags,
           expiryDate: newExpiryDate || undefined,
           price,
-          stock: 0,
+          stock,
           type: "supplement",
           code: verifiedCode,
           ...(canEditWholesale ? { wholesalers: newWholesalers } : {}),
@@ -572,6 +578,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewStrength(String((item as any).strength || ""));
     setNewDescription(item.description);
     setNewPrice(String(item.price));
+    setNewStock(String(typeof item.stock === "number" ? item.stock : Number(item.stock || 0)));
     
     const tags = { ...(item.tags || {}) };
     if (item.dosageForm && !tags.dosage_form) tags.dosage_form = [item.dosageForm];
@@ -723,7 +730,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   onCheckedChange={() => handleToggleSelect(supplement.id)}
                 />
               </div>
-              <h3 className="font-medium mt-2 text-xs">{supplement.name}</h3>
+              <h3 className="mt-2 min-h-[2rem] text-center text-xs font-medium leading-snug line-clamp-2">{supplement.name}</h3>
               <div className="mt-0.5 flex items-center justify-center gap-2">
                 <p className="text-xs font-medium">₦{supplement.price.toLocaleString()}</p>
                 <Button
@@ -741,11 +748,6 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                 </Button>
               </div>
             </CardContent>
-            <CardFooter className="p-1 pt-0">
-              <p className="text-xs text-muted-foreground truncate w-full">
-                {supplement.manufacturer || "Unknown manufacturer"}
-              </p>
-            </CardFooter>
           </Card>
         ))}
       </div>
@@ -1067,6 +1069,19 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     placeholder="e.g. 2500"
+                    inputMode="numeric"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="new-supplement-stock">Stock quantity</Label>
+                  <Input
+                    id="new-supplement-stock"
+                    type="number"
+                    min="0"
+                    value={newStock}
+                    onChange={(e) => setNewStock(e.target.value)}
+                    placeholder="e.g. 50"
                     inputMode="numeric"
                   />
                 </div>

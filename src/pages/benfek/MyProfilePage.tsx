@@ -46,6 +46,7 @@ const MyProfilePage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
+    principalEmail: '',
     phone: '',
     whatsappNumber: '',
     preferredPharmacyName: '',
@@ -83,6 +84,7 @@ const MyProfilePage: React.FC = () => {
       firstName: nextProfile?.firstName || '',
       lastName: nextProfile?.lastName || '',
       email: nextProfile?.email || '',
+      principalEmail: nextProfile?.quizCode?.principal?.email || '',
       phone: nextProfile?.phone || '',
       whatsappNumber: nextProfile?.whatsappNumber || '',
       preferredPharmacyName: nextProfile?.preferredPharmacyName || '',
@@ -259,6 +261,7 @@ const MyProfilePage: React.FC = () => {
                 <div><Label>First Name</Label><Input value={personalForm.firstName} onChange={(e) => setPersonalForm((s) => ({ ...s, firstName: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Last Name</Label><Input value={personalForm.lastName} onChange={(e) => setPersonalForm((s) => ({ ...s, lastName: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Email</Label><Input type="email" value={personalForm.email} onChange={(e) => setPersonalForm((s) => ({ ...s, email: e.target.value }))} disabled={loading} /></div>
+                <div><Label>Principal Email</Label><Input type="email" value={personalForm.principalEmail} onChange={(e) => setPersonalForm((s) => ({ ...s, principalEmail: e.target.value }))} disabled={loading} placeholder="Enter your principal's email" /></div>
                 <div><Label>WhatsApp Number</Label><Input value={personalForm.whatsappNumber} onChange={(e) => setPersonalForm((s) => ({ ...s, whatsappNumber: e.target.value }))} disabled={loading} placeholder="Update your WhatsApp number" /></div>
                 <div><Label>Phone Number</Label><Input value={personalForm.phone} onChange={(e) => setPersonalForm((s) => ({ ...s, phone: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Preferred Pharmacy</Label><Input value={personalForm.preferredPharmacyName} onChange={(e) => setPersonalForm((s) => ({ ...s, preferredPharmacyName: e.target.value }))} disabled={loading} placeholder="Enter your preferred pharmacy" /></div>

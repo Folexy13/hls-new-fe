@@ -567,9 +567,15 @@ export function TabsContainer() {
     const budgetValue = Number(data?.quiz?.preferences?.budget);
     setUserBudget(parsedRange || (Number.isFinite(budgetValue) ? { min: 0, max: budgetValue } : null));
 
+    const benfekDisplayName =
+      data?.fullName?.trim() ||
+      data?.name?.trim() ||
+      [data?.firstName, data?.lastName].filter(Boolean).join(" ").trim() ||
+      "this benfek";
+
     toast({
       title: "Beneficiary Verified",
-      description: `Now designing packs for ${data.firstName} ${data.lastName}`,
+      description: `Now designing packs for ${benfekDisplayName}`,
     });
   };
 

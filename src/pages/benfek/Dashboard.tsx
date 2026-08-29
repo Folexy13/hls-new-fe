@@ -44,6 +44,15 @@ type PackPaymentState = {
   orderStatus: string | null;
 };
 
+type SupplementPaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
 const PENDING_PACK_CHECKOUT_KEY = 'benfek.pending.pack.checkout';
 const VERIFIED_PACK_REFERENCE_KEY = 'benfek.verified.pack.reference';
 
@@ -80,6 +89,15 @@ const Dashboard = () => {
   const [showNutrientNotice, setShowNutrientNotice] = useState(false);
   const [hasNutrientNotice, setHasNutrientNotice] = useState(true);
   const [apiPharmacyItems, setApiPharmacyItems] = useState<Array<{ id: string; title: string; price: string; image: string }>>([]);
+  const [isLoadingPharmacyItems, setIsLoadingPharmacyItems] = useState(true);
+  const [supplementMeta, setSupplementMeta] = useState<SupplementPaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
   const [addingToCartId, setAddingToCartId] = useState<string | null>(null);
   const [activeCatalogueId, setActiveCatalogueId] = useState<string | null>(null);
   const [packItems, setPackItems] = useState<Record<string, any[]>>({});
@@ -92,6 +110,8 @@ const Dashboard = () => {
   const [savedDeliveryAddress, setSavedDeliveryAddress] = useState('');
   const [pharmacyModalSnapshot, setPharmacyModalSnapshot] = useState<PharmacySelectionSnapshot | null>(null);
   const tabMenuRef = useRef<HTMLDivElement | null>(null);
+  const itemsPerPage = 10;
+  const [currentPage, setCurrentPage] = useState(1);
 
   const setPendingPackCheckout = (value: PendingPackCheckout) => {
     try {
@@ -129,9 +149,19 @@ const Dashboard = () => {
     let mounted = true;
 
     const fetchSupplements = async () => {
+      if (mounted) {
+        setIsLoadingPharmacyItems(true);
+      }
+
       try {
-        const response = await apiClient.get('/api/v2/supplements');
+        const response = await apiClient.get('/api/v2/supplements/all', {
+          params: {
+            page: currentPage,
+            limit: itemsPerPage,
+          },
+        });
         const data = response.data?.data?.supplements || [];
+        const pagination = response.data?.data?.pagination || response.data?.data?.meta;
         const mapped = (data as Array<Record<string, unknown>>)
           .map((item) => {
             const stock = (item.stock as number) ?? 0;
@@ -143,13 +173,36 @@ const Dashboard = () => {
               stock,
             };
           })
-          // Do not show out-of-stock items in benfek dashboard.
           .filter((item) => item.id && item.title && item.stock > 0)
           .map(({ stock, ...rest }) => rest);
 
-        if (mounted) setApiPharmacyItems(mapped);
+        if (mounted) {
+          setApiPharmacyItems(mapped);
+          setSupplementMeta({
+            total: Number(pagination?.total ?? mapped.length),
+            page: Number(pagination?.page ?? currentPage),
+            limit: Number(pagination?.limit ?? itemsPerPage),
+            totalPages: Math.max(1, Number(pagination?.totalPages ?? 1)),
+            hasNextPage: Boolean(pagination?.hasNextPage),
+            hasPrevPage: Boolean(pagination?.hasPrevPage),
+          });
+        }
       } catch {
-        if (mounted) setApiPharmacyItems([]);
+        if (mounted) {
+          setApiPharmacyItems([]);
+          setSupplementMeta({
+            total: 0,
+            page: currentPage,
+            limit: itemsPerPage,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          });
+        }
+      } finally {
+        if (mounted) {
+          setIsLoadingPharmacyItems(false);
+        }
       }
     };
 
@@ -157,7 +210,7 @@ const Dashboard = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [currentPage, itemsPerPage]);
 
   useEffect(() => {
     const fetchPacks = async () => {
@@ -324,13 +377,23 @@ const Dashboard = () => {
     setShowPharmacyModal(true);
   };
 
-  const itemsPerPage = 10;
-  const totalPages = Math.max(1, Math.ceil(filteredPharmacyItems.length / itemsPerPage));
-  const [currentPage, setCurrentPage] = useState(1);
-  const pagedPharmacyItems = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredPharmacyItems.slice(start, start + itemsPerPage);
-  }, [currentPage, filteredPharmacyItems]);
+  const totalPages = Math.max(1, supplementMeta.totalPages);
+  const pagedPharmacyItems = filteredPharmacyItems;
+  const visiblePageNumbers = useMemo(() => {
+    if (totalPages <= 3) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    if (currentPage <= 2) {
+      return [1, 2, 3];
+    }
+
+    if (currentPage >= totalPages - 1) {
+      return [totalPages - 2, totalPages - 1, totalPages];
+    }
+
+    return [currentPage - 1, currentPage, currentPage + 1];
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -690,8 +753,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <div className="max-w-6xl mx-auto pb-8 ">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto pb-8">
         <div className="mb-6 flex justify-center">
           <div className="relative h-[50vw] w-full max-w-[960px] overflow-hidden shadow-lg">
             <div
@@ -806,7 +869,12 @@ const Dashboard = () => {
                     </button>
                   )} */}
                 </div>
-                {!selectedPharmacy ? (
+                {isHydratingPharmacy || isLoadingPharmacyItems ? (
+                  <div className="flex items-center justify-center rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
+                    <LoadingSpinner className="mr-2 h-4 w-4" />
+                    Loading supplements...
+                  </div>
+                ) : !selectedPharmacy ? (
                   <button
                     type="button"
                     onClick={openPharmacyModal}
@@ -820,7 +888,7 @@ const Dashboard = () => {
                       {pagedPharmacyItems.map((item) => (
                         <div
                           key={item.id}
-                          className="group w-[40vw] max-w-[190px] cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="group flex h-full w-[40vw] max-w-[190px] cursor-pointer flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         >
                           <div className="relative">
                             <div className="w-full h-24 flex items-center justify-center bg-gradient-to-br from-white to-emerald-50 p-3 border-b border-slate-100">
@@ -834,13 +902,17 @@ const Dashboard = () => {
                               Supplement
                             </span>
                           </div>
-                          <div className="p-3 flex flex-1 flex-col">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 [&>span]:hidden">
-                                <h3 className="text-xs font-semibold text-gray-950 leading-snug line-clamp-2">{item.title}</h3>
+                          <div className="flex flex-1 flex-col p-3">
+                            <div className="flex flex-1 items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1 self-stretch [&>span]:hidden">
+                                <div className="flex min-h-[3.75rem] flex-col justify-center">
+                                  <h3 className="text-xs font-semibold leading-snug text-gray-950 line-clamp-3">
+                                    {item.title}
+                                  </h3>
+                                </div>
                                 <span className="text-xs font-semibold text-emerald-600">{item.price}</span>
                               </div>
-                              <div className="shrink-0 text-right">
+                              <div className="shrink-0 self-center text-right">
                                 <span className="block text-xs font-semibold text-emerald-600">{item.price}</span>
                               </div>
                             </div>
@@ -848,7 +920,7 @@ const Dashboard = () => {
                               type="button"
                               onClick={() => handleAddPharmacyItemToCart(item)}
                               disabled={addingToCartId === item.id}
-                              className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
+                              className="mt-auto inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-600 disabled:opacity-60"
                               aria-label={`Add ${item.title} to cart`}
                             >
                               {addingToCartId === item.id ? (
@@ -868,7 +940,9 @@ const Dashboard = () => {
                       ))}
                       {filteredPharmacyItems.length === 0 && (
                         <div className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700">
-                          No supplements match your search.
+                          {searchValue.trim()
+                            ? 'No supplements match your search.'
+                            : 'No supplements are available right now.'}
                         </div>
                       )}
                     </div>
@@ -916,43 +990,45 @@ const Dashboard = () => {
                     )} */}
                   </>
                 )}
-                {selectedPharmacy && filteredPharmacyItems.length > 0 && (
-                  <div className="flex items-center justify-center gap-2 pt-2">
-                    <button
-                      type="button"
-                      className="h-8 px-3 rounded-full border border-emerald-200 text-xs font-semibold text-emerald-700 bg-white disabled:opacity-50"
-                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Prev
-                    </button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, index) => {
-                        const page = index + 1;
-                        return (
+                {selectedPharmacy && !isHydratingPharmacy && !isLoadingPharmacyItems && totalPages > 1 && (
+                  <div className="space-y-3 pt-2">
+                    <div className="text-center text-xs font-medium text-emerald-700">
+                      Showing page {currentPage} of {totalPages} • {supplementMeta.total} supplement{supplementMeta.total === 1 ? '' : 's'}
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        className="h-9 min-w-[72px] rounded-full border border-emerald-200 bg-white px-4 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={!supplementMeta.hasPrevPage}
+                      >
+                        Prev
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {visiblePageNumbers.map((page) => (
                           <button
                             key={`page-${page}`}
                             type="button"
                             onClick={() => setCurrentPage(page)}
-                            className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+                            className={`h-9 w-9 rounded-full text-xs font-semibold transition ${
                               currentPage === page
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50'
                             }`}
                           >
                             {page}
                           </button>
-                        );
-                      })}
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="h-9 min-w-[72px] rounded-full border border-emerald-200 bg-white px-4 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={!supplementMeta.hasNextPage}
+                      >
+                        Next
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      className="h-8 px-3 rounded-full border border-emerald-200 text-xs font-semibold text-emerald-700 bg-white disabled:opacity-50"
-                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </button>
                   </div>
                 )}
               </div>

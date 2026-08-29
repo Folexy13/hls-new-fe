@@ -158,7 +158,20 @@ export default function ResearcherSelectedSupplementsPage() {
 
   const isOverBudget = benfekMaxBudget > 0 && selectedDispatchTotal > benfekMaxBudget;
 
+  const ensurePackSelected = () => {
+    if (selectedPackId) return true;
+
+    toast({
+      title: "Select a pack first",
+      description: "Choose a pack before selecting supplements for dispatch.",
+      variant: "destructive",
+    });
+    return false;
+  };
+
   const toggleSheetSelection = (id: string) => {
+    if (!ensurePackSelected()) return;
+
     setSelectedSheetIds((prev) => ({
       ...prev,
       [id]: !prev[id],
@@ -385,6 +398,13 @@ export default function ResearcherSelectedSupplementsPage() {
             </div>
           </div>
         </div>
+        {!selectedPackId && (
+          <div className="mx-auto w-[90vw] pb-3">
+            <p className="text-xs font-medium text-amber-700">
+              Select a pack before choosing supplements.
+            </p>
+          </div>
+        )}
       </div>
 
       <main className="container px-1 py-6 pt-[160px]">
@@ -398,10 +418,9 @@ export default function ResearcherSelectedSupplementsPage() {
             {filteredSelected.map((item) => (
               <Card
                 key={item.id}
-                className={`overflow-hidden cursor-pointer transition-all relative group ${
+                className={`overflow-hidden transition-all relative group ${
                   selectedSheetIds[item.id] ? "ring-2 ring-researcher-primary" : "hover:shadow-md"
                 }`}
-                onClick={() => setViewingSupplement(item)}
               >
                 <CardContent className="p-2 flex flex-col items-start">
                   {/* Selection Checkbox (Restored) */}
@@ -456,15 +475,26 @@ export default function ResearcherSelectedSupplementsPage() {
                     </button>
                   </div>
 
-                  <div className="aspect-square w-full mb-1 overflow-hidden rounded-md bg-white border flex items-center justify-center">
+                  <button
+                    type="button"
+                    className="aspect-square w-full mb-1 overflow-hidden rounded-md bg-white border flex items-center justify-center"
+                    onClick={() => toggleSheetSelection(item.id)}
+                    aria-label={`${selectedSheetIds[item.id] ? "Deselect" : "Select"} ${item.name}`}
+                  >
                     <img
                       src={item.imageUrl}
                       alt={item.name}
                       className="max-h-full max-w-full object-contain p-1"
                     />
-                  </div>
+                  </button>
 
-                  {/* Manufacturer Name */}
+                  <button
+                    type="button"
+                    className="mt-0.5 w-full text-left"
+                    onClick={() => setViewingSupplement(item)}
+                    aria-label={`View details for ${item.name}`}
+                  >
+                    {/* Manufacturer Name */}
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter truncate w-full text-left">
                     {item.manufacturer || "Manufacturer"}
                   </p>
@@ -476,6 +506,7 @@ export default function ResearcherSelectedSupplementsPage() {
                   <p className="mt-0.5 text-[11px] font-bold text-researcher-primary tabular-nums">
                     ₦{(item.price * (item.qty || 1)).toLocaleString()}
                   </p>
+                  </button>
                 </CardContent>
               </Card>
             ))}

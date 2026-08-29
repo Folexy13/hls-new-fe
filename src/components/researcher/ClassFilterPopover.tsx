@@ -115,18 +115,6 @@ export function ClassFilterPopover({
 
   useEffect(() => {
     if (!open) return;
-    const prevBody = document.body.style.overflow;
-    const prevHtml = document.documentElement.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevBody;
-      document.documentElement.style.overflow = prevHtml;
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
 
     // Prevent background scroll (wheel/touch) while still allowing scrolling inside the popover.
     const preventIfOutside = (event: Event) => {
@@ -256,7 +244,13 @@ export function ClassFilterPopover({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="start" sideOffset={8} className="-ml-[3%] w-[min(92vw,740px)] p-0 border-researcher-border shadow-lg">
+      <PopoverContent
+        side="bottom"
+        align="end"
+        sideOffset={10}
+        collisionPadding={{ top: 88, right: 12, bottom: 12, left: 12 }}
+        className="w-[min(92vw,740px)] max-w-[calc(100vw-1rem)] p-0 border-researcher-border shadow-lg"
+      >
         <div ref={popoverBodyRef} className="relative flex max-h-[min(72vh,30rem)] overflow-hidden rounded-md bg-white">
           {/* Categories Sidebar */}
           <div className="w-[180px] shrink-0 border-r bg-slate-50/50 overflow-y-auto">

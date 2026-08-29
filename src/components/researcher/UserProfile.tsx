@@ -54,7 +54,6 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
     ...benfekData,
     displayName: benfekData.fullName || benfekData.name || "Unnamed Benefek",
     phone: benfekData.phone || "",
-    family: benfekData.principal ? `${benfekData.principal.firstName} ${benfekData.principal.lastName}` : "Not specified",
     health: {
       ...benfekData.health,
       scares: benfekData.health?.scares,
@@ -227,10 +226,6 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                     <p className="font-medium">{userDetails.gender}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Family</Label>
-                    <p className="font-medium">{userDetails.family || "Not specified"}</p>
-                  </div>
-                  <div>
                     <Label className="text-muted-foreground">Age</Label>
                     <p className="font-medium">{formatValue(userDetails.age)}</p>
                   </div>
@@ -240,7 +235,13 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                   </div>
                   <div className="col-span-2">
                     <Label className="text-muted-foreground">Principal</Label>
-                    <p className="font-medium">{formatValue(userDetails.family)}</p>
+                    <p className="font-medium">
+                      {formatValue(
+                        userDetails.principal
+                          ? `${userDetails.principal.firstName || ""} ${userDetails.principal.lastName || ""}`.trim()
+                          : null
+                      )}
+                    </p>
                   </div>
                   {userDetails.budget && (
                     <div className="col-span-2">
@@ -265,10 +266,6 @@ export function UserProfile({ onUserVerified, benfekData }: UserProfileProps) {
                       <div className="col-span-2 sm:col-span-1">
                         <Label className="text-muted-foreground text-xs">Scares / Health Concerns</Label>
                         <p className="text-sm font-medium">{formatValue(userDetails.health.scares, "None")}</p>
-                      </div>
-                      <div className="col-span-2 sm:col-span-1">
-                        <Label className="text-muted-foreground text-xs">Family Condition</Label>
-                        <p className="text-sm font-medium">{formatValue(userDetails.health.familyCondition, "None")}</p>
                       </div>
                       <div className="col-span-2">
                         <Label className="text-muted-foreground text-xs">Current Condition Declared</Label>
