@@ -56,6 +56,7 @@ export type ArticleComment = {
   articleId: number;
   userId?: number | null;
   guestName?: string | null;
+  guestEmail?: string | null;
   parentId?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -81,8 +82,20 @@ export const contentService = {
     return response.data?.data?.comments ?? [];
   },
 
-  async createArticleComment(articleId: number | string, body: string, guestName?: string) {
-    const response = await apiClient.post(`/api/v2/content/public/articles/${articleId}/comments`, { body, guestName });
+  async createArticleComment(articleId: number | string, body: string, guestName?: string, guestEmail?: string) {
+    const response = await apiClient.post(`/api/v2/content/public/articles/${articleId}/comments`, { body, guestName, guestEmail });
+    return response.data?.data;
+  },
+
+  async updateArticleComment(articleId: number | string, commentId: number | string, body: string, ownerToken?: string) {
+    const response = await apiClient.patch(`/api/v2/content/public/articles/${articleId}/comments/${commentId}`, { body, ownerToken });
+    return response.data?.data;
+  },
+
+  async deleteArticleComment(articleId: number | string, commentId: number | string, ownerToken?: string) {
+    const response = await apiClient.delete(`/api/v2/content/public/articles/${articleId}/comments/${commentId}`, {
+      data: { ownerToken },
+    });
     return response.data?.data;
   },
 

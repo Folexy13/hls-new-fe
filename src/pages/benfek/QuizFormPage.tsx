@@ -367,6 +367,70 @@ const QuizFormPage: React.FC = () => {
   const [trappedZonePct, setTrappedZonePct] = useState(DEFAULT_MIN_Y_BOUND);
   const [maxSafeYPct, setMaxSafeYPct] = useState(DEFAULT_MAX_Y_BOUND);
 
+  const isPositiveNumber = (value: string) => {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue > 0;
+  };
+
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+  const isValidPassword = (value: string) => {
+    return value.length >= 8 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(value);
+  };
+
+  const getStepValidationMessage = (step: number) => {
+    if (step === 0 && includeGenderAge) {
+      if (!basic.gender || !basic.age || !basic.weight || !basic.height) {
+        return 'Please fill all required basic information fields.';
+      }
+      if (!isPositiveNumber(basic.age) || !isPositiveNumber(basic.weight) || !isPositiveNumber(basic.height)) {
+        return 'Age, weight, and height must be valid numbers.';
+      }
+    }
+
+    if (step === 1) {
+      if (!lifestyle.habit.length || !lifestyle.fun.length || !lifestyle.routine.length || !lifestyle.career) {
+        return 'Please complete all lifestyle sections before continuing.';
+      }
+    }
+
+    if (step === 2) {
+      if (!preference.drugForm.length || !preference.budgetRange) {
+        return 'Please select your preferred drug form and budget range.';
+      }
+    }
+
+    if (step === 3) {
+      const email = finalLogin.email.trim();
+      const phone = finalLogin.phone.trim();
+      if (!email || !phone) {
+        return 'Please provide your email address and WhatsApp phone number.';
+      }
+      if (!isValidEmail(email)) {
+        return 'Please enter a valid email address.';
+      }
+      if (!isValidPassword(finalLogin.password)) {
+        return 'Password must contain at least one uppercase, lowercase, number, and special character.';
+      }
+      if (finalLogin.password !== finalLogin.confirmPassword) {
+        return 'Passwords do not match.';
+      }
+    }
+
+    return '';
+  };
+
+  const isStepValid = (step: number) => !getStepValidationMessage(step);
+
+  const requireValidStep = (step: number) => {
+    const message = getStepValidationMessage(step);
+    if (message) {
+      toast.error(message);
+      return false;
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (!persistedDraft) return;
     if (persistedDraft.lifestyle) setLifestyle(persistedDraft.lifestyle);
@@ -459,24 +523,8 @@ const QuizFormPage: React.FC = () => {
   };
 
   const handleNutrientNext = () => {
-    // if (nutrientStep === 0) {
-    //   if (!basic.gender || !basic.age || !basic.weight || !basic.height) {
-    //     toast.error('Please fill all required basic fields.');
-    //     return;
-    //   }
-    // }
-    // if (nutrientStep === 1) {
-    //   if (!lifestyle.career) {
-    //     toast.error('Please fill all required lifestyle fields.');
-    //     return;
-    //   }
-    // }
-    // if (nutrientStep === 2) {
-    //   if (!preference.minBudget || !preference.maxBudget) {
-    //     toast.error('Please fill all required preference fields.');
-    //     return;
-    //   }
-    // }
+    if (!requireValidStep(nutrientStep)) return;
+
     if (nutrientStep < 2) {
       if (nutrientStep === 0) {
         setNutrientStep(1);
@@ -494,6 +542,15 @@ const QuizFormPage: React.FC = () => {
     if (nutrientStep > 0) {
       if (nutrientStep === 2) {
         setFinalGameCompleted(false);
+      }
+      if (nutrientStep === 3) {
+        setFinalGameCompleted(false);
+        setNutrientStep(2);
+        return;
+      }
+      if (nutrientStep === 4) {
+        setNutrientStep(3);
+        return;
       }
       setNutrientStep(includeGenderAge ? nutrientStep - 1 : Math.max(1, nutrientStep - 1));
     }
@@ -527,6 +584,11 @@ const QuizFormPage: React.FC = () => {
 
   const handleNutrientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (nutrientStep !== 2) {
+      handleNutrientNext();
+      return;
+    }
+    if (!requireValidStep(2)) return;
     if (!finalGameCompleted) {
       beginGame(null);
       return;
@@ -990,22 +1052,19 @@ const QuizFormPage: React.FC = () => {
     const email = finalLogin.email.trim();
     const phone = finalLogin.phone.trim();
 
-    if (!email || !phone) {
-      toast.error('Please provide your email address and WhatsApp phone number to complete sign up.');
+    if (includeGenderAge && !requireValidStep(0)) {
+      setNutrientStep(0);
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error('Please enter a valid email address.');
+    if (!requireValidStep(1)) {
+      setNutrientStep(1);
       return;
     }
-    if (!finalLogin.password || !finalLogin.confirmPassword) {
-      toast.error('Please fill all password fields.');
+    if (!requireValidStep(2)) {
+      setNutrientStep(2);
       return;
     }
-    if (finalLogin.password !== finalLogin.confirmPassword) {
-      toast.error('Passwords do not match.');
-      return;
-    }
+    if (!requireValidStep(3)) return;
     const [firstName = 'Benfek', ...restName] = (validatedBenfekName || 'Benfek User').trim().split(/\s+/);
     const lastName = restName.join(' ') || 'User';
 
@@ -1062,6 +1121,12 @@ const QuizFormPage: React.FC = () => {
     }
   };
 
+  const handleFinalLoginNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requireValidStep(3)) return;
+    setNutrientStep(4);
+  };
+
   const handleReplayGame = () => {
     if (gameIntervalRef.current) {
       clearInterval(gameIntervalRef.current);
@@ -1094,7 +1159,7 @@ const QuizFormPage: React.FC = () => {
             </div>
           )}
           {nutrientStep === 3 ? (
-            <form onSubmit={handleFinalLoginSubmit} className="space-y-6">
+            <form onSubmit={handleFinalLoginNext} className="space-y-6">
               <div className="space-y-2 text-center">
                 <h2 className="text-2xl font-bold text-slate-900">Congratulations!</h2>
                 <p className="text-sm text-slate-600">
@@ -1143,6 +1208,9 @@ const QuizFormPage: React.FC = () => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Password must contain at least one uppercase, lowercase, number, and special character
+                  </p>
                 </div>
                 <div>
                   <Label>Confirm Password</Label>
@@ -1164,10 +1232,109 @@ const QuizFormPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting && <LoadingSpinner className="mr-2" />}
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </Button>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                <Button type="button" variant="outline" onClick={handleNutrientBack}>
+                  Back
+                </Button>
+                <Button type="submit" disabled={!isStepValid(3)}>
+                  Review Details
+                </Button>
+              </div>
+            </form>
+          ) : nutrientStep === 4 ? (
+            <form onSubmit={handleFinalLoginSubmit} className="space-y-6">
+              <div className="space-y-2 text-center">
+                <h2 className="text-2xl font-bold text-slate-900">Review Your Details</h2>
+                <p className="text-sm text-slate-600">
+                  Confirm everything below before submitting your assessment and account details.
+                </p>
+              </div>
+
+              <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+                {includeGenderAge && (
+                  <div>
+                    <p className="font-semibold text-slate-900">Basic Information</p>
+                    <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-slate-500">Gender</dt>
+                        <dd className="font-medium capitalize text-slate-900">{basic.gender || 'Not provided'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Age</dt>
+                        <dd className="font-medium text-slate-900">{basic.age || 'Not provided'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Weight</dt>
+                        <dd className="font-medium text-slate-900">{basic.weight || validatedBenfekWeight || 'Not provided'} kg</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">Height</dt>
+                        <dd className="font-medium text-slate-900">{basic.height || validatedBenfekHeight || 'Not provided'} cm</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+
+                <div>
+                  <p className="font-semibold text-slate-900">Lifestyle</p>
+                  <dl className="mt-2 grid gap-2">
+                    <div>
+                      <dt className="text-slate-500">Habits</dt>
+                      <dd className="font-medium text-slate-900">{lifestyle.habit.join(', ') || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Fun activities</dt>
+                      <dd className="font-medium text-slate-900">{lifestyle.fun.join(', ') || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Desires</dt>
+                      <dd className="font-medium text-slate-900">{lifestyle.routine.join(', ') || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Career</dt>
+                      <dd className="font-medium text-slate-900">{lifestyle.career || 'Not provided'}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-slate-900">Preferences</p>
+                  <dl className="mt-2 grid gap-2">
+                    <div>
+                      <dt className="text-slate-500">Drug form</dt>
+                      <dd className="font-medium text-slate-900">{preference.drugForm.join(', ') || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">Budget range</dt>
+                      <dd className="font-medium text-slate-900">{preference.budgetRange || 'Not provided'}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div>
+                  <p className="font-semibold text-slate-900">Account Details</p>
+                  <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-slate-500">Email address</dt>
+                      <dd className="break-words font-medium text-slate-900">{finalLogin.email || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-slate-500">WhatsApp phone number</dt>
+                      <dd className="font-medium text-slate-900">{finalLogin.phone || 'Not provided'}</dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                <Button type="button" variant="outline" onClick={handleNutrientBack} disabled={isSubmitting}>
+                  Back
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting && <LoadingSpinner className="mr-2" />}
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </Button>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleNutrientSubmit} className="space-y-6">
@@ -1212,7 +1379,7 @@ const QuizFormPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
+                  <Button type="button" onClick={handleNutrientNext} disabled={!isStepValid(0)}>Next</Button>
                 </div>
               </div>
             )}
@@ -1519,7 +1686,7 @@ const QuizFormPage: React.FC = () => {
                   {includeGenderAge && (
                     <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
                   )}
-                  <Button type="button" onClick={handleNutrientNext}>Next</Button>
+                  <Button type="button" onClick={handleNutrientNext} disabled={!isStepValid(1)}>Next</Button>
                 </div>
               </div>
             )}
@@ -1626,16 +1793,12 @@ const QuizFormPage: React.FC = () => {
                 </div>
                 <div className="flex justify-between gap-2">
                   <Button type="button" variant="outline" onClick={handleNutrientBack}>Back</Button>
-                  {finalGameCompleted ? (
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <LoadingSpinner className="mr-2" />}
-                      {isSubmitting ? 'Submitting...' : 'Submit'}
-                    </Button>
-                  ) : (
-                    <Button type="button" onClick={() => beginGame(null)}>
-                      Next
-                    </Button>
-                  )}
+                  <Button type="button" onClick={() => {
+                      if (!requireValidStep(2)) return;
+                      beginGame(null);
+                    }} disabled={!isStepValid(2)}>
+                    Next
+                  </Button>
                 </div>
               </div>
             )}

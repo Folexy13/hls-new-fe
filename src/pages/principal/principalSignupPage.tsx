@@ -244,7 +244,7 @@ const PrincipalSignupPage = () => {
               <p className="text-red-500 text-sm mt-1">{errors.password}</p>
             )}
             <p className="text-gray-500 text-xs mt-1">
-              Must be at least 8 characters with uppercase, lowercase, number, and special character
+              Password must contain at least one uppercase, lowercase, number, and special character
             </p>
           </div>
 
