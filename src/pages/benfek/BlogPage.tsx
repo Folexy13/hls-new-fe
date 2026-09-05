@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, MessageCircle, Reply, Send, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Edit2, MessageCircle, Reply, Send, Trash2, User, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,16 @@ const BlogPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
   const [commentBody, setCommentBody] = useState('');
   const [replyBodyByComment, setReplyBodyByComment] = useState<Record<number, string>>({});
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentBody, setEditingCommentBody] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [submittingReplyId, setSubmittingReplyId] = useState<number | null>(null);
+  const [savingCommentId, setSavingCommentId] = useState<number | null>(null);
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
 
   const isArticleAuthor = Boolean(
     isAuthenticated &&
@@ -41,6 +46,24 @@ const BlogPage: React.FC = () => {
     } finally {
       setCommentsLoading(false);
     }
+  };
+
+  const getCommentOwnerToken = (commentId: number) => {
+    return localStorage.getItem(`articleCommentOwner.${commentId}`) || undefined;
+  };
+
+  const rememberCommentOwner = (commentId?: number, ownerToken?: string) => {
+    if (!commentId || !ownerToken) return;
+    localStorage.setItem(`articleCommentOwner.${commentId}`, ownerToken);
+  };
+
+  const forgetCommentOwner = (commentId: number) => {
+    localStorage.removeItem(`articleCommentOwner.${commentId}`);
+  };
+
+  const canManageComment = (comment: ArticleComment) => {
+    if (isAuthenticated && comment.userId && Number(comment.userId) === Number(user?.id)) return true;
+    return Boolean(!comment.userId && getCommentOwnerToken(comment.id));
   };
 
   useEffect(() => {
@@ -64,6 +87,11 @@ const BlogPage: React.FC = () => {
       toast.error('Please enter your name before posting a comment.');
       return;
     }
+    const trimmedGuestEmail = guestEmail.trim();
+    if (!isAuthenticated && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedGuestEmail)) {
+      toast.error('Please enter a valid email address before posting a comment.');
+      return;
+    }
     if (commentBody.trim().length < 2) {
       toast.error('Please write a comment before posting.');
       return;
@@ -71,15 +99,73 @@ const BlogPage: React.FC = () => {
 
     setIsSubmittingComment(true);
     try {
-      await contentService.createArticleComment(id, commentBody.trim(), isAuthenticated ? undefined : trimmedGuestName);
+      const result = await contentService.createArticleComment(
+        id,
+        commentBody.trim(),
+        isAuthenticated ? undefined : trimmedGuestName,
+        isAuthenticated ? undefined : trimmedGuestEmail
+      );
+      rememberCommentOwner(result?.commentId, result?.ownerToken);
       setCommentBody('');
-      if (!isAuthenticated) setGuestName('');
+      if (!isAuthenticated) {
+        setGuestName('');
+        setGuestEmail('');
+      }
       toast.success('Comment posted');
       await loadComments(id);
     } catch (error) {
       toast.error(getApiErrorMessage(error, 'Failed to post your comment.'));
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const startEditingComment = (comment: ArticleComment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentBody(comment.body);
+  };
+
+  const cancelEditingComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentBody('');
+  };
+
+  const handleUpdateComment = async (comment: ArticleComment) => {
+    if (!id) return;
+    const body = editingCommentBody.trim();
+    if (body.length < 2) {
+      toast.error('Please write a comment before saving.');
+      return;
+    }
+
+    setSavingCommentId(comment.id);
+    try {
+      await contentService.updateArticleComment(id, comment.id, body, getCommentOwnerToken(comment.id));
+      cancelEditingComment();
+      toast.success('Comment updated');
+      await loadComments(id);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to update your comment.'));
+    } finally {
+      setSavingCommentId(null);
+    }
+  };
+
+  const handleDeleteComment = async (comment: ArticleComment) => {
+    if (!id) return;
+    const confirmed = window.confirm('Delete this comment?');
+    if (!confirmed) return;
+
+    setDeletingCommentId(comment.id);
+    try {
+      await contentService.deleteArticleComment(id, comment.id, getCommentOwnerToken(comment.id));
+      forgetCommentOwner(comment.id);
+      toast.success('Comment deleted');
+      await loadComments(id);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to delete your comment.'));
+    } finally {
+      setDeletingCommentId(null);
     }
   };
 
@@ -189,6 +275,18 @@ const BlogPage: React.FC = () => {
                   className="bg-white"
                   maxLength={100}
                 />
+                <label htmlFor="comment-email" className="text-sm font-medium text-slate-700">
+                  Email address
+                </label>
+                <Input
+                  id="comment-email"
+                  type="email"
+                  value={guestEmail}
+                  onChange={(event) => setGuestEmail(event.target.value)}
+                  placeholder="Enter your email address"
+                  className="bg-white"
+                  maxLength={191}
+                />
               </div>
             )}
             <Textarea
@@ -225,7 +323,60 @@ const BlogPage: React.FC = () => {
                         <p className="font-semibold text-slate-950">{comment.author || 'User'}</p>
                         <span className="text-xs text-slate-500">{formatCommentDate(comment.createdAt)}</span>
                       </div>
-                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{comment.body}</p>
+                      {editingCommentId === comment.id ? (
+                        <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                          <Textarea
+                            value={editingCommentBody}
+                            onChange={(event) => setEditingCommentBody(event.target.value)}
+                            placeholder="Update your comment..."
+                            className="min-h-24 bg-white"
+                            maxLength={2000}
+                          />
+                          <div className="mt-3 flex flex-wrap justify-end gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={cancelEditingComment}>
+                              <X className="mr-2 h-4 w-4" />
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleUpdateComment(comment)}
+                              disabled={savingCommentId === comment.id}
+                              className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              {savingCommentId === comment.id ? 'Saving...' : 'Save Comment'}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{comment.body}</p>
+                      )}
+
+                      {canManageComment(comment) && editingCommentId !== comment.id ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-slate-600 hover:text-slate-900"
+                            onClick={() => startEditingComment(comment)}
+                          >
+                            <Edit2 className="mr-2 h-4 w-4" />
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteComment(comment)}
+                            disabled={deletingCommentId === comment.id}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {deletingCommentId === comment.id ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </div>
+                      ) : null}
 
                       {isArticleAuthor ? (
                         <div className="mt-3">

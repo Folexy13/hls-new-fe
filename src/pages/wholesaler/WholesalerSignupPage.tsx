@@ -151,6 +151,9 @@ const WholesalerSignupPage = () => {
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            <p className="text-gray-500 text-xs mt-1">
+              Password must contain at least one uppercase, lowercase, number, and special character
+            </p>
           </div>
 
           <div className="relative">
