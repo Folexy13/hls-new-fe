@@ -63,6 +63,7 @@ import {
   wholesalerService,
   type WholesalerSupplement,
 } from "@/services/wholesalerService";
+import DeleteAccountPanel from "@/components/DeleteAccountPanel";
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -136,7 +137,9 @@ const WholesalerHomepage: React.FC = () => {
   const currentUserId = Number(user?.id || 0);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const initialTab = searchParams.get("tab") === "products" ? "products" : "gallery";
+  const initialTab = searchParams.get("tab") === "products" || searchParams.get("tab") === "account"
+    ? searchParams.get("tab")!
+    : "gallery";
   const [activeTab, setActiveTab] = useState(initialTab);
   const [galleryProducts, setGalleryProducts] = useState<WholesalerSupplement[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
@@ -231,14 +234,14 @@ const WholesalerHomepage: React.FC = () => {
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "products" || tab === "gallery") {
+    if (tab === "products" || tab === "gallery" || tab === "account") {
       setActiveTab(tab);
     }
   }, [searchParams]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setSearchParams(tab === "products" ? { tab: "products" } : {});
+    setSearchParams(tab === "gallery" ? {} : { tab });
   };
 
   const visibleGalleryProducts = useMemo(() => {
@@ -449,7 +452,7 @@ const WholesalerHomepage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 pb-16">
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-slate-100 p-1 shadow-sm md:max-w-2xl">
+          <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-slate-100 p-1 shadow-sm md:max-w-2xl">
             <TabsTrigger
               value="gallery"
               className="gap-2 rounded-lg bg-white py-2.5 text-slate-600 hover:bg-slate-50 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:shadow-none"
@@ -463,6 +466,13 @@ const WholesalerHomepage: React.FC = () => {
             >
               <Pill className="h-4 w-4" />
               My Products
+            </TabsTrigger>
+            <TabsTrigger
+              value="account"
+              className="gap-2 rounded-lg bg-white py-2.5 text-slate-600 hover:bg-slate-50 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:shadow-none"
+            >
+              <AlertCircle className="h-4 w-4" />
+              Account
             </TabsTrigger>
           </TabsList>
 
@@ -922,6 +932,15 @@ const WholesalerHomepage: React.FC = () => {
                   </div>
                 )}
               </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="account" className="mt-6">
+            <Card className="border border-slate-200 bg-white p-5 shadow-sm">
+              <DeleteAccountPanel
+                roleLabel="Wholesaler"
+                note="Your payment and order history will be retained for transaction records."
+              />
             </Card>
           </TabsContent>
         </Tabs>
