@@ -14,6 +14,7 @@ import { useStore } from '@/store/useStore';
 import { Eye, EyeOff, HeartPulse, Lock, Sparkles, UserRound } from 'lucide-react';
 import { budgetRangeOptions } from '@/lib/researcher/taxonomy';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import DeleteAccountPanel from '@/components/DeleteAccountPanel';
 
 const drugFormOptions = ['Tablet', 'Capsule', 'Liquid', 'Powder', 'Gummy', 'Chewable', 'Syrup', 'Drops'];
 
@@ -382,6 +383,11 @@ const MyProfilePage: React.FC = () => {
                   {savingSection === 'password' && <LoadingSpinner className="mr-2" />}
                   {savingSection === 'password' ? 'Updating...' : 'Update Password'}
                 </Button>
+                <DeleteAccountPanel
+                  roleLabel="Benfek"
+                  note="Your payment and order history will be retained for transaction records."
+                  className="mt-2"
+                />
               </CardContent>
             </Card>
           </TabsContent>

@@ -31,6 +31,11 @@ export interface AuthResponse {
   };
 }
 
+export interface DeleteAccountRequest {
+  currentPassword: string;
+  confirmation: string;
+}
+
 export const authService = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await apiClient.post("/api/v2/auth/login", credentials);
@@ -53,6 +58,10 @@ export const authService = {
     await apiClient.post("/api/v2/auth/logout", {
       refreshToken,
     });
+  },
+
+  async deleteAccount(payload: DeleteAccountRequest): Promise<void> {
+    await apiClient.delete("/api/v2/auth/me", { data: payload });
   },
 
   async forgotPassword(email: string): Promise<any> {

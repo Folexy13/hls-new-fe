@@ -217,6 +217,7 @@ const AddBenfekPage: React.FC = () => {
   const [dragActive, setDragActive] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [showSentModal, setShowSentModal] = useState(false);
+  const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [manualStep, setManualStep] = useState(0);
   const navigate = useNavigate();
 
@@ -273,17 +274,19 @@ const AddBenfekPage: React.FC = () => {
         currentConditions: values.hasCurrentCondition?.length ? values.hasCurrentCondition : undefined,
         hasCurrentCondition: conditionDetails.length > 0,
       };
+      let response;
       try {
-        await apiClient.post('/api/v2/quiz-code/create', payload);
+        response = await apiClient.post('/api/v2/quiz-code/create', payload);
       } catch (err: any) {
         // Some backends expose a different route name. Try a sensible fallback.
         if (err?.response?.status === 404) {
-          await apiClient.post('/api/v2/quiz-code/generate', payload);
+          response = await apiClient.post('/api/v2/quiz-code/generate', payload);
         } else {
           throw err;
         }
       }
 
+      setEmailSent(response?.data?.data?.emailDelivery?.sent === true);
       setIsSuccess(true);
       setShowSentModal(true);
       sessionStorage.setItem('benfeksNeedsRefresh', '1');
@@ -374,9 +377,11 @@ const AddBenfekPage: React.FC = () => {
       <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Quiz code sent</DialogTitle>
+            <DialogTitle>{emailSent ? 'Quiz code sent' : 'Quiz code created'}</DialogTitle>
             <DialogDescription>
-              Quiz code has been sent to the email of the added benfek.
+              {emailSent
+                ? 'Quiz code has been sent to the email of the added benfek.'
+                : 'The Benfek was added, but email delivery is pending and will be retried automatically.'}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -427,8 +432,9 @@ const AddBenfekPage: React.FC = () => {
                 Benfek Added Successfully
               </h2>
               <p className="text-gray-600 mb-6 max-w-md">
-                The benfek has been added to your network successfully. They will
-                receive an email with instructions to set up their account.
+                {emailSent
+                  ? 'The benfek has been added to your network and their setup instructions were sent by email.'
+                  : 'The benfek has been added to your network. Their setup email is queued for another delivery attempt.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button onClick={() => setIsSuccess(false)}>

@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle, Bell, Check, ChevronsUpDown, CreditCard, Lock, Upload, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { principalService } from '@/services/principalService';
+import DeleteAccountPanel from '@/components/DeleteAccountPanel';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocation } from 'react-router-dom';
@@ -827,6 +828,21 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                           {savingSection === 'password' ? 'Updating...' : 'Update Password'}
                         </Button>
                       </form>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  <AccordionItem value="delete-account" className="border border-red-200 rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left text-red-700">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span>Delete Account</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <DeleteAccountPanel
+                        roleLabel="Principal"
+                        note="Your wallet balance must be zero before deletion. Payment and withdrawal records will be retained."
+                      />
                     </AccordionContent>
                   </AccordionItem>
 

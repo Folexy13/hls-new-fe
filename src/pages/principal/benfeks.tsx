@@ -21,7 +21,7 @@ import {
   Search, UserPlus, Filter, Download,
   ChevronDown, Eye, ArrowUpDown,
   Copy, CheckCircle, Plus,
-  User
+  User, Mail
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import { apiClient } from '@/config/axios';
@@ -133,6 +133,7 @@ const BenfeksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBenfek, setSelectedBenfek] = useState<BenfekRecord | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<number | null>(null);
   const [registrationFilter, setRegistrationFilter] = useState<'all' | 'registered' | 'not_registered'>('all');
   const [showRegistrationFilter, setShowRegistrationFilter] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -222,6 +223,21 @@ const BenfeksPage: React.FC = () => {
     setCopiedCode(code);
     toast.success('Code copied to clipboard');
     setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const resendCodeEmail = async (benfek: BenfekRecord) => {
+    setResendingId(benfek.id);
+    try {
+      const response = await apiClient.post(`/api/v2/quiz-code/${benfek.id}/resend-email`);
+      const sent = response.data?.data?.emailDelivery?.sent === true;
+      sent
+        ? toast.success('Quiz code email sent successfully')
+        : toast.info('Email is queued for another delivery attempt');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to resend quiz code email');
+    } finally {
+      setResendingId(null);
+    }
   };
 
   // Filter and sort data
@@ -466,6 +482,17 @@ const BenfeksPage: React.FC = () => {
                       <TableCell>{renderStatusBadge(benfek.registrationStatus)}</TableCell>
                       <TableCell className="text-sm text-gray-500">{new Date(benfek.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
+                        {!benfek.isUsed && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Resend quiz code email"
+                            disabled={resendingId === benfek.id}
+                            onClick={() => resendCodeEmail(benfek)}
+                          >
+                            {resendingId === benfek.id ? <LoadingSpinner /> : <Mail className="h-4 w-4" />}
+                          </Button>
+                        )}
                         <Button variant="ghost" size="icon" onClick={() => { setSelectedBenfek(benfek); setIsModalOpen(true); }}>
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -559,7 +586,19 @@ const BenfeksPage: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="flex justify-start">
+                        <div className="flex flex-col gap-2">
+                          {!benfek.isUsed && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full rounded-full h-10 border-gray-200"
+                              disabled={resendingId === benfek.id}
+                              onClick={() => resendCodeEmail(benfek)}
+                            >
+                              {resendingId === benfek.id ? <LoadingSpinner className="mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                              Resend Code Email
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
