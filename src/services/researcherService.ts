@@ -7,6 +7,7 @@ export type ResearcherSupplementPayload = {
   price: number;
   stock?: number;
   imageUrl?: string | null;
+  sourceImageSupplementId?: number | null;
   category?: string | null;
   manufacturer?: string | null;
   strength?: string | null;

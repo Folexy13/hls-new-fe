@@ -42,6 +42,7 @@ import { researcherService } from "@/services/researcherService";
 import { canViewWholesaleDetails } from "@/utils/authClaims";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "@/config/env";
+import { SupplementImageSuggestions } from "@/components/supplements/SupplementImageSuggestions";
 
 export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: number }) {
   const SHEET_STORAGE_KEY = "researcher.sheet.supplements";
@@ -69,6 +70,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
   const [newExpiryDate, setNewExpiryDate] = useState("");
   const [newImageUrl, setNewImageUrl] = useState<string>("");
   const [newImagePreviewUrl, setNewImagePreviewUrl] = useState<string>("");
+  const [sourceImageSupplementId, setSourceImageSupplementId] = useState<number | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [newWholesalers, setNewWholesalers] = useState<
     Array<{ name: string; price: number; contact: string; address: string }>
@@ -132,6 +134,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
     setNewExpiryDate("");
     setNewImageUrl("");
     setNewImagePreviewUrl("");
+    setSourceImageSupplementId(null);
     setIsUploadingImage(false);
     setNewWholesalers([]);
     setWholesalerName("");
@@ -462,6 +465,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
           manufacturer,
           strength,
           imageUrl: newSupplement.imageUrl,
+          sourceImageSupplementId: sourceImageSupplementId || undefined,
           category: newSupplement.category,
           tags: newTags,
           expiryDate: newExpiryDate || undefined,
@@ -867,9 +871,32 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                   <Input
                     id="new-supplement-name"
                     value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
+                    onChange={(e) => {
+                      setNewName(e.target.value);
+                      if (sourceImageSupplementId) {
+                        setSourceImageSupplementId(null);
+                        setNewImageUrl("");
+                        setNewImagePreviewUrl("");
+                      }
+                    }}
                     placeholder="e.g. Vitamin K2"
                   />
+                  {!editingId ? (
+                    <SupplementImageSuggestions
+                      query={newName}
+                      selectedId={sourceImageSupplementId}
+                      onSelect={(suggestion) => {
+                        setSourceImageSupplementId(suggestion.id);
+                        setNewImageUrl(suggestion.imageUrl);
+                        setNewImagePreviewUrl(suggestion.imageUrl);
+                      }}
+                      onClear={() => {
+                        setSourceImageSupplementId(null);
+                        setNewImageUrl("");
+                        setNewImagePreviewUrl("");
+                      }}
+                    />
+                  ) : null}
                 </div>
 
                 <div className="space-y-2">
@@ -1033,6 +1060,7 @@ export function SupplementGallery({ openAddRequest = 0 }: { openAddRequest?: num
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
+                      setSourceImageSupplementId(null);
                       const reader = new FileReader();
                       reader.onload = () => {
                         if (typeof reader.result === "string") setNewImagePreviewUrl(reader.result);

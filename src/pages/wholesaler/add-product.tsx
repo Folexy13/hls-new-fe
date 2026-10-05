@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/config/axios";
 import { getApiErrorMessage } from "@/utils/apiError";
+import { SupplementImageSuggestions } from "@/components/supplements/SupplementImageSuggestions";
 
 const productsTabPath = "/wholesaler?tab=products";
 
@@ -28,6 +29,7 @@ const AddProductPage: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
+  const [sourceImageSupplementId, setSourceImageSupplementId] = useState<number | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     brandName: "",
@@ -40,6 +42,10 @@ const AddProductPage: React.FC = () => {
 
   const updateField = (name: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "brandName" && sourceImageSupplementId) {
+      setSourceImageSupplementId(null);
+      setImagePreview("");
+    }
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -50,7 +56,7 @@ const AddProductPage: React.FC = () => {
     if (!formData.price.trim() || Number(formData.price) <= 0) nextErrors.price = "Enter a valid price";
     if (formData.stock.trim() && Number(formData.stock) < 0) nextErrors.stock = "Enter a valid stock quantity";
     if (!formData.manufacturer.trim()) nextErrors.manufacturer = "Manufacturer is required";
-    if (!imageFile) nextErrors.image = "Product image is required";
+    if (!imageFile && !sourceImageSupplementId) nextErrors.image = "Product image is required";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -68,20 +74,26 @@ const AddProductPage: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     setImageFile(file);
+    setSourceImageSupplementId(null);
     setImagePreview(URL.createObjectURL(file));
     setErrors((prev) => ({ ...prev, image: "" }));
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!validateForm() || !imageFile) return;
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      const imageUrl = await uploadProductImage(imageFile);
-      if (!imageUrl) {
-        toast.error("Image upload failed. Please try again.");
-        return;
+      let imageUrl: string | undefined;
+      if (imageFile) {
+        imageUrl = await uploadProductImage(imageFile);
+        if (!imageUrl) {
+          toast.error("Image upload failed. Please try again.");
+          return;
+        }
+      } else if (sourceImageSupplementId) {
+        imageUrl = imagePreview;
       }
 
       await apiClient.post("/api/v2/supplements/wholesaler/products", {
@@ -90,6 +102,7 @@ const AddProductPage: React.FC = () => {
         price: Number(formData.price),
         stock: formData.stock.trim() ? Number(formData.stock) : 0,
         imageUrl,
+        sourceImageSupplementId: sourceImageSupplementId || undefined,
         manufacturer: formData.manufacturer.trim(),
         strength: formData.strength.trim() || null,
         expiryDate: formData.expiryDate,
@@ -159,6 +172,20 @@ const AddProductPage: React.FC = () => {
                   className={errors.brandName ? "border-red-500" : ""}
                 />
                 {errors.brandName && <p className="text-sm text-red-500">{errors.brandName}</p>}
+                <SupplementImageSuggestions
+                  query={formData.brandName}
+                  selectedId={sourceImageSupplementId}
+                  onSelect={(suggestion) => {
+                    setSourceImageSupplementId(suggestion.id);
+                    setImageFile(null);
+                    setImagePreview(suggestion.imageUrl);
+                    setErrors((prev) => ({ ...prev, image: "" }));
+                  }}
+                  onClear={() => {
+                    setSourceImageSupplementId(null);
+                    setImagePreview("");
+                  }}
+                />
               </div>
 
               <div className="space-y-2">
