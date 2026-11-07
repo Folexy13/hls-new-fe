@@ -154,10 +154,11 @@ const Dashboard = () => {
       }
 
       try {
-        const response = await apiClient.get('/api/v2/supplements/all', {
+        const response = await apiClient.get('/api/v2/supplements/benfek/gallery', {
           params: {
             page: currentPage,
             limit: itemsPerPage,
+            q: searchValue.trim() || undefined,
           },
         });
         const data = response.data?.data?.supplements || [];
@@ -165,10 +166,11 @@ const Dashboard = () => {
         const mapped = (data as Array<Record<string, unknown>>)
           .map((item) => {
             const stock = (item.stock as number) ?? 0;
+            const priceHidden = item.priceHidden === true;
             return {
               id: String(item.id ?? ''),
               title: String(item.name ?? ''),
-              price: `₦${Number(item.price ?? 0).toLocaleString()}`,
+              price: priceHidden ? 'Price hidden' : `₦${Number(item.price ?? 0).toLocaleString()}`,
               image: (item.imageUrl as string) || (item.image as string) || '/placeholder.svg',
               stock,
             };
@@ -210,7 +212,7 @@ const Dashboard = () => {
     return () => {
       mounted = false;
     };
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, searchValue, selectedPharmacy]);
 
   useEffect(() => {
     const fetchPacks = async () => {
@@ -874,14 +876,6 @@ const Dashboard = () => {
                     <LoadingSpinner className="mr-2 h-4 w-4" />
                     Loading supplements...
                   </div>
-                ) : !selectedPharmacy ? (
-                  <button
-                    type="button"
-                    onClick={openPharmacyModal}
-                    className="w-full rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/60 p-8 text-center text-sm font-medium text-emerald-700 hover:bg-emerald-50/80 transition"
-                  >
-                    Select a pharmacy to view available drugs.
-                  </button>
                 ) : (
                   <>
                     <div className="flex flex-wrap gap-4 justify-center">
@@ -990,7 +984,7 @@ const Dashboard = () => {
                     )} */}
                   </>
                 )}
-                {selectedPharmacy && !isHydratingPharmacy && !isLoadingPharmacyItems && totalPages > 1 && (
+                {!isHydratingPharmacy && !isLoadingPharmacyItems && totalPages > 1 && (
                   <div className="space-y-3 pt-2">
                     <div className="text-center text-xs font-medium text-emerald-700">
                       Showing page {currentPage} of {totalPages} • {supplementMeta.total} supplement{supplementMeta.total === 1 ? '' : 's'}
