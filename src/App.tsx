@@ -105,6 +105,7 @@ const App = () => (
                 <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
                 <Route path="/assessment" element={<AssessmentPage/>} />
                 <Route path="/quiz" element={<QuizPage />} />
+                <Route path="/benfek/quiz" element={<QuizPage />} />
                 <Route path="/benfek/quiz-form" element={<QuizFormPage />} />
 
 
