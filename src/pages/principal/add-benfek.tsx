@@ -218,6 +218,8 @@ const AddBenfekPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [showSentModal, setShowSentModal] = useState(false);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [emailStatus, setEmailStatus] = useState<string | undefined>();
+  const [whatsappStatus, setWhatsappStatus] = useState<string | undefined>();
   const [manualStep, setManualStep] = useState(0);
   const navigate = useNavigate();
 
@@ -249,6 +251,18 @@ const AddBenfekPage: React.FC = () => {
     },
   });
   const isDirty = form.formState.isDirty || !!uploadedFile;
+  const invitationFeedback = [
+    emailSent ? 'Email invitation sent.' : emailStatus === 'pending'
+      ? 'Email invitation is pending and will be retried automatically.'
+      : 'Email invitation was not sent. Please retry it from the Benfek list.',
+    whatsappStatus === 'accepted'
+      ? 'WhatsApp invitation accepted for sending; delivery is not yet confirmed.'
+      : whatsappStatus === 'not_configured'
+        ? 'WhatsApp is not configured on this server. No WhatsApp message was sent.'
+        : whatsappStatus === 'failed'
+          ? 'WhatsApp invitation failed. The referral is still saved.'
+          : 'WhatsApp invitation status is unavailable.',
+  ].join(' ');
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -287,6 +301,8 @@ const AddBenfekPage: React.FC = () => {
       }
 
       setEmailSent(response?.data?.data?.emailDelivery?.sent === true);
+      setEmailStatus(response?.data?.data?.emailDelivery?.status);
+      setWhatsappStatus(response?.data?.data?.whatsappDelivery?.status);
       setIsSuccess(true);
       setShowSentModal(true);
       sessionStorage.setItem('benfeksNeedsRefresh', '1');
@@ -377,11 +393,9 @@ const AddBenfekPage: React.FC = () => {
       <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{emailSent ? 'Quiz code sent' : 'Quiz code created'}</DialogTitle>
+            <DialogTitle>Referral created</DialogTitle>
             <DialogDescription>
-              {emailSent
-                ? 'Quiz code has been sent to the email of the added benfek.'
-                : 'The Benfek was added, but email delivery is pending and will be retried automatically.'}
+              {invitationFeedback}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -432,9 +446,7 @@ const AddBenfekPage: React.FC = () => {
                 Benfek Added Successfully
               </h2>
               <p className="text-gray-600 mb-6 max-w-md">
-                {emailSent
-                  ? 'The benfek has been added to your network and their setup instructions were sent by email.'
-                  : 'The benfek has been added to your network. Their setup email is queued for another delivery attempt.'}
+                {invitationFeedback}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button onClick={() => setIsSuccess(false)}>
