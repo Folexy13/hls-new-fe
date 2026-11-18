@@ -300,6 +300,14 @@ const AddBenfekPage: React.FC = () => {
         }
       }
 
+      // Temporary diagnostics for failed invitations; never log the full Axios response.
+      const whatsappDelivery = response?.data?.data?.whatsappDelivery;
+      if (whatsappDelivery?.status === 'failed' || whatsappDelivery?.status === 'not_configured') {
+        console.error('[Add Benfek] WhatsApp invitation failed', {
+          status: whatsappDelivery.status,
+          ...(whatsappDelivery.debug || { message: whatsappDelivery.message }),
+        });
+      }
       setEmailSent(response?.data?.data?.emailDelivery?.sent === true);
       setEmailStatus(response?.data?.data?.emailDelivery?.status);
       setWhatsappStatus(response?.data?.data?.whatsappDelivery?.status);

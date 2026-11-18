@@ -25,7 +25,12 @@ async function main() {
             await route.fulfill({ json: { success: true, data: {
               code: 'HLS12345',
               emailDelivery: { status: emailStatus, sent: emailStatus === 'sent' },
-              whatsappDelivery: { status: whatsappStatus, accepted: whatsappStatus === 'accepted' },
+              whatsappDelivery: {
+                status: whatsappStatus, accepted: whatsappStatus === 'accepted',
+                debug: whatsappStatus !== 'accepted'
+                  ? { httpStatus: 401, error: { code: 190, message: 'Invalid access token', fbtrace_id: 'test-trace' } }
+                  : undefined,
+              },
             } } });
           } else {
             await route.fulfill({ json: { success: true, data: {} } });
@@ -44,7 +49,16 @@ async function main() {
         await page.getByLabel('Height (cm)', { exact: true }).fill('165');
         await page.getByRole('button', { name: 'Next', exact: true }).click();
         await page.getByRole('checkbox').check();
+        const debugEvent = whatsappStatus !== 'accepted'
+          ? page.waitForEvent('console', { predicate: message => message.type() === 'error' && message.text().includes('[Add Benfek] WhatsApp invitation failed') })
+          : null;
         await page.getByRole('button', { name: 'Add Benfek', exact: true }).click();
+        if (debugEvent) {
+          const diagnostic = await (await debugEvent).args()[1].jsonValue();
+          assert.equal(diagnostic.httpStatus, 401);
+          assert.equal(diagnostic.error.code, 190);
+          assert.equal(diagnostic.error.fbtrace_id, 'test-trace');
+        }
         const dialog = page.getByRole('dialog');
         await dialog.waitFor();
         const text = await dialog.innerText();
