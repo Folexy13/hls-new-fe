@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { jsPDF } from "jspdf";
+import { apiClient } from "@/config/axios";
+import { toast } from "sonner";
 import {
   ChevronLeft,
   ChevronRight,
@@ -28,6 +29,7 @@ import {
 import { type Supplement } from "@/lib/researcher/dummyData";
 
 interface PackCatalogueProps {
+  packId: string;
   packName: string;
   packRationale?: string;
   items: Supplement[];
@@ -52,6 +54,7 @@ const PLACEHOLDER_IMAGE =
   "https://images.unsplash.com/photo-1584362917165-526a968579e8?q=80&w=800&auto=format&fit=crop";
 
 export function PackCatalogue({
+  packId,
   packName,
   packRationale = "",
   items,
@@ -102,162 +105,6 @@ export function PackCatalogue({
     [items]
   );
 
-  const invoiceShareText = useMemo(() => {
-    const lines = items.map((item) => {
-      const qty = (item as any).qty || 1;
-      const totalPrice = item.price * qty;
-      return `- ${item.name} x${qty}: NGN ${totalPrice.toLocaleString()}`;
-    });
-
-    return [
-      `HLS Invoice`,
-      `Pack: ${packName}`,
-      "",
-      ...lines,
-      "",
-      `Grand Total: NGN ${invoiceTotal.toLocaleString()}`,
-    ].join("\n");
-  }, [invoiceTotal, items, packName]);
-
-  const createInvoicePdf = async () => {
-    const doc = new jsPDF({
-      unit: "pt",
-      format: "a4",
-    });
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const left = 48;
-    const right = pageWidth - 48;
-    let y = 56;
-
-    const addWrappedText = (
-      text: string,
-      x: number,
-      top: number,
-      maxWidth: number,
-      lineHeight: number,
-      options?: { align?: "left" | "right" | "center"; fontSize?: number; fontStyle?: "normal" | "bold" }
-    ) => {
-      if (options?.fontSize) doc.setFontSize(options.fontSize);
-      doc.setFont("helvetica", options?.fontStyle || "normal");
-      const lines = doc.splitTextToSize(text, maxWidth);
-      doc.text(lines, x, top, { align: options?.align || "left", maxWidth });
-      return top + lines.length * lineHeight;
-    };
-
-    const ensurePageSpace = (requiredHeight: number) => {
-      if (y + requiredHeight <= pageHeight - 48) return;
-      doc.addPage();
-      y = 56;
-    };
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("HLS Invoice", left, y);
-    y += 22;
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Pack: ${packName}`, left, y);
-    y += 16;
-    doc.text(`Generated: ${new Date().toLocaleString()}`, left, y);
-    y += 24;
-
-    if (trimmedPackRationale) {
-      ensurePageSpace(72);
-      doc.setDrawColor(209, 213, 219);
-      doc.roundedRect(left, y, right - left, 52, 12, 12);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.setTextColor(15, 23, 42);
-      doc.text("Rationale", left + 16, y + 18);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      addWrappedText(trimmedPackRationale, left + 16, y + 35, right - left - 32, 14, { fontSize: 10 });
-      y += 68;
-    }
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Items", left, y);
-    y += 18;
-
-    items.forEach((item, index) => {
-      const qty = (item as any).qty || 1;
-      const totalPrice = item.price * qty;
-      const itemLabel = `${index + 1}. ${item.name} x${qty}`;
-      const wrappedLines = doc.splitTextToSize(itemLabel, right - left - 120);
-      const blockHeight = Math.max(22, wrappedLines.length * 14 + 8);
-
-      ensurePageSpace(blockHeight + 12);
-
-      doc.setDrawColor(226, 232, 240);
-      doc.line(left, y + blockHeight, right, y + blockHeight);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.setTextColor(51, 65, 85);
-      doc.text(wrappedLines, left, y + 12);
-
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(`NGN ${totalPrice.toLocaleString()}`, right, y + 12, { align: "right" });
-
-      y += blockHeight + 10;
-    });
-
-    ensurePageSpace(40);
-    doc.setDrawColor(148, 163, 184);
-    doc.line(left, y, right, y);
-    y += 22;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(15, 23, 42);
-    doc.text("Grand Total", left, y);
-    doc.setTextColor(5, 150, 105);
-    doc.text(`NGN ${invoiceTotal.toLocaleString()}`, right, y, { align: "right" });
-
-    const blob = doc.output("blob");
-    const fileName = `${packName.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "hls-invoice"}-invoice.pdf`;
-    const file = new File([blob], fileName, { type: "application/pdf" });
-
-    return { blob, file, fileName };
-  };
-
-  const shareInvoicePdf = async () => {
-    const { blob, file, fileName } = await createInvoicePdf();
-    const shareData = {
-      files: [file],
-      title: `${packName} Invoice`,
-      text: "Share this invoice PDF to WhatsApp.",
-    };
-
-    const canUseNativeShare =
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      typeof navigator.canShare === "function" &&
-      navigator.canShare({ files: [file] });
-
-    if (canUseNativeShare) {
-      await navigator.share(shareData);
-      return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const pdfWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (pdfWindow) {
-      pdfWindow.location.href = url;
-    } else {
-      const downloadLink = document.createElement("a");
-      downloadLink.href = url;
-      downloadLink.download = fileName;
-      downloadLink.click();
-    }
-
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  };
 
   useEffect(() => {
     if (trimmedSavedDeliveryAddress) {
@@ -293,7 +140,7 @@ export function PackCatalogue({
     [items]
   );
 
-  const changeItemImage = (itemId: number, direction: "prev" | "next") => {
+  const changeItemImage = (itemId: string, direction: "prev" | "next") => {
     const key = String(itemId);
     const images = visibleItemImages[key] ?? [];
     if (images.length <= 1) return;
@@ -671,27 +518,36 @@ export function PackCatalogue({
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-slate-700">
-                  Share this invoice as a PDF to your WhatsApp number.
+                  Send a private invoice link to your saved WhatsApp number?
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <Button
                     variant="outline"
                     onClick={() => setIsShareDialogOpen(false)}
                   >
-                    No
+                    Cancel
                   </Button>
                   <Button
                     onClick={async () => {
                       setIsSendingInvoice(true);
                       try {
-                        await shareInvoicePdf();
+                        const response = await apiClient.post('/api/v2/benfek/invoice',
+                          paymentState?.isPaid && paymentState.orderId ? { orderId: paymentState.orderId } : { packId });
+                        const status = response.data.data.notification.status;
+                        if (status === 'failed' || status === 'cancelled') {
+                          toast.error('The previous invoice notification could not be sent. Please contact HLS support.');
+                        } else {
+                          toast.success(status === 'accepted' ? 'Invoice notification already submitted' : 'Invoice queued for WhatsApp');
+                        }
+                      } catch (error: any) {
+                        toast.error(error.response?.data?.message || 'Unable to request your invoice. Please retry.');
                       } finally {
                         setIsSendingInvoice(false);
                         setIsShareDialogOpen(false);
                       }
                     }}
                   >
-                    Yes
+                    <Share2 className="mr-2 h-4 w-4" />Send invoice
                   </Button>
                 </div>
               </div>

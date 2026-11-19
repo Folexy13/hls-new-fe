@@ -15,8 +15,11 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 const SignInPage = () => {
   const location = useLocation();
   const signInState = location.state as
-    | { prefill?: { email?: string; password?: string }; from?: { pathname?: string } }
+    | { prefill?: { email?: string; password?: string }; from?: { pathname?: string; search?: string; hash?: string } }
     | null;
+  const from = signInState?.from;
+  const returnPath = from?.pathname?.startsWith('/') && !from.pathname.startsWith('//')
+    ? `${from.pathname}${from.search || ''}${from.hash || ''}` : null;
   const [email, setEmail] = useState(signInState?.prefill?.email ?? '');
   const [password, setPassword] = useState(signInState?.prefill?.password ?? '');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,9 +60,9 @@ const SignInPage = () => {
           redirectPath = '/benfek/dashboard';
       }
       // Use window.location for a hard redirect to ensure URL changes
-      window.location.href = redirectPath;
+      window.location.href = returnPath || redirectPath;
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, returnPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,8 +117,7 @@ const SignInPage = () => {
           redirectPath = '/benfek/dashboard';
       }
       
-      const from = location.state?.from?.pathname || redirectPath;
-      navigate(from, { replace: true });
+      navigate(returnPath || redirectPath, { replace: true });
     } catch (error) {
       const message = getApiErrorMessage(
         error,

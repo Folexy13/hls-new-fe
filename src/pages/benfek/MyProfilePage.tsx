@@ -52,6 +52,7 @@ const MyProfilePage: React.FC = () => {
     whatsappNumber: '',
     preferredPharmacyName: '',
     preferredPharmacyPhone: '',
+    notificationRemindersEnabled: false,
     benfekName: '',
     benfekAge: '',
     benfekGender: '',
@@ -90,6 +91,7 @@ const MyProfilePage: React.FC = () => {
       whatsappNumber: nextProfile?.whatsappNumber || '',
       preferredPharmacyName: nextProfile?.preferredPharmacyName || '',
       preferredPharmacyPhone: nextProfile?.preferredPharmacyPhone || '',
+      notificationRemindersEnabled: Boolean(nextProfile?.notificationRemindersEnabled),
       benfekName: nextProfile?.quizCode?.benfekName || nextProfile?.fullName || '',
       benfekAge: nextProfile?.quizCode?.benfekAge || '',
       benfekGender: nextProfile?.quizCode?.benfekGender || '',
@@ -271,6 +273,11 @@ const MyProfilePage: React.FC = () => {
                 <div><Label>Age</Label><Input value={personalForm.benfekAge} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekAge: e.target.value }))} disabled={loading} /></div>
                 <div><Label>Gender</Label><Input value={personalForm.benfekGender} onChange={(e) => setPersonalForm((s) => ({ ...s, benfekGender: e.target.value }))} disabled={loading} /></div>
                 <div className="sm:col-span-2">
+                  <div className="mb-4 flex items-center gap-3">
+                    <Switch id="notification-reminders" checked={personalForm.notificationRemindersEnabled}
+                      onCheckedChange={value => setPersonalForm(s => ({ ...s, notificationRemindersEnabled: value }))} disabled={loading} />
+                    <Label htmlFor="notification-reminders">Receive WhatsApp reminders about my cart, assessment and incomplete profile</Label>
+                  </div>
                   <Button onClick={savePersonal} disabled={loading || savingSection === 'personal'}>
                     {savingSection === 'personal' && <LoadingSpinner className="mr-2" />}
                     {savingSection === 'personal' ? 'Saving...' : 'Save Personal Details'}

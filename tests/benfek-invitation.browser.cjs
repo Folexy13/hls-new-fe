@@ -27,9 +27,6 @@ async function main() {
               emailDelivery: { status: emailStatus, sent: emailStatus === 'sent' },
               whatsappDelivery: {
                 status: whatsappStatus, accepted: whatsappStatus === 'accepted',
-                debug: whatsappStatus !== 'accepted'
-                  ? { httpStatus: 401, error: { code: 190, message: 'Invalid access token', fbtrace_id: 'test-trace' } }
-                  : undefined,
               },
             } } });
           } else {
@@ -37,6 +34,10 @@ async function main() {
           }
         });
         const page = await context.newPage();
+        const invitationErrors = [];
+        page.on('console', message => {
+          if (message.text().includes('[Add Benfek] WhatsApp invitation failed')) invitationErrors.push(message.text());
+        });
         await page.goto(`${process.env.TEST_BASE_URL || 'http://127.0.0.1:7001'}/principal/add-benfek`);
         await page.getByLabel('First Name', { exact: true }).fill('Test');
         await page.getByLabel('Last Name', { exact: true }).fill('Benfek');
@@ -48,23 +49,15 @@ async function main() {
         await page.getByLabel('Weight (kg)', { exact: true }).fill('60');
         await page.getByLabel('Height (cm)', { exact: true }).fill('165');
         await page.getByRole('button', { name: 'Next', exact: true }).click();
-        await page.getByRole('checkbox').check();
-        const debugEvent = whatsappStatus !== 'accepted'
-          ? page.waitForEvent('console', { predicate: message => message.type() === 'error' && message.text().includes('[Add Benfek] WhatsApp invitation failed') })
-          : null;
+        await page.getByRole('checkbox', { name: 'I confirm that I have permission to add this benfek to the network' }).check();
         await page.getByRole('button', { name: 'Add Benfek', exact: true }).click();
-        if (debugEvent) {
-          const diagnostic = await (await debugEvent).args()[1].jsonValue();
-          assert.equal(diagnostic.httpStatus, 401);
-          assert.equal(diagnostic.error.code, 190);
-          assert.equal(diagnostic.error.fbtrace_id, 'test-trace');
-        }
         const dialog = page.getByRole('dialog');
         await dialog.waitFor();
         const text = await dialog.innerText();
         assert.ok(text.includes('Referral created'));
         assert.ok(text.includes(emailStatus === 'sent' ? 'Email invitation sent.' : emailStatus === 'pending' ? 'pending and will be retried' : 'Email invitation was not sent.'));
-        assert.ok(text.includes(whatsappStatus === 'accepted' ? 'delivery is not yet confirmed' : whatsappStatus === 'failed' ? 'WhatsApp invitation failed' : 'WhatsApp is not configured'));
+        assert.ok(text.includes(whatsappStatus === 'accepted' ? 'WhatsApp invitation sent' : whatsappStatus === 'failed' ? 'WhatsApp invitation failed' : 'WhatsApp is not configured'));
+        assert.equal(invitationErrors.length, 0);
         assert.equal(requests, 1);
         assert.ok(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth));
         console.log(`PASS ${viewport.width}px: email=${emailStatus}, WhatsApp=${whatsappStatus}`);

@@ -20,9 +20,11 @@ export const authenticatedNavigation = [
 export const roleNavigation = {
   [UserRole.PRINCIPAL]: [
     { name: 'Dashboard', href: '/principal', icon: Shield },
+    { name: 'Support', href: '/principal/support', icon: LifeBuoy },
   ],
   [UserRole.WHOLESALER]: [
     { name: 'Wholesaler Dashboard', href: '/wholesaler', icon: Package },
+    { name: 'Support', href: '/wholesaler/support', icon: LifeBuoy },
   ],
   [UserRole.RESEARCHER]: [
     { name: 'Researcher Workspace', href: '/researcher', icon: Briefcase },

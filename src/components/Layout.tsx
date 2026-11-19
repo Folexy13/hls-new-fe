@@ -97,10 +97,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     isAuthenticated &&
     userRole !== UserRole.BENFEK &&
     userRole !== UserRole.WHOLESALER &&
-    (userRole === UserRole.PRINCIPAL
-      ? privateNavigation.filter((item) => item.name !== 'Dashboard')
-      : privateNavigation
-    ).length > 0;
+    userRole !== UserRole.PRINCIPAL &&
+    privateNavigation.length > 0;
   const mainBottomSpacing = hasBenfekBottomNav
     ? 'pb-24 sm:pb-28'
     : hasPrincipalSettingsFooter
@@ -376,6 +374,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <button
               ref={mobileMenuButtonRef}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
               className="p-2 text-gray-600"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -722,16 +722,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {isAuthenticated &&
         userRole !== UserRole.BENFEK &&
         userRole !== UserRole.WHOLESALER &&
-        (userRole === UserRole.PRINCIPAL
-          ? privateNavigation.filter((item) => item.name !== 'Dashboard')
-          : privateNavigation
-        ).length > 0 && (
+        userRole !== UserRole.PRINCIPAL &&
+        privateNavigation.length > 0 && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
           <div className="flex justify-around py-2">
-            {(userRole === UserRole.PRINCIPAL
-              ? privateNavigation.filter((item) => item.name !== 'Dashboard')
-              : privateNavigation
-            )
+            {privateNavigation
               .slice(0, 4)
               .map((item) => (
               <Link
