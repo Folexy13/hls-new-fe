@@ -71,7 +71,7 @@ export const researcherService = {
     status?: string;
   }) {
     const response = await apiClient.post("/api/v2/researcher/packs/dispatch", payload);
-    return response.data.data?.pack;
+    return response.data.data;
   },
 
   async getBenfekPacks(code: string) {

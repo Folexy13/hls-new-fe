@@ -8,13 +8,26 @@ import { LogIn, LogOut } from "lucide-react";
 import logo from "@/images/logo.jpg";
 import { useStore } from "../../store/useStore";
 import { tokenManager } from "@/utils/tokenManager";
+import { apiClient } from '@/config/axios';
+import { OperationsPanel } from '@/components/researcher/OperationsPanel';
 
 const ResearcherHomepage = () => {
   const { user, isAuthenticated: storeAuthenticated, logout } = useStore();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(storeAuthenticated);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [canOperate, setCanOperate] = useState(false);
+  const [operationsOpen, setOperationsOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+
+  useEffect(() => {
+    let active = true;
+    setCanOperate(false);
+    if (storeAuthenticated && user?.role === 'researcher') {
+      apiClient.get('/api/v2/operations/access').then(() => { if (active) setCanOperate(true); }).catch(() => undefined);
+    }
+    return () => { active = false; };
+  }, [storeAuthenticated, user?.id, user?.role]);
 
   useEffect(() => {
     // 1. Check for token in URL (callback from General Sign-In)
@@ -91,7 +104,10 @@ const ResearcherHomepage = () => {
             <img src={logo} width={150} alt="HLS" />
           </Link>
 
-          <div>
+          <div className="flex items-center gap-2">
+            {canOperate && <Button size="sm" variant="outline" onClick={() => setOperationsOpen(value => !value)}>
+              {operationsOpen ? 'Workspace' : 'Operations'}
+            </Button>}
             {isAuthenticated ? (
               <Button
                 variant="outline"
@@ -113,7 +129,7 @@ const ResearcherHomepage = () => {
       </header>
 
       <main className="container mx-auto pt-[72px] pb-4 px-2 sm:px-4 flex-1">
-        <TabsContainer />
+        {canOperate && operationsOpen ? <OperationsPanel /> : <TabsContainer />}
       </main>
 
       <footer className="bg-white border-t py-4 px-2 sm:px-4 mt-auto">

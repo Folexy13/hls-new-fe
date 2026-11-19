@@ -76,6 +76,7 @@ const formSchema = z.object({
   termsAccepted: z.boolean().refine(val => val === true, {
     message: 'You must accept the terms and conditions.',
   }),
+  notificationRemindersEnabled: z.boolean().default(false),
 });
 
 const HEALTH_FIELD_OPTIONS = {
@@ -248,6 +249,7 @@ const AddBenfekPage: React.FC = () => {
       // bio: '',
       // commissionRate: '',
       termsAccepted: false,
+      notificationRemindersEnabled: false,
     },
   });
   const isDirty = form.formState.isDirty || !!uploadedFile;
@@ -256,7 +258,7 @@ const AddBenfekPage: React.FC = () => {
       ? 'Email invitation is pending and will be retried automatically.'
       : 'Email invitation was not sent. Please retry it from the Benfek list.',
     whatsappStatus === 'accepted'
-      ? 'WhatsApp invitation accepted for sending; delivery is not yet confirmed.'
+      ? 'WhatsApp invitation sent'
       : whatsappStatus === 'not_configured'
         ? 'WhatsApp is not configured on this server. No WhatsApp message was sent.'
         : whatsappStatus === 'failed'
@@ -287,6 +289,7 @@ const AddBenfekPage: React.FC = () => {
         scares: values.scares?.length ? values.scares : undefined,
         currentConditions: values.hasCurrentCondition?.length ? values.hasCurrentCondition : undefined,
         hasCurrentCondition: conditionDetails.length > 0,
+        notificationRemindersEnabled: values.notificationRemindersEnabled,
       };
       let response;
       try {
@@ -300,14 +303,6 @@ const AddBenfekPage: React.FC = () => {
         }
       }
 
-      // Temporary diagnostics for failed invitations; never log the full Axios response.
-      const whatsappDelivery = response?.data?.data?.whatsappDelivery;
-      if (whatsappDelivery?.status === 'failed' || whatsappDelivery?.status === 'not_configured') {
-        console.error('[Add Benfek] WhatsApp invitation failed', {
-          status: whatsappDelivery.status,
-          ...(whatsappDelivery.debug || { message: whatsappDelivery.message }),
-        });
-      }
       setEmailSent(response?.data?.data?.emailDelivery?.sent === true);
       setEmailStatus(response?.data?.data?.emailDelivery?.status);
       setWhatsappStatus(response?.data?.data?.whatsappDelivery?.status);
@@ -757,6 +752,12 @@ const AddBenfekPage: React.FC = () => {
 
                           {manualStep === 1 && (
                             <>
+                              <FormField control={form.control} name="notificationRemindersEnabled" render={({ field }) => (
+                                <FormItem className="flex items-start gap-3 space-y-0 border p-4">
+                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                  <FormLabel>The Benfek has agreed to receive WhatsApp assessment reminders</FormLabel>
+                                </FormItem>
+                              )} />
                               {/* Terms and Conditions */}
                               <FormField
                                 control={form.control}

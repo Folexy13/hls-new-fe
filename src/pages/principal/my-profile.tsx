@@ -14,7 +14,8 @@ import { principalService } from '@/services/principalService';
 import DeleteAccountPanel from '@/components/DeleteAccountPanel';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { SupportTicketForm } from '@/components/SupportTicketForm';
 import { apiClient } from '@/config/axios';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -119,6 +120,7 @@ const healthcareProfessionOptions = [
 
 const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, setUser } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(defaultTab);
@@ -932,17 +934,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pb-4">
-                      <form className="space-y-4">
-                        <div>
-                          <label htmlFor="complaintSubject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                          <Input id="complaintSubject" placeholder="Short summary" />
-                        </div>
-                        <div>
-                          <label htmlFor="complaintMessage" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                          <Textarea id="complaintMessage" placeholder="Describe the issue..." />
-                        </div>
-                        <Button variant="outline" type="button">Submit Complaint</Button>
-                      </form>
+                      <SupportTicketForm onCreated={() => navigate('/principal/support?tab=history')} />
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

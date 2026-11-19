@@ -1030,6 +1030,7 @@ const Dashboard = () => {
               <div className="flex flex-col items-center gap-5">
                 {activeCatalogueId ? (
                   <PackCatalogue 
+                    packId={promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]}
                     packName={promoCards.find(p => p.id === activeCatalogueId)?.title || ""}
                     packRationale={packRationales[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || ""}
                     items={packItems[promoIdToPackId[activeCatalogueId as keyof typeof promoIdToPackId]] || []}
