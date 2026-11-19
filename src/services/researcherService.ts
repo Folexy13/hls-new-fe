@@ -7,6 +7,7 @@ export type ResearcherSupplementPayload = {
   price: number;
   stock?: number;
   imageUrl?: string | null;
+  sourceImageSupplementId?: number | null;
   category?: string | null;
   manufacturer?: string | null;
   strength?: string | null;
@@ -70,7 +71,7 @@ export const researcherService = {
     status?: string;
   }) {
     const response = await apiClient.post("/api/v2/researcher/packs/dispatch", payload);
-    return response.data.data?.pack;
+    return response.data.data;
   },
 
   async getBenfekPacks(code: string) {

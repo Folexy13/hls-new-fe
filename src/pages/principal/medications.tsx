@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { apiClient } from '@/config/axios';
 import { toast } from 'sonner';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
+import { SupplementImageSuggestions } from '@/components/supplements/SupplementImageSuggestions';
 
 // Define the Medication type
 type Medication = {
@@ -143,10 +144,15 @@ const MedicationsPage: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sourceImageSupplementId, setSourceImageSupplementId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'In Stock' | 'Low Stock' | 'Out of Stock'>('all');
   const [showStatusFilter, setShowStatusFilter] = useState(false);
 
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    if (!isModalOpen) setSourceImageSupplementId(null);
+  }, [isModalOpen]);
 
   // Fetch medications from API
   useEffect(() => {
@@ -275,6 +281,11 @@ const MedicationsPage: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNewMedication(prev => ({ ...prev, [name]: value }));
+    if (name === 'name' && sourceImageSupplementId) {
+      setSourceImageSupplementId(null);
+      setPreviewImage(null);
+      setNewMedication(prev => ({ ...prev, image: '' }));
+    }
     setIsDirty(true);
   };
 
@@ -283,6 +294,7 @@ const MedicationsPage: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
+      setSourceImageSupplementId(null);
       setIsDirty(true);
       
       // Create preview
@@ -410,6 +422,7 @@ const MedicationsPage: React.FC = () => {
           price: priceValue,
           stock: Number(newMedication.stock) || 0,
           imageUrl: imageUrl,
+          sourceImageSupplementId: sourceImageSupplementId || undefined,
           category: resolvedCategory,
           manufacturer: newMedication.manufacturer || '',
           strength: newMedication.strength || '',
@@ -1009,6 +1022,24 @@ const MedicationsPage: React.FC = () => {
                       onChange={handleInputChange}
                       placeholder="e.g., Paracetamol 500mg"
                     />
+                    {!editingMedicationId && (
+                      <SupplementImageSuggestions
+                        query={newMedication.name || ''}
+                        selectedId={sourceImageSupplementId}
+                        onSelect={(suggestion) => {
+                          setSourceImageSupplementId(suggestion.id);
+                          setSelectedFile(null);
+                          setPreviewImage(suggestion.imageUrl);
+                          setNewMedication((prev) => ({ ...prev, image: suggestion.imageUrl }));
+                          setIsDirty(true);
+                        }}
+                        onClear={() => {
+                          setSourceImageSupplementId(null);
+                          setPreviewImage(null);
+                          setNewMedication((prev) => ({ ...prev, image: '' }));
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="space-y-4">
                     <div>

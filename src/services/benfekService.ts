@@ -1,4 +1,5 @@
 import { apiClient } from "@/config/axios";
+import { supportService } from './supportService';
 
 export interface BenfekProfilePayload {
   email?: string;
@@ -11,6 +12,7 @@ export interface BenfekProfilePayload {
   dropOffAddress?: string;
   preferredPharmacyName?: string;
   preferredPharmacyPhone?: string;
+  notificationRemindersEnabled?: boolean;
   benfekName?: string;
   benfekAge?: string;
   benfekGender?: string;
@@ -62,13 +64,11 @@ export const benfekService = {
   },
 
   async getSupportTickets() {
-    const response = await apiClient.get("/api/v2/benfek/support");
-    return response.data?.data?.tickets || [];
+    return supportService.getTickets();
   },
 
   async createSupportTicket(payload: SupportTicketPayload) {
-    const response = await apiClient.post("/api/v2/benfek/support", payload);
-    return response.data?.data?.ticket;
+    return supportService.createTicket(payload);
   },
 
   async getNotificationSummary(): Promise<{

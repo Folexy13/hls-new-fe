@@ -18,6 +18,7 @@ import AboutPage from "./pages/AboutPage";
 import QuizPage from "./pages/benfek/QuizPage";
 import AuthPage from "./pages/AuthPage";
 import SupportPage from "./pages/benfek/SupportPage";
+import InvoicePage from "./pages/benfek/InvoicePage";
 import Dashboard from "./pages/benfek/Dashboard";
 import CartPage from "./pages/benfek/CartPage";
 import PodcastPage from "./pages/benfek/PodcastPage";
@@ -105,6 +106,7 @@ const App = () => (
                 <Route path="/auth/signup/researcher" element={<ResearcherAuthPage />} />
                 <Route path="/assessment" element={<AssessmentPage/>} />
                 <Route path="/quiz" element={<QuizPage />} />
+                <Route path="/benfek/quiz" element={<QuizPage />} />
                 <Route path="/benfek/quiz-form" element={<QuizFormPage />} />
 
 
@@ -137,6 +139,10 @@ const App = () => (
                   }
                 />
                 <Route
+                  path="/invoices/:id"
+                  element={<RoleBasedRoute allowedRoles={[UserRole.BENFEK]}><InvoicePage /></RoleBasedRoute>}
+                />
+                <Route
                   path="/about"
                   element={
                     <AboutPage />
@@ -147,13 +153,16 @@ const App = () => (
                   path="/support"
                   element={
                     <RoleBasedRoute
-                      allowedRoles={[UserRole.BENFEK]}
+                      allowedRoles={[UserRole.BENFEK, UserRole.PRINCIPAL, UserRole.WHOLESALER]}
                       fallbackPath="/"
                     >
                       <SupportPage />
                     </RoleBasedRoute>
                   }
                 />
+
+                <Route path="/principal/support" element={<RoleBasedRoute allowedRoles={[UserRole.PRINCIPAL]}><SupportPage /></RoleBasedRoute>} />
+                <Route path="/wholesaler/support" element={<RoleBasedRoute allowedRoles={[UserRole.WHOLESALER]}><SupportPage /></RoleBasedRoute>} />
 
                 <Route
                   path="/benfek/my-profile"

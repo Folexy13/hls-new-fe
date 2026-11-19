@@ -8,18 +8,20 @@ import { useStore } from '@/store/useStore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, Bell, Check, ChevronsUpDown, CreditCard, Lock, Upload, User } from 'lucide-react';
+import { AlertTriangle, Bell, Check, ChevronsUpDown, CreditCard, Eye, Lock, Upload, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { principalService } from '@/services/principalService';
 import DeleteAccountPanel from '@/components/DeleteAccountPanel';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@/config/env';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { SupportTicketForm } from '@/components/SupportTicketForm';
 import { apiClient } from '@/config/axios';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { Switch } from '@/components/ui/switch';
 
 type MyProfilePageProps = {
   defaultTab?: 'profile' | 'settings';
@@ -118,6 +120,7 @@ const healthcareProfessionOptions = [
 
 const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, setUser } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'settings'>(defaultTab);
@@ -159,6 +162,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
     referPharmacy: false,
     referredPharmacyName: '',
     referredPharmacyPhone: '',
+    showPricesToBenfeks: true,
   });
 
   useEffect(() => {
@@ -190,6 +194,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       referPharmacy: Boolean(principal?.referPharmacy),
       referredPharmacyName: principal?.referredPharmacyName || '',
       referredPharmacyPhone: principal?.referredPharmacyPhone || '',
+      showPricesToBenfeks: principal?.showPricesToBenfeks !== false,
     });
     setPaymentForm({
       preferredPaymentMethod: principal?.preferredPaymentMethod || 'Paystack',
@@ -347,6 +352,24 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
       toast.success('Personal information updated');
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to update personal information');
+    } finally {
+      setSavingSection(null);
+    }
+  };
+
+  const savePriceVisibility = async (showPricesToBenfeks: boolean) => {
+    const previousValue = profileForm.showPricesToBenfeks;
+    setProfileForm((prev) => ({ ...prev, showPricesToBenfeks }));
+    setSavingSection('price-visibility');
+    try {
+      const principal = await principalService.updateMe({ showPricesToBenfeks });
+      hydrateProfile(principal);
+      toast.success(showPricesToBenfeks
+        ? 'Prices are now visible to Benfeks'
+        : 'Prices are now hidden from Benfeks');
+    } catch (error: any) {
+      setProfileForm((prev) => ({ ...prev, showPricesToBenfeks: previousValue }));
+      toast.error(error?.response?.data?.message || 'Failed to update price visibility');
     } finally {
       setSavingSection(null);
     }
@@ -699,6 +722,34 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                     </AccordionContent>
                   </AccordionItem>
 
+                  <AccordionItem value="price-visibility" className="border rounded-lg px-4">
+                    <AccordionTrigger className="py-4">
+                      <div className="flex items-center gap-3 text-left">
+                        <Eye className="h-5 w-5" />
+                        <span>Benfek Price Visibility</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-4">
+                      <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+                        <div>
+                          <label htmlFor="show-prices-to-benfeks" className="text-sm font-medium text-slate-900">
+                            Show my product prices to Benfeks
+                          </label>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Products remain available to Benfeks when prices are hidden.
+                          </p>
+                        </div>
+                        <Switch
+                          id="show-prices-to-benfeks"
+                          checked={profileForm.showPricesToBenfeks}
+                          disabled={savingSection === 'price-visibility'}
+                          onCheckedChange={savePriceVisibility}
+                          aria-label="Show product prices to Benfeks"
+                        />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
                   <AccordionItem value="payments" className="border rounded-lg px-4">
                     <AccordionTrigger className="py-4">
                       <div className="flex items-center gap-3 text-left">
@@ -883,17 +934,7 @@ const MyProfilePage: React.FC<MyProfilePageProps> = ({ defaultTab = 'profile' })
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pb-4">
-                      <form className="space-y-4">
-                        <div>
-                          <label htmlFor="complaintSubject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                          <Input id="complaintSubject" placeholder="Short summary" />
-                        </div>
-                        <div>
-                          <label htmlFor="complaintMessage" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                          <Textarea id="complaintMessage" placeholder="Describe the issue..." />
-                        </div>
-                        <Button variant="outline" type="button">Submit Complaint</Button>
-                      </form>
+                      <SupportTicketForm onCreated={() => navigate('/principal/support?tab=history')} />
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

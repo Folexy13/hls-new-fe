@@ -76,6 +76,7 @@ const formSchema = z.object({
   termsAccepted: z.boolean().refine(val => val === true, {
     message: 'You must accept the terms and conditions.',
   }),
+  notificationRemindersEnabled: z.boolean().default(false),
 });
 
 const HEALTH_FIELD_OPTIONS = {
@@ -218,6 +219,8 @@ const AddBenfekPage: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [showSentModal, setShowSentModal] = useState(false);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [emailStatus, setEmailStatus] = useState<string | undefined>();
+  const [whatsappStatus, setWhatsappStatus] = useState<string | undefined>();
   const [manualStep, setManualStep] = useState(0);
   const navigate = useNavigate();
 
@@ -246,9 +249,22 @@ const AddBenfekPage: React.FC = () => {
       // bio: '',
       // commissionRate: '',
       termsAccepted: false,
+      notificationRemindersEnabled: false,
     },
   });
   const isDirty = form.formState.isDirty || !!uploadedFile;
+  const invitationFeedback = [
+    emailSent ? 'Email invitation sent.' : emailStatus === 'pending'
+      ? 'Email invitation is pending and will be retried automatically.'
+      : 'Email invitation was not sent. Please retry it from the Benfek list.',
+    whatsappStatus === 'accepted'
+      ? 'WhatsApp invitation sent'
+      : whatsappStatus === 'not_configured'
+        ? 'WhatsApp is not configured on this server. No WhatsApp message was sent.'
+        : whatsappStatus === 'failed'
+          ? 'WhatsApp invitation failed. The referral is still saved.'
+          : 'WhatsApp invitation status is unavailable.',
+  ].join(' ');
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -273,6 +289,7 @@ const AddBenfekPage: React.FC = () => {
         scares: values.scares?.length ? values.scares : undefined,
         currentConditions: values.hasCurrentCondition?.length ? values.hasCurrentCondition : undefined,
         hasCurrentCondition: conditionDetails.length > 0,
+        notificationRemindersEnabled: values.notificationRemindersEnabled,
       };
       let response;
       try {
@@ -287,6 +304,8 @@ const AddBenfekPage: React.FC = () => {
       }
 
       setEmailSent(response?.data?.data?.emailDelivery?.sent === true);
+      setEmailStatus(response?.data?.data?.emailDelivery?.status);
+      setWhatsappStatus(response?.data?.data?.whatsappDelivery?.status);
       setIsSuccess(true);
       setShowSentModal(true);
       sessionStorage.setItem('benfeksNeedsRefresh', '1');
@@ -377,11 +396,9 @@ const AddBenfekPage: React.FC = () => {
       <Dialog open={showSentModal} onOpenChange={setShowSentModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{emailSent ? 'Quiz code sent' : 'Quiz code created'}</DialogTitle>
+            <DialogTitle>Referral created</DialogTitle>
             <DialogDescription>
-              {emailSent
-                ? 'Quiz code has been sent to the email of the added benfek.'
-                : 'The Benfek was added, but email delivery is pending and will be retried automatically.'}
+              {invitationFeedback}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
@@ -432,9 +449,7 @@ const AddBenfekPage: React.FC = () => {
                 Benfek Added Successfully
               </h2>
               <p className="text-gray-600 mb-6 max-w-md">
-                {emailSent
-                  ? 'The benfek has been added to your network and their setup instructions were sent by email.'
-                  : 'The benfek has been added to your network. Their setup email is queued for another delivery attempt.'}
+                {invitationFeedback}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <Button onClick={() => setIsSuccess(false)}>
@@ -737,6 +752,12 @@ const AddBenfekPage: React.FC = () => {
 
                           {manualStep === 1 && (
                             <>
+                              <FormField control={form.control} name="notificationRemindersEnabled" render={({ field }) => (
+                                <FormItem className="flex items-start gap-3 space-y-0 border p-4">
+                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                  <FormLabel>The Benfek has agreed to receive WhatsApp assessment reminders</FormLabel>
+                                </FormItem>
+                              )} />
                               {/* Terms and Conditions */}
                               <FormField
                                 control={form.control}

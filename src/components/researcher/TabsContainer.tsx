@@ -15,6 +15,12 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLocation } from "react-router-dom";
 import { getApiErrorMessage } from "@/utils/apiError";
 
+function packWhatsAppFeedback(status?: string) {
+  if (status === "accepted") return "WhatsApp notification submitted.";
+  if (status === "queued" || status === "processing") return "WhatsApp notification queued.";
+  return "WhatsApp notification needs review in Operations.";
+}
+
 export function TabsContainer() {
   const location = useLocation();
   const defaultTab =
@@ -386,7 +392,7 @@ export function TabsContainer() {
 
     try {
       setDispatchingPackId(packId);
-      await researcherService.dispatchPack({
+      const dispatch = await researcherService.dispatchPack({
         code: verifiedCode,
         packId,
         packName,
@@ -399,7 +405,7 @@ export function TabsContainer() {
       setSelectedSupplements((prev) => ({ ...prev, [packId]: [] }));
       toast({
         title: "Pack Dispatched",
-        description: `The ${packName} is now live in the beneficiary's catalogue.`,
+        description: `The ${packName} is now live in the beneficiary's catalogue. ${packWhatsAppFeedback(dispatch?.whatsappDelivery?.status)}`,
       });
     } catch (e) {
       toast({
@@ -430,6 +436,7 @@ export function TabsContainer() {
     }
 
     let succeeded = 0;
+    let notificationsQueued = 0;
     const updatedDispatched = { ...dispatchedPacks };
     const updatedSelected = { ...selectedSupplements };
     const packsNeedingFallback = packsToDispatch.filter((pack) => {
@@ -484,7 +491,7 @@ export function TabsContainer() {
         }));
 
         try {
-          await researcherService.dispatchPack({
+          const dispatch = await researcherService.dispatchPack({
             code: verifiedCode,
             packId: pack.id,
             packName: pack.name,
@@ -496,6 +503,7 @@ export function TabsContainer() {
           updatedDispatched[pack.id] = true;
           updatedSelected[pack.id] = [];
           succeeded += 1;
+          if (["queued", "processing", "accepted"].includes(dispatch?.whatsappDelivery?.status)) notificationsQueued += 1;
         } catch (error) {
           toast({
             title: `Failed to dispatch ${pack.name}`,
@@ -510,7 +518,7 @@ export function TabsContainer() {
         setSelectedSupplements(updatedSelected);
         toast({
           title: "Packs Dispatched",
-          description: `${succeeded} pack${succeeded > 1 ? "s" : ""} dispatched successfully.`,
+          description: `${succeeded} pack${succeeded > 1 ? "s" : ""} dispatched successfully. ${notificationsQueued} WhatsApp notification${notificationsQueued === 1 ? "" : "s"} queued or submitted.${notificationsQueued < succeeded ? " Review notification status in Operations." : ""}`,
         });
       }
     } finally {

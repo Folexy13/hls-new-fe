@@ -14,6 +14,7 @@ export interface PrincipalProfilePayload {
   referPharmacy?: boolean;
   referredPharmacyName?: string;
   referredPharmacyPhone?: string;
+  showPricesToBenfeks?: boolean;
   preferredPaymentMethod?: string;
   bankName?: string;
   accountNumber?: string;

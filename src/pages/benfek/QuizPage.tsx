@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,8 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const QuizPage = () => {
   const navigate = useNavigate();
-  const [quizCode, setQuizCode] = useState('');
+  const [searchParams] = useSearchParams();
+  const [quizCode, setQuizCode] = useState(() => searchParams.get('code')?.trim() || '');
   const [isValidating, setIsValidating] = useState(false);
 
   const handleValidateCode = async () => {
